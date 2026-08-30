@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isPublished() { return resource.data.status == 'published'; }
+    match /activities/{recordId} { allow read: if isPublished(); allow write: if false; }
+    match /mathematics/{recordId} { allow read: if isPublished(); allow write: if false; }
+    match /publications/{recordId} { allow read: if isPublished(); allow write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

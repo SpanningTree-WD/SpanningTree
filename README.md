@@ -25,4 +25,7 @@ npm run build
 npm run preview
 ```
 
-Stage 3 uses typed local fixtures behind repository contracts. Public repository methods exclude drafts. Firebase, real files, authentication, and admin tools remain deferred to later approved stages.
+Public routes use typed repositories and default to reviewed local fixtures.
+Stage 5 prepares secure Firebase repositories and Hosting while `/admin` remains
+a browser-local prototype. See [Firebase operations](docs/FIREBASE.md) for setup,
+deployment, import, rules, and handoff instructions.

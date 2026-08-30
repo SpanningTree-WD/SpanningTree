@@ -4,6 +4,9 @@ dist
 .env
 .env.*
 !.env.example
+*service-account*.json
+firebase-debug.log
+.firebase/
 coverage
 playwright-report
 test-results
