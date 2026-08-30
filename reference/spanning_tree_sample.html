@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spanning Tree — Sample</title>
+  <style>
+    :root{
+      --bg:#f7f6f1;
+      --paper:#fbfaf6;
+      --text:#171b18;
+      --muted:#697169;
+      --green:#214d36;
+      --green-2:#3f6f55;
+      --line:#d7ddd6;
+      --line-strong:#b9c5bb;
+      --panel:#ffffffaa;
+      --max:1280px;
+      --reading:780px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--text);
+      background:var(--bg);
+      font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height:1.6;
+    }
+    h1,h2,h3,.brand,.serif{
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight:500;
+      letter-spacing:-.02em;
+    }
+    a{color:inherit;text-decoration:none}
+    button,input{font:inherit}
+    .shell{min-height:100vh;display:flex;flex-direction:column}
+    .site-header{
+      position:sticky;top:0;z-index:30;
+      background:rgba(251,250,246,.94);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--green);
+    }
+    .header-inner{
+      max-width:var(--max);margin:0 auto;padding:0 28px;
+      height:82px;display:grid;
+      grid-template-columns:1fr auto 1fr;align-items:center;gap:28px;
+    }
+    .brand{
+      font-size:28px;color:var(--green);letter-spacing:.02em;cursor:pointer;
+      white-space:nowrap;
+    }
+    .nav{display:flex;gap:34px;align-items:center;height:100%}
+    .nav button{
+      border:0;background:none;color:#1d241f;padding:29px 2px 24px;cursor:pointer;
+      position:relative;font-size:15px;
+    }
+    .nav button.active{color:var(--green);font-weight:650}
+    .nav button.active::after{
+      content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--green);
+    }
+    .header-actions{display:flex;justify-content:flex-end}
+    .search-icon{
+      width:38px;height:38px;border:0;background:none;cursor:pointer;position:relative;
+    }
+    .search-icon::before{
+      content:"";position:absolute;width:14px;height:14px;border:2px solid #111;border-radius:50%;
+      left:8px;top:8px;
+    }
+    .search-icon::after{
+      content:"";position:absolute;width:9px;height:2px;background:#111;transform:rotate(45deg);
+      left:21px;top:23px;
+    }
+    main{flex:1}
+    .page{display:none}
+    .page.active{display:block}
+    .wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+    .hero{
+      min-height:450px;border-bottom:1px solid var(--line);
+      background:
+        radial-gradient(circle at 70% 30%, rgba(45,84,62,.05), transparent 26%),
+        linear-gradient(180deg,#fbfaf6 0%,#f7f6f1 100%);
+    }
+    .hero-grid{
+      max-width:var(--max);margin:0 auto;padding:64px 28px 46px;
+      display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
+    }
+    .hero h1{
+      font-size:clamp(46px,5.4vw,78px);line-height:1.03;margin:0 0 24px;
+      max-width:760px;
+    }
+    .hero p{font-size:18px;color:#2f3932;margin:0 0 28px;max-width:510px}
+    .btn{
+      display:inline-flex;align-items:center;gap:24px;
+      border:1px solid var(--green);padding:12px 18px;background:transparent;color:var(--green);
+      cursor:pointer;
+    }
+    .btn:hover{background:#eef3ef}
+    .tree-art{min-height:330px;display:flex;align-items:center;justify-content:center}
+    .tree-art svg{width:100%;max-width:560px;height:auto}
+    .home-sections{padding:36px 0 54px}
+    .home-grid{
+      display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:30px;
+    }
+    .section-head{
+      display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px;
+    }
+    .section-head h3{font-family:inherit;font-size:17px;font-weight:700;margin:0}
+    .small-link{font-size:13px;color:#394239}
+    .activity-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .mini-card{border:1px solid var(--line);background:var(--panel)}
+    .photo{
+      aspect-ratio:16/9;overflow:hidden;background:#ddd;position:relative;
+    }
+    .photo::after{
+      content:"";position:absolute;inset:0;
+      background:
+        linear-gradient(160deg,transparent 0 48%,rgba(33,77,54,.14) 49% 100%),
+        repeating-linear-gradient(0deg,transparent 0 18px,rgba(0,0,0,.04) 19px 20px);
+    }
+    .photo.a{background:linear-gradient(150deg,#c9c5bc 0 35%,#65645e 35% 58%,#1e2521 58% 100%)}
+    .photo.b{background:linear-gradient(160deg,#1f2323 0 47%,#d9d8d2 47% 70%,#7896a2 70%)}
+    .photo.c{background:linear-gradient(145deg,#d5d4cf 0 40%,#36453b 40% 68%,#20231f 68%)}
+    .mini-card .meta{padding:11px 12px 13px}
+    .mini-card strong{font-family:Georgia,serif;font-size:16px}
+    .mini-card small{display:block;margin-top:5px;color:var(--muted)}
+    .list-compact .item{
+      padding:10px 0;border-bottom:1px solid var(--line);
+    }
+    .list-compact .item:last-child{border-bottom:0}
+    .list-compact strong{font-family:Georgia,serif;font-size:17px}
+    .list-compact small{display:block;color:var(--muted);margin-top:2px}
+    .publication-feature{display:grid;grid-template-columns:98px 1fr;gap:18px}
+    .cover{
+      aspect-ratio:2/3;border:1px solid var(--line);padding:12px;
+      display:flex;align-items:flex-start;justify-content:flex-start;
+      font-family:Georgia,serif;line-height:1.15;
+      background:linear-gradient(180deg,#2c3146,#171928);color:white;
+    }
+    .cover.light{background:#efebe0;color:#244332}
+    .cover.green{background:#173c31;color:#f4f1e6}
+    .cover.blue{background:#183654;color:#f5f5f3}
+    .cover.cream{background:#f2eee4;color:#21352b}
+    .page-head{
+      padding:52px 0 24px;
+    }
+    .page-head h1{font-size:56px;line-height:1;margin:0 0 14px}
+    .page-head p{margin:0;color:#455047;max-width:780px}
+    .about-hero{
+      display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center;
+      padding:58px 0 34px;border-bottom:1px solid var(--line);
+    }
+    .about-hero h1{font-size:58px;margin:0 0 20px}
+    .about-hero p{font-size:18px;color:#3d473f;max-width:680px}
+    .about-photo{
+      aspect-ratio:16/10;border:1px solid var(--line);
+      background:
+        radial-gradient(circle at 65% 34%,rgba(33,77,54,.55) 0 2%,transparent 3%),
+        linear-gradient(170deg,#e9e6dc 0 58%,#81906f 59% 76%,#4a5940 77%);
+      position:relative;overflow:hidden;
+    }
+    .about-photo::before{
+      content:"";position:absolute;width:120px;height:220px;border-radius:50% 50% 10% 10%;
+      left:62%;top:16%;border-left:5px solid #334c39;transform:rotate(3deg);
+      box-shadow:
+        -35px 22px 0 -31px #334c39,
+        35px 28px 0 -31px #334c39,
+        -65px 55px 0 -31px #334c39,
+        62px 52px 0 -31px #334c39;
+    }
+    .about-grid{
+      display:grid;grid-template-columns:1.05fr 1.15fr .85fr;gap:28px;padding:30px 0 58px;
+    }
+    .about-panel{border-right:1px solid var(--line);padding-right:28px}
+    .about-panel:last-child{border-right:0;padding-right:0}
+    .about-panel h2{font-size:26px;margin:0 0 12px}
+    .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .feature{
+      min-height:130px;border-top:1px solid var(--line);padding:16px 8px 10px 0;
+    }
+    .feature .icon{
+      width:34px;height:34px;border:1px solid var(--green);display:grid;place-items:center;color:var(--green);margin-bottom:9px;
+    }
+    .feature strong{font-size:16px}
+    .feature p{font-size:13px;color:var(--muted);margin:6px 0}
+    .timeline{position:relative;padding-left:32px}
+    .timeline::before{
+      content:"";position:absolute;left:8px;top:8px;bottom:8px;width:1px;background:var(--green-2);
+    }
+    .timeline-row{position:relative;display:grid;grid-template-columns:62px 1fr;gap:10px;margin:14px 0}
+    .timeline-row::before{
+      content:"";position:absolute;left:-29px;top:7px;width:7px;height:7px;border-radius:50%;border:2px solid var(--green);background:var(--bg);
+    }
+    .timeline-row strong{font-size:14px}
+    .timeline-row span{font-size:13px;color:#596259}
+    .quote{
+      font-family:Georgia,serif;font-size:24px;line-height:1.4;color:#203d2d;margin-top:28px;
+    }
+    .people-tools{
+      display:flex;justify-content:flex-end;margin-top:-6px;margin-bottom:26px;
+    }
+    .toggle{
+      display:flex;align-items:center;gap:12px;border:1px solid var(--line);
+      padding:10px 13px;background:rgba(255,255,255,.45);
+    }
+    .switch{width:42px;height:22px;background:var(--green);border-radius:99px;position:relative}
+    .switch::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:white;right:3px;top:3px}
+    .people-tree{padding:18px 0 60px}
+    .generation{
+      display:grid;grid-template-columns:160px 1fr;align-items:center;gap:22px;margin:32px 0;
+    }
+    .generation-label h2{font-size:31px;color:var(--green);margin:0}
+    .generation-label small{color:var(--muted)}
+    .nodes{display:flex;gap:26px;align-items:center;justify-content:space-around;position:relative;min-height:96px}
+    .nodes::before{content:"";position:absolute;left:4%;right:4%;top:50%;height:1px;background:var(--line-strong)}
+    .person{
+      width:72px;height:72px;border-radius:50%;background:var(--bg);border:1px solid var(--line-strong);
+      display:grid;place-items:center;position:relative;z-index:2;font-weight:600;font-size:14px;
+    }
+    .person::after{content:"";position:absolute;left:50%;top:72px;width:1px;height:45px;border-left:1px dashed #bcc8be}
+    .generation:last-of-type .person::after{display:none}
+    .tree-note{margin-left:182px;color:var(--muted);font-size:13px}
+    .archive-layout{
+      display:grid;grid-template-columns:250px 1fr;gap:34px;padding:6px 0 56px;
+    }
+    .filters{
+      border:1px solid var(--line);padding:20px;background:rgba(255,255,255,.28);align-self:start;
+    }
+    .filter-group{padding:0 0 18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+    .filter-group:last-child{border-bottom:0;margin-bottom:0}
+    .filter-group h3{font-family:inherit;font-size:14px;margin:0 0 10px}
+    .filter-item{display:flex;justify-content:space-between;padding:3px 0;color:#313931;font-size:14px}
+    .filter-item.active{color:var(--green);font-weight:700}
+    .results-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#4a524b;font-size:14px}
+    .archive-list{border:1px solid var(--line)}
+    .archive-row{
+      display:grid;grid-template-columns:225px 1fr auto;gap:28px;padding:14px 18px;
+      align-items:center;border-bottom:1px solid var(--line);background:rgba(255,255,255,.22);
+    }
+    .archive-row:last-child{border-bottom:0}
+    .archive-row .thumb{aspect-ratio:16/9;border:1px solid var(--line)}
+    .archive-row h3{font-size:25px;margin:0 0 3px}
+    .archive-row p{font-size:14px;color:#4d554f;margin:6px 0}
+    .tags{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{font-size:12px;border:1px solid #9eb09f;padding:3px 8px;color:#355a43;background:#f8faf8}
+    .cover-thumb{width:122px;justify-self:center}
+    .publication-row{grid-template-columns:150px 1fr auto}
+    .pdf-btn{
+      border:1px solid var(--green);padding:7px 14px;background:transparent;color:var(--green);white-space:nowrap;
+    }
+    .math-row{grid-template-columns:230px 1fr}
+    .math-cover{
+      aspect-ratio:16/8;background:#7f91a1;color:#15212a;border:1px solid var(--line);padding:18px;
+      font-family:Georgia,serif;font-size:23px;position:relative;overflow:hidden;
+    }
+    .math-cover::after{
+      content:"";position:absolute;width:100px;height:100px;border:1px solid currentColor;right:-18px;bottom:-20px;transform:rotate(18deg);
+    }
+    .math-cover.blue{background:#173f63;color:white}
+    .math-cover.gray{background:#5f615f;color:white}
+    .math-cover.dark{background:#111c25;color:white}
+    .math-cover.brown{background:#4a3328;color:#f8efe3}
+    .article-link{font-size:13px;color:var(--green);font-weight:700}
+    footer{
+      background:#0e2d22;color:#eef2ed;margin-top:auto;
+    }
+    .footer-inner{
+      max-width:var(--max);margin:0 auto;padding:28px;
+      display:flex;justify-content:space-between;align-items:center;gap:20px;
+    }
+    .footer-brand{display:flex;align-items:center;gap:16px}
+    .footer-logo{
+      width:42px;height:42px;border:1px solid #dce7de;display:grid;place-items:center;font-family:Georgia,serif
+    }
+    .footer-copy{font-size:13px;color:#cfdbd2}
+    @media (max-width: 980px){
+      .header-inner{grid-template-columns:1fr auto}
+      .nav{position:absolute;top:82px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);padding:0 14px;overflow:auto}
+      .header-actions{display:none}
+      main{padding-top:58px}
+      .hero-grid,.about-hero{grid-template-columns:1fr}
+      .home-grid,.about-grid{grid-template-columns:1fr}
+      .activity-mini-grid{grid-template-columns:1fr 1fr}
+      .archive-layout{grid-template-columns:1fr}
+      .filters{display:none}
+      .archive-row,.publication-row,.math-row{grid-template-columns:170px 1fr}
+      .archive-row > :last-child{grid-column:2}
+      .generation{grid-template-columns:110px 1fr}
+      .nodes{gap:10px}
+      .person{width:58px;height:58px;font-size:12px}
+    }
+    @media (max-width:650px){
+      .wrap,.header-inner,.hero-grid,.footer-inner{padding-left:18px;padding-right:18px}
+      .brand{font-size:22px}
+      .nav{gap:18px}
+      .hero h1{font-size:44px}
+      .activity-mini-grid{grid-template-columns:1fr}
+      .archive-row,.publication-row,.math-row{grid-template-columns:1fr}
+      .archive-row > :last-child{grid-column:auto}
+      .generation{grid-template-columns:1fr}
+      .tree-note{margin-left:0}
+      .nodes{flex-wrap:wrap}
+      .nodes::before{display:none}
+      .person::after{display:none}
+      .footer-inner{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand" data-page="main">SPANNING TREE</div>
+      <nav class="nav">
+        <button class="active" data-page="main">Main</button>
+        <button data-page="about">About</button>
+        <button data-page="people">People</button>
+        <button data-page="activities">Activities</button>
+        <button data-page="publications">Publications</button>
+        <button data-page="mathematics">Mathematics</button>
+      </nav>
+      <div class="header-actions"><button class="search-icon" aria-label="Search"></button></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- MAIN -->
+    <section class="page active" id="main">
+      <div class="hero">
+        <div class="hero-grid">
+          <div>
+            <h1>Together in Mathematics,<br>Growing Further</h1>
+            <p>함께 탐구하고, 함께 성장하며,<br>더욱 멀리 뻗어가는 Spanning Tree</p>
+            <button class="btn" data-page="about">About Spanning Tree <span>→</span></button>
+          </div>
+          <div class="tree-art" aria-hidden="true">
+            <svg viewBox="0 0 620 420">
+              <defs>
+                <filter id="soft"><feGaussianBlur stdDeviation="0.35"/></filter>
+              </defs>
+              <path d="M311 350 C315 290 308 245 310 190 C315 128 335 80 350 42" fill="none" stroke="#364c3b" stroke-width="8" stroke-linecap="round"/>
+              <g stroke="#4f6957" stroke-width="2.2" fill="none">
+                <path d="M311 208 C260 172 225 142 190 101"/>
+                <path d="M310 220 C353 175 397 144 448 112"/>
+                <path d="M314 170 C275 135 267 95 255 65"/>
+                <path d="M318 163 C363 131 392 92 407 59"/>
+                <path d="M309 247 C250 230 201 223 151 193"/>
+                <path d="M314 248 C374 225 430 223 488 195"/>
+                <path d="M308 286 C258 279 227 280 188 296"/>
+                <path d="M318 291 C360 280 394 285 430 303"/>
+              </g>
+              <g fill="#335e43" opacity=".9">
+                <circle cx="190" cy="101" r="5"/><circle cx="448" cy="112" r="5"/><circle cx="255" cy="65" r="5"/>
+                <circle cx="407" cy="59" r="5"/><circle cx="151" cy="193" r="5"/><circle cx="488" cy="195" r="5"/>
+                <circle cx="188" cy="296" r="5"/><circle cx="430" cy="303" r="5"/><circle cx="301" cy="102" r="4"/>
+                <circle cx="356" cy="94" r="4"/><circle cx="230" cy="164" r="4"/><circle cx="420" cy="164" r="4"/>
+              </g>
+              <g stroke="#89a08f" stroke-width="1" opacity=".55">
+                <line x1="190" y1="101" x2="255" y2="65"/><line x1="255" y1="65" x2="301" y2="102"/>
+                <line x1="301" y1="102" x2="356" y2="94"/><line x1="356" y1="94" x2="407" y2="59"/>
+                <line x1="407" y1="59" x2="448" y2="112"/><line x1="190" y1="101" x2="230" y2="164"/>
+                <line x1="230" y1="164" x2="151" y2="193"/><line x1="448" y1="112" x2="420" y2="164"/>
+                <line x1="420" y1="164" x2="488" y2="195"/><line x1="230" y1="164" x2="420" y2="164"/>
+              </g>
+              <path d="M94 352 C240 330 405 335 550 360" fill="none" stroke="#98a397" stroke-width="1.5" opacity=".7"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="wrap home-sections">
+        <div class="home-grid">
+          <section>
+            <div class="section-head"><h3>Featured Activities</h3><span class="small-link">View all →</span></div>
+            <div class="activity-mini-grid">
+              <div class="mini-card"><div class="photo a"></div><div class="meta"><strong>KSA × Spanning Tree Forum</strong><small>2025.05.17</small></div></div>
+              <div class="mini-card"><div class="photo b"></div><div class="meta"><strong>Mini Lecture Day</strong><small>2025.04.12</small></div></div>
+              <div class="mini-card"><div class="photo c"></div><div class="meta"><strong>Integration Bee</strong><small>2025.03.08</small></div></div>
+            </div>
+          </section>
+          <section>
+            <div class="section-head"><h3>Latest Mathematics</h3><span class="small-link">View all →</span></div>
+            <div class="list-compact">
+              <div class="item"><strong>Sylow’s Theorems</strong><small>Lecture Note · Algebra · 2026</small></div>
+              <div class="item"><strong>An Introduction to Fundamental Groups</strong><small>Lecture Note · Topology · 2025</small></div>
+              <div class="item"><strong>Burnside’s Lemma and Applications</strong><small>Article · Combinatorics · 2026</small></div>
+            </div>
+          </section>
+          <section>
+            <div class="section-head"><h3>Publications</h3><span class="small-link">View all →</span></div>
+            <div class="publication-feature">
+              <div class="cover">확장과 연결의 질문</div>
+              <div><h3 style="margin:0 0 6px">확장과 연결의 질문</h3><div style="color:var(--muted);font-size:14px">Spanning Tree Publications</div><div style="margin-top:4px;font-size:14px">2025</div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="page" id="about">
+      <div class="wrap">
+        <div class="about-hero">
+          <div>
+            <h1>About Spanning Tree</h1>
+            <p>Spanning Tree는 수학의 다양한 분야를 연결하고 깊이 있게 탐구하며, 함께 배우고 기록하고 다음 세대에 지식을 이어가는 학술 공동체입니다.</p>
+          </div>
+          <div class="about-photo"></div>
+        </div>
+        <div class="about-grid">
+          <section class="about-panel">
+            <h2>What We Do</h2>
+            <div class="feature-grid">
+              <div class="feature"><div class="icon">∫</div><strong>연구와 학습</strong><p>핵심 개념과 여러 분야를 체계적으로 공부합니다.</p></div>
+              <div class="feature"><div class="icon">✎</div><strong>지식 공유</strong><p>세미나, 강연, 포럼으로 배운 내용을 나눕니다.</p></div>
+              <div class="feature"><div class="icon">◇</div><strong>창의적 탐구</strong><p>문제를 발견하고 새로운 관점으로 접근합니다.</p></div>
+              <div class="feature"><div class="icon">↗</div><strong>성장과 연결</strong><p>서로의 성장을 돕고 학문적 네트워크를 확장합니다.</p></div>
+            </div>
+          </section>
+          <section class="about-panel">
+            <h2>History</h2>
+            <div class="timeline">
+              <div class="timeline-row"><strong>2024</strong><span>Spanning Tree의 장기 아카이브 체계 구축 시작</span></div>
+              <div class="timeline-row"><strong>2025</strong><span>외부 교류, 포럼 및 여러 프로젝트 확장</span></div>
+              <div class="timeline-row"><strong>2026</strong><span>세대별 멘토링·Web Archive·Publication 구조 정비</span></div>
+            </div>
+          </section>
+          <section class="about-panel">
+            <h2>Philosophy</h2>
+            <div class="quote">“수학은 함께 질문하고, 기록하고, 다음 세대에 넘길 때 더 멀리 뻗어갑니다.”</div>
+            <p style="color:var(--muted);font-size:14px">Spanning Tree는 활동 자체보다 배움과 결과가 축적되는 구조를 중요하게 생각합니다.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- PEOPLE -->
+    <section class="page" id="people">
+      <div class="wrap">
+        <div class="page-head">
+          <h1>People</h1>
+          <p>함께 배우고 성장하며, 서로의 길을 잇는 사람들. 세대와 멘토링의 흐름을 한눈에 봅니다.</p>
+        </div>
+        <div class="people-tools"><div class="toggle">Show mentorship connections <span class="switch"></span></div></div>
+        <div class="people-tree">
+          <div class="generation">
+            <div class="generation-label"><h2>2026</h2><small>1기 / 신입</small></div>
+            <div class="nodes">
+              <div class="person">김도현</div><div class="person">이서연</div><div class="person">박진우</div><div class="person">최유진</div><div class="person">정민호</div>
+            </div>
+          </div>
+          <div class="generation">
+            <div class="generation-label"><h2>2025</h2><small>2기</small></div>
+            <div class="nodes">
+              <div class="person">윤시온</div><div class="person">강민재</div><div class="person">한지수</div><div class="person">이재훈</div><div class="person">임채원</div><div class="person">송지우</div>
+            </div>
+          </div>
+          <div class="generation">
+            <div class="generation-label"><h2>2024</h2><small>3기</small></div>
+            <div class="nodes">
+              <div class="person">박서준</div><div class="person">오유빈</div><div class="person">이동혁</div><div class="person">김하린</div><div class="person">정우진</div><div class="person">배수빈</div>
+            </div>
+          </div>
+          <div class="tree-note">실선 = 동기 연결 · 점선 = 멘토링 연결 (샘플 UI)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACTIVITIES -->
+    <section class="page" id="activities">
+      <div class="wrap">
+        <div class="page-head"><h1>Activities</h1><p>Spanning Tree의 다양한 활동과 프로젝트를 확인하세요.</p></div>
+        <div class="archive-layout">
+          <aside class="filters">
+            <div class="filter-group"><h3>Year</h3>
+              <div class="filter-item active"><span>All</span></div><div class="filter-item"><span>2026</span></div><div class="filter-item"><span>2025</span></div><div class="filter-item"><span>2024</span></div>
+            </div>
+            <div class="filter-group"><h3>Type</h3>
+              <div class="filter-item active"><span>All</span></div><div class="filter-item"><span>Forum</span></div><div class="filter-item"><span>Mini Lecture</span></div><div class="filter-item"><span>Competition</span></div><div class="filter-item"><span>Exchange</span></div><div class="filter-item"><span>Workshop</span></div>
+            </div>
+          </aside>
+          <div>
+            <div class="results-head"><span>5 Results</span><span>Sort by &nbsp; Latest⌄</span></div>
+            <div class="archive-list">
+              <article class="archive-row"><div class="thumb photo a"></div><div><h3>KSA × Spanning Tree Forum</h3><div style="color:var(--muted);font-size:13px">2025.05.17 · Forum</div><p>최신 연구 동향을 공유하고 학문적 교류를 확장하는 포럼입니다.</p></div><span class="tag">Forum</span></article>
+              <article class="archive-row"><div class="thumb photo b"></div><div><h3>Mini Lecture Day</h3><div style="color:var(--muted);font-size:13px">2025.04.12 · Mini Lecture</div><p>추상적인 수학을 짧고 실제적인 언어로 소개하는 미니 강연 행사입니다.</p></div><span class="tag">Mini Lecture</span></article>
+              <article class="archive-row"><div class="thumb photo c"></div><div><h3>Integration Bee</h3><div style="color:var(--muted);font-size:13px">2025.03.08 · Competition</div><p>문제 해결력과 아이디어를 겨루는 수학 경시 활동입니다.</p></div><span class="tag">Competition</span></article>
+              <article class="archive-row"><div class="thumb photo a"></div><div><h3>Research Exchange Seminar</h3><div style="color:var(--muted);font-size:13px">2025.02.20 · Exchange</div><p>다른 학교·기관과 수학 주제를 공유하고 토론하는 교류 세미나입니다.</p></div><span class="tag">Exchange</span></article>
+              <article class="archive-row"><div class="thumb photo b"></div><div><h3>Topology Workshop</h3><div style="color:var(--muted);font-size:13px">2025.01.11 · Workshop</div><p>위상수학의 개념부터 연구 주제까지 함께 학습하는 워크숍입니다.</p></div><span class="tag">Workshop</span></article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PUBLICATIONS -->
+    <section class="page" id="publications">
+      <div class="wrap">
+        <div class="page-head"><h1>Publications</h1><p>Spanning Tree가 만들어 낸 책, Notes, Proceedings, Report를 소개합니다.</p></div>
+        <div class="archive-layout">
+          <aside class="filters">
+            <div class="filter-group"><h3>Type</h3>
+              <div class="filter-item active"><span>All</span></div><div class="filter-item"><span>Book</span></div><div class="filter-item"><span>Report</span></div><div class="filter-item"><span>Proceedings</span></div><div class="filter-item"><span>Note</span></div>
+            </div>
+            <div class="filter-group"><h3>Year</h3>
+              <div class="filter-item active"><span>All</span></div><div class="filter-item"><span>2026</span></div><div class="filter-item"><span>2025</span></div><div class="filter-item"><span>2024</span></div>
+            </div>
+          </aside>
+          <div>
+            <div class="results-head"><span>3 Results</span><span>Sort by &nbsp; Latest⌄</span></div>
+            <div class="archive-list">
+              <article class="archive-row publication-row"><div class="cover cover-thumb">확장과 연결의 질문</div><div><h3>확장과 연결의 질문</h3><div style="color:var(--muted);font-size:13px">Spanning Tree Publications · 2025</div><p>수학과 학문의 경계를 확장하고 다양한 분야의 연결을 모색하는 출판물.</p><small>184 pages · PDF</small></div><button class="pdf-btn">▣ PDF</button></article>
+              <article class="archive-row publication-row"><div class="cover light cover-thumb">2025 KSA × ST Forum Proceedings</div><div><h3>2025 KSA × ST Forum Proceedings</h3><div style="color:var(--muted);font-size:13px">Proceedings · 2025</div><p>Forum의 발표와 토론을 수록한 공식 proceedings.</p><small>256 pages · PDF</small></div><button class="pdf-btn">▣ PDF</button></article>
+              <article class="archive-row publication-row"><div class="cover green cover-thumb">Spanning Tree Report 2024</div><div><h3>Spanning Tree Report 2024</h3><div style="color:var(--muted);font-size:13px">Report · 2024</div><p>주요 활동과 프로젝트 운영 성과를 기록한 연간 보고서.</p><small>132 pages · PDF</small></div><button class="pdf-btn">▣ PDF</button></article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MATHEMATICS -->
+    <section class="page" id="mathematics">
+      <div class="wrap">
+        <div class="page-head"><h1>Mathematics</h1><p>수학의 다양한 분야를 탐구한 lecture note, article, problem set을 살펴보세요.</p></div>
+        <div class="archive-layout">
+          <aside class="filters">
+            <div class="filter-group"><h3>Category</h3>
+              <div class="filter-item active"><span>All</span><span>58</span></div><div class="filter-item"><span>Algebra</span><span>16</span></div><div class="filter-item"><span>Topology</span><span>12</span></div><div class="filter-item"><span>Combinatorics</span><span>9</span></div><div class="filter-item"><span>Number Theory</span><span>9</span></div>
+            </div>
+            <div class="filter-group"><h3>Type</h3>
+              <div class="filter-item active"><span>All</span><span>58</span></div><div class="filter-item"><span>Lecture Note</span><span>28</span></div><div class="filter-item"><span>Article</span><span>18</span></div><div class="filter-item"><span>Problem Set</span><span>12</span></div>
+            </div>
+            <div class="filter-group"><h3>Year</h3>
+              <div class="filter-item active"><span>All</span><span>58</span></div><div class="filter-item"><span>2026</span><span>18</span></div><div class="filter-item"><span>2025</span><span>40</span></div>
+            </div>
+          </aside>
+          <div>
+            <div class="results-head"><span>58 Results</span><span>Sort by &nbsp; Latest⌄</span></div>
+            <div class="archive-list">
+              <article class="archive-row math-row"><div class="math-cover">Sylow’s<br>Theorems</div><div><h3>Sylow’s Theorems</h3><div style="color:var(--muted);font-size:13px">Lecture Note · Algebra · 2026</div><p>유한군에서의 Sylow 정리를 체계적으로 정리하고 증명합니다.</p><a class="article-link" href="#">Read More →</a></div></article>
+              <article class="archive-row math-row"><div class="math-cover blue">An Introduction to<br>Fundamental Groups</div><div><h3>An Introduction to Fundamental Groups</h3><div style="color:var(--muted);font-size:13px">Lecture Note · Topology · 2025</div><p>기본군의 정의와 성질, 대표 예제를 소개합니다.</p><a class="article-link" href="#">Read More →</a></div></article>
+              <article class="archive-row math-row"><div class="math-cover gray">Burnside’s Lemma<br>and Applications</div><div><h3>Burnside’s Lemma and Applications</h3><div style="color:var(--muted);font-size:13px">Article · Combinatorics · 2026</div><p>Burnside의 보조정리와 다양한 counting 응용을 다룹니다.</p><a class="article-link" href="#">Read More →</a></div></article>
+              <article class="archive-row math-row"><div class="math-cover dark">Prime Number<br>Theorem</div><div><h3>Prime Number Theorem</h3><div style="color:var(--muted);font-size:13px">Lecture Note · Number Theory · 2025</div><p>소수정리의 역사적 배경과 핵심 아이디어를 정리합니다.</p><a class="article-link" href="#">Read More →</a></div></article>
+              <article class="archive-row math-row"><div class="math-cover brown">Generating<br>Functions</div><div><h3>Generating Functions</h3><div style="color:var(--muted);font-size:13px">Lecture Note · Combinatorics · 2025</div><p>생성함수의 기본 개념과 다양한 기법 및 응용을 소개합니다.</p><a class="article-link" href="#">Read More →</a></div></article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">ST</div>
+        <div><div class="serif" style="font-size:18px">SPANNING TREE</div><div class="footer-copy">수학과 학문의 성장을 함께 만들어 갑니다.</div></div>
+      </div>
+      <div class="footer-copy">© Spanning Tree. All rights reserved.</div>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const pages = [...document.querySelectorAll('.page')];
+  const navButtons = [...document.querySelectorAll('[data-page]')];
+
+  function showPage(id){
+    pages.forEach(p => p.classList.toggle('active', p.id === id));
+    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.page === id));
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+
+  navButtons.forEach(el => {
+    el.addEventListener('click', () => showPage(el.dataset.page));
+  });
+
+  document.querySelectorAll('a[href="#"]').forEach(a => {
+    a.addEventListener('click', e => e.preventDefault());
+  });
+</script>
+</body>
+</html>
