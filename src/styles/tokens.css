@@ -1,0 +1,15 @@
+:root {
+  --color-background: #f7f6f1;
+  --color-paper: #fbfaf6;
+  --color-text: #171b18;
+  --color-muted: #697169;
+  --color-green: #214d36;
+  --color-green-secondary: #3f6f55;
+  --color-line: #d7ddd6;
+  --color-line-strong: #b9c5bb;
+  --color-panel: #ffffffaa;
+  --container-width: 1280px;
+  --reading-width: 780px;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
