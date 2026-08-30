@@ -1,0 +1,7 @@
+import type { Publication } from '../../models/publication'
+const publication=(id:string,slug:string,title:string,year:number,type:string,summary:string,variant:string,pages:string,relations:Partial<Publication>={}):Publication=>({id,slug,title,year,type,summary,description:summary,coverImage:{variant,alt:`${title} 표지`},pdf:{label:'PDF (sample action)',fileName:`${slug}.pdf`,mediaType:'application/pdf',sizeLabel:`${pages} pages · PDF`},authors:[],editors:['Spanning Tree Editorial Board'],relatedActivities:[],relatedMathematics:[],status:'published',createdAt:`${year}-01-01T00:00:00Z`,updatedAt:`${year}-12-01T00:00:00Z`,...relations})
+export const publicationFixtures:Publication[]=[
+ publication('publication-questions','questions-of-extension-and-connection','확장과 연결의 질문',2025,'Book','수학과 학문의 경계를 확장하고 다양한 분야의 연결을 모색하는 출판물.','', '184',{relatedMathematics:['math-sylow']}),
+ publication('publication-forum-2025','ksa-st-forum-proceedings-2025','2025 KSA × ST Forum Proceedings',2025,'Proceedings','Forum의 발표와 토론을 수록한 공식 proceedings.','light','256',{relatedActivities:['activity-forum-2025'],relatedMathematics:['math-sylow']}),
+ publication('publication-report-2024','spanning-tree-report-2024','Spanning Tree Report 2024',2024,'Report','주요 활동과 프로젝트 운영 성과를 기록한 연간 보고서.','green','132'),
+ publication('publication-draft','spanning-tree-notes-2026','Spanning Tree Notes 2026',2026,'Note','편집 중인 차기 Notes입니다.','light','96',{status:'draft'})]
