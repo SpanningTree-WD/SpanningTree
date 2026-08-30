@@ -1,9 +1,9 @@
 import { activityFixtures } from '../../content/fixtures/activities'
 import { mathematicsFixtures } from '../../content/fixtures/mathematics'
 import { publicationFixtures } from '../../content/fixtures/publications'
-import type { Activity, ActivityListQuery } from '../../models/activity'
-import type { Mathematics, MathematicsListQuery } from '../../models/mathematics'
-import type { Publication, PublicationListQuery } from '../../models/publication'
+import type { ActivityListQuery } from '../../models/activity'
+import type { MathematicsListQuery } from '../../models/mathematics'
+import type { PublicationListQuery } from '../../models/publication'
 import type { AdminRepository, ActivityRepository, MathematicsRepository, PublicationRepository, RelatedContent } from '../contracts'
 
 type RecordBase = { id: string; slug: string; status: 'draft' | 'published'; createdAt: string; updatedAt: string; publishedAt?: string }
@@ -52,19 +52,19 @@ const publicationAdmin = adminMethods('publications', publicationFixtures)
 
 export const activityRepository: ActivityRepository = {
   ...activityAdmin,
-  async listPublished(query: ActivityListQuery = {}) { let items = (await activityAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || Number(item.date.slice(0, 4)) === query.year) && (!query.type || item.type === query.type) && (!query.featured || item.featured)); items.sort((a,b)=>b.date.localeCompare(a.date)); return page(items, query.limit) },
+  async listPublished(query: ActivityListQuery = {}) { const items = (await activityAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || Number(item.date.slice(0, 4)) === query.year) && (!query.type || item.type === query.type) && (!query.featured || item.featured)); items.sort((a,b)=>b.date.localeCompare(a.date)); return page(items, query.limit) },
   async getPublishedBySlug(slug) { return (await activityAdmin.listAll()).find(item => item.status === 'published' && item.slug === slug) ?? null },
   async getPublishedByIds(ids) { return (await activityAdmin.listAll()).filter(item => item.status === 'published' && ids.includes(item.id)) },
 }
 export const mathematicsRepository: MathematicsRepository = {
   ...mathematicsAdmin,
-  async listPublished(query: MathematicsListQuery = {}) { let items = (await mathematicsAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || item.year === query.year) && (!query.field || item.field === query.field) && (!query.type || item.type === query.type)); items.sort((a,b)=>b.year-a.year||b.updatedAt.localeCompare(a.updatedAt)); return page(items, query.limit) },
+  async listPublished(query: MathematicsListQuery = {}) { const items = (await mathematicsAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || item.year === query.year) && (!query.field || item.field === query.field) && (!query.type || item.type === query.type)); items.sort((a,b)=>b.year-a.year||b.updatedAt.localeCompare(a.updatedAt)); return page(items, query.limit) },
   async getPublishedBySlug(slug) { return (await mathematicsAdmin.listAll()).find(item => item.status === 'published' && item.slug === slug) ?? null },
   async getPublishedByIds(ids) { return (await mathematicsAdmin.listAll()).filter(item => item.status === 'published' && ids.includes(item.id)) },
 }
 export const publicationRepository: PublicationRepository = {
   ...publicationAdmin,
-  async listPublished(query: PublicationListQuery = {}) { let items = (await publicationAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || item.year === query.year) && (!query.type || item.type === query.type)); items.sort((a,b)=>b.year-a.year||b.updatedAt.localeCompare(a.updatedAt)); return page(items, query.limit) },
+  async listPublished(query: PublicationListQuery = {}) { const items = (await publicationAdmin.listAll()).filter(item => item.status === 'published' && (!query.year || item.year === query.year) && (!query.type || item.type === query.type)); items.sort((a,b)=>b.year-a.year||b.updatedAt.localeCompare(a.updatedAt)); return page(items, query.limit) },
   async getPublishedBySlug(slug) { return (await publicationAdmin.listAll()).find(item => item.status === 'published' && item.slug === slug) ?? null },
   async getPublishedByIds(ids) { return (await publicationAdmin.listAll()).filter(item => item.status === 'published' && ids.includes(item.id)) },
 }

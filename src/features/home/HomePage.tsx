@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ContentState } from '../../components/ui/ContentState'
-import { activityRepository, mathematicsRepository, publicationRepository } from '../../repositories/local/repositories'
+import { activityRepository, mathematicsRepository, publicationRepository } from '../../repositories/publicRepositories'
 import { useRepository } from '../shared/useRepository'
 import { TreeArtwork } from './TreeArtwork'
 function SectionHeading({title,to}:{title:string;to:string}){return <div className="section-head"><h2>{title}</h2><Link className="small-link" to={to}>View all →</Link></div>}
