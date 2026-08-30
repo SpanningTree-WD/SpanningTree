@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Open the URL printed by Vite. Public routes are `/`, `/about`, `/people`, `/activities`, `/publications`, and `/mathematics`.
+Open the URL printed by Vite. Public routes are `/`, `/about`, `/people`, `/activities`, `/publications`, and `/mathematics`. The three archives support linkable URL filters and local fixture-backed detail routes such as `/activities/ksa-spanning-tree-forum`.
 
 ## Checks
 
@@ -25,4 +25,4 @@ npm run build
 npm run preview
 ```
 
-Stage 1 intentionally contains minimal page bodies. Full prototype content, archive records, Firebase, and admin tools are deferred to later approved stages.
+Stage 3 uses typed local fixtures behind repository contracts. Public repository methods exclude drafts. Firebase, real files, authentication, and admin tools remain deferred to later approved stages.

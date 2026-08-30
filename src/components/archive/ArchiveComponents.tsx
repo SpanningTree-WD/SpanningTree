@@ -1,14 +1,7 @@
 import type { ReactNode } from 'react'
-
-export type FilterOption = { label: string; count?: number }
-export function FilterSidebar({ groups }: { groups: { title: string; options: FilterOption[] }[] }) {
-  return <aside className="filters" aria-label="Archive filters">{groups.map(group => <FilterGroup key={group.title} {...group} />)}</aside>
-}
-export function FilterGroup({ title, options }: { title: string; options: FilterOption[] }) {
-  return <div className="filter-group"><h3>{title}</h3>{options.map((option, index) => <button className={`filter-item${index === 0 ? ' active' : ''}`} type="button" key={option.label} aria-pressed={index === 0}><span>{option.label}</span>{option.count !== undefined && <span>{option.count}</span>}</button>)}</div>
-}
-export function ResultsToolbar({ count }: { count: number }) { return <div className="results-head"><span>{count} Results</span><span>Sort by &nbsp; Latest⌄</span></div> }
-export function ArchiveLayout({ filters, count, children }: { filters: { title: string; options: FilterOption[] }[]; count: number; children: ReactNode }) {
-  return <div className="archive-layout"><FilterSidebar groups={filters} /><div><ResultsToolbar count={count} /><div className="archive-list">{children}</div></div></div>
-}
-export function PageHeading({ title, children }: { title: string; children: ReactNode }) { return <div className="page-head"><h1>{title}</h1><p>{children}</p></div> }
+export type FilterOption={label:string;value?:string;count?:number}
+export type FilterGroupModel={title:string;parameter:string;selected?:string;options:FilterOption[]}
+export function FilterSidebar({groups,onChange}:{groups:FilterGroupModel[];onChange:(parameter:string,value?:string)=>void}){return <aside className="filters" aria-label="Archive filters">{groups.map(group=><div className="filter-group" key={group.title}><h3>{group.title}</h3>{group.options.map(option=>{const value=option.value??option.label;const active=group.selected?value===group.selected:option.label==='All';return <button className={`filter-item${active?' active':''}`} type="button" key={option.label} aria-pressed={active} onClick={()=>onChange(group.parameter,option.label==='All'?undefined:value)}><span>{option.label}</span>{option.count!==undefined&&<span>{option.count}</span>}</button>})}</div>)}</aside>}
+export function ResultsToolbar({count}:{count:number}){return <div className="results-head"><span>{count} Results</span><span>Sort by &nbsp; Latest⌄</span></div>}
+export function ArchiveLayout({filters,count,onFilter,children}:{filters:FilterGroupModel[];count:number;onFilter:(parameter:string,value?:string)=>void;children:ReactNode}){return <div className="archive-layout"><FilterSidebar groups={filters} onChange={onFilter}/><div><ResultsToolbar count={count}/><div className="archive-list">{children}</div></div></div>}
+export function PageHeading({title,children}:{title:string;children:ReactNode}){return <div className="page-head"><h1>{title}</h1><p>{children}</p></div>}
