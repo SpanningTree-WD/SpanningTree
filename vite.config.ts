@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [react()],
   test: {
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/uploads/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/uploads/**/*.test.ts', 'workers/**/*.test.ts'],
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
   },

@@ -14,6 +14,7 @@ import {
   type UploadRequest,
 } from '../../services/uploads/uploadTypes'
 import { adminErrorMessage } from './adminErrors'
+import { hasUploadTrigger, triggerUpload } from '../../services/uploads/triggerUpload'
 
 const stateLabels = {
   uploading: '파일 전송 중',
@@ -46,6 +47,8 @@ export function UploadPanel({
   const [request, setRequest] = useState<UploadRequest | null>(null)
   const [error, setError] = useState('')
   const [progress, setProgress] = useState<number | null>(null)
+  const [triggerNotice, setTriggerNotice] = useState('')
+  const [triggering, setTriggering] = useState(false)
   useEffect(() => {
     try {
       return watchUpload(setRequest, (failure) => setError(adminErrorMessage(failure)))
@@ -60,13 +63,35 @@ export function UploadPanel({
   async function upload(file?: File) {
     if (!file) return
     setError('')
+    setTriggerNotice('')
     setProgress(0)
     try {
-      await queueGitHubUpload(file, collection, recordId, setProgress)
+      const result = await queueGitHubUpload(file, collection, recordId, setProgress)
+      if (hasUploadTrigger())
+        setTriggerNotice(
+          result?.trigger === 'scheduled'
+            ? '파일 전송은 끝났습니다. 즉시 실행에 연결하지 못해 5분 간격의 예약 작업을 기다립니다.'
+            : '처리 시작을 요청했습니다. GitHub 실행과 사이트 배포가 끝날 때까지 기다려 주세요.'
+        )
     } catch (failure) {
       setError(adminErrorMessage(failure))
     } finally {
       setProgress(null)
+    }
+  }
+  async function startNow() {
+    if (!request || triggering) return
+    setTriggering(true)
+    setError('')
+    try {
+      await triggerUpload(request.uploadId)
+      setTriggerNotice(
+        '처리 시작을 요청했습니다. GitHub 실행과 사이트 배포가 끝날 때까지 기다려 주세요.'
+      )
+    } catch (failure) {
+      setError(adminErrorMessage(failure))
+    } finally {
+      setTriggering(false)
     }
   }
   function attach() {
@@ -116,8 +141,9 @@ export function UploadPanel({
             </label>
           </div>
           <p className="field-help">
-            한 번에 한 파일씩 처리합니다. 서버는 5분 간격으로 확인하며 GitHub 사정에 따라 더 늦어질
-            수 있습니다.
+            {hasUploadTrigger()
+              ? '파일 전송 후 바로 처리 시작을 요청합니다. GitHub 실행과 사이트 배포에는 시간이 걸릴 수 있습니다.'
+              : '한 번에 한 파일씩 처리합니다. 서버는 5분 간격으로 확인하며 GitHub 사정에 따라 더 늦어질 수 있습니다.'}
           </p>
         </>
       )}
@@ -133,6 +159,7 @@ export function UploadPanel({
             <progress aria-label="파일 전송 진행률" value={progress} max={100} />
           )}
           {request.error && <p>{request.error}</p>}
+          {triggerNotice && isUploadActive(request.state) && <p>{triggerNotice}</p>}
           {!own && (
             <p>
               다른 글에 올린 파일입니다.{' '}
@@ -146,7 +173,21 @@ export function UploadPanel({
               글에 첨부
             </button>
           )}
-          {own && attached && <p>첨부된 파일입니다. 변경한 내용은 아래 저장 버튼으로 반영해 주세요.</p>}
+          {own && attached && (
+            <p>첨부된 파일입니다. 변경한 내용은 아래 저장 버튼으로 반영해 주세요.</p>
+          )}
+          {hasUploadTrigger() &&
+            own &&
+            ['queued', 'committed'].includes(request.state) &&
+            progress === null && (
+              <button
+                type="button"
+                disabled={disabled || triggering}
+                onClick={() => void startNow()}
+              >
+                {triggering ? '실행 요청 중…' : '지금 처리 요청'}
+              </button>
+            )}
           {['uploading', 'queued'].includes(request.state) && progress === null && (
             <button
               type="button"

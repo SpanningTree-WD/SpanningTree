@@ -7,6 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { getFirebaseServices } from '../firebase/firebase'
+import { triggerUpload } from './triggerUpload'
 import {
   isUploadActive,
   MAX_IMAGE_BYTES,
@@ -99,6 +100,12 @@ export async function queueGitHubUpload(
   } catch (error) {
     await cancelUpload(request.uploadId).catch(() => {})
     throw error
+  }
+  // Trigger failure must not cancel the successfully queued file.
+  try {
+    return { trigger: await triggerUpload(request.uploadId) }
+  } catch {
+    return { trigger: 'scheduled' as const }
   }
 }
 

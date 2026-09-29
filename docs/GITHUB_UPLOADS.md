@@ -19,6 +19,10 @@
 
 ## 처리 구조
 
+즉시 실행 요청을 추가하는 [Cloudflare 연결 코드와 설정 안내](CLOUDFLARE_UPLOAD_TRIGGER.md)가
+준비되어 있습니다. Worker 배포·secret·공개 URL 설정까지 끝나면 업로드 직후 실행을 요청하며,
+아래 5분 예약 작업은 장애 시 재시도와 임시 데이터 정리를 위해 유지합니다.
+
 - 브라우저는 Firebase 로그인과 기존 `admins/{uid}` 권한을 사용합니다.
 - `uploadRequests/{uid}`에 파일 정보, 하위 `chunks/{index}`에 512 KiB 단위 Bytes를
   잠시 저장합니다. 브라우저는 자기 요청만 읽고 쓰며 파일 조각은 읽을 수 없습니다.
@@ -38,7 +42,8 @@
 
 ## 인프라 설정
 
-Firebase Storage, Cloud Functions, 새 외부 계정, 개인 GitHub 토큰은 사용하지 않습니다.
+기본 예약 처리에는 Firebase Storage, Cloud Functions, 새 외부 계정, 개인 GitHub 토큰이 필요하지 않습니다.
+선택적인 즉시 실행은 Cloudflare 계정과 서버에 보관하는 GitHub 실행 전용 토큰을 사용합니다.
 Blaze 전환이나 결제 수단 등록도 하지 않습니다. GitHub 공개 저장소의 표준 실행기와
 현재 Firebase 무료 할당량을 이용하므로 **무제한 저장·전송은 아닙니다**.
 

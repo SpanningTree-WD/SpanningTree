@@ -1,0 +1,14 @@
+{
+  "name": "spanningtree-upload-trigger",
+  "main": "index.ts",
+  "compatibility_date": "2026-09-29",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "ratelimits": [
+    {
+      "name": "TRIGGER_LIMITER",
+      "namespace_id": "632176001",
+      "simple": { "limit": 2, "period": 60 }
+    }
+  ]
+}

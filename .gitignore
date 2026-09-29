@@ -11,3 +11,6 @@ firebase-debug.log
 coverage
 playwright-report
 test-results
+.wrangler/
+.dev.vars
+.dev.vars.*

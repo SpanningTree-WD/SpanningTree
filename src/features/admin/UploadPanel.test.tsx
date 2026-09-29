@@ -8,6 +8,8 @@ const service = vi.hoisted(() => ({
   queueGitHubUpload: vi.fn(),
   cancelUpload: vi.fn(),
 }))
+const trigger = vi.hoisted(() => ({ hasUploadTrigger: vi.fn(), triggerUpload: vi.fn() }))
+vi.mock('../../services/uploads/triggerUpload', () => trigger)
 vi.mock('../../services/uploads/GitHubUploadService', () => service)
 let notify: (request: UploadRequest | null) => void
 const request: UploadRequest = {
@@ -40,6 +42,8 @@ beforeEach(() => {
     return () => {}
   })
   service.queueGitHubUpload.mockResolvedValue(undefined)
+  trigger.hasUploadTrigger.mockReturnValue(false)
+  trigger.triggerUpload.mockResolvedValue('requested')
 })
 afterEach(cleanup)
 function show(recordId = 'saved') {
@@ -94,4 +98,14 @@ it('keeps another record’s upload attached to its original target', () => {
     'href',
     '/admin/activities/another/edit'
   )
+})
+it('explains immediate dispatch and allows retrying a queued file without re-uploading', async () => {
+  trigger.hasUploadTrigger.mockReturnValue(true)
+  show()
+  act(() => notify(request))
+  expect(screen.getByText(/파일 전송 후 바로 처리 시작/)).toBeVisible()
+  await act(async () => fireEvent.click(screen.getByRole('button', { name: '지금 처리 요청' })))
+  expect(trigger.triggerUpload).toHaveBeenCalledWith(request.uploadId)
+  expect(service.queueGitHubUpload).not.toHaveBeenCalled()
+  expect(screen.getByText(/처리 시작을 요청했습니다/)).toBeVisible()
 })
