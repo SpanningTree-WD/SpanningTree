@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
 import { ArchiveLayout, PageHeading } from '../../components/archive/ArchiveComponents'
@@ -26,7 +27,9 @@ export function ActivityArchiveRow({ item }: { item: Activity }) {
     </article>
   )
 }
+
 export function ActivitiesPage() {
+  usePageMetadata()
   const { data, error, year, type, search, sort, change, resetFilters } =
     useArchiveResults(activityRepository)
   const filters = [

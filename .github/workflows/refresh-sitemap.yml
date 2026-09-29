@@ -1,0 +1,42 @@
+name: Refresh public sitemap
+on:
+  schedule:
+    - cron: '23 18 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: firebase-production
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_PUBLIC_DATA_SOURCE: firebase
+      VITE_UPLOAD_TRIGGER_URL: ${{ vars.VITE_UPLOAD_TRIGGER_URL || 'https://spanningtree-upload-trigger.spanning-tree-website.workers.dev/trigger' }}
+      VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: npm }
+      - run: npm ci --no-audit --no-fund
+      # Public queries only; no Firestore admin credential is used to make the map.
+      - name: Compare published URLs with the live sitemap
+        id: sitemap
+        run: npm run seo:generate -- --check-live
+      - if: steps.sitemap.outputs.changed == 'true'
+        run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.sitemap.outputs.changed == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+          projectId: spanningtree-math
+          channelId: live

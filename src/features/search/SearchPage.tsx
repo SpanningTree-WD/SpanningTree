@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
 import {
   ArchiveLayout,
@@ -16,7 +17,9 @@ const kinds = [
   ['publications', '출판물'],
 ] as const
 
+
 export function SearchPage() {
+  usePageMetadata({ noindex: true })
   const { search, kind, sort, change, resetFilters } = useArchiveControls()
   const { data, error } = useRepository(listSearchRecords, [])
   const matching = (data ?? []).filter((item) => matchesArchiveSearch(item.record, search))

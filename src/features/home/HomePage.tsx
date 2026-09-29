@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
 import { ContentState } from '../../components/ui/ContentState'
@@ -19,7 +20,9 @@ function SectionHeading({ title, to }: { title: string; to: string }) {
     </div>
   )
 }
+
 export function HomePage() {
+  usePageMetadata()
   const { data, error } = useRepository(async () => {
     const [activities, mathematics, publications] = await Promise.all([
       activityRepository.listPublished({ featured: true, limit: 3 }),

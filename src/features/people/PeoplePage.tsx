@@ -1,10 +1,13 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { useEffect, useState } from 'react'
 import { PageHeading } from '../../components/archive/ArchiveComponents'
 import { ContentState } from '../../components/ui/ContentState'
 import { groupMembers, type Member } from '../../models/people'
 import { watchPublicMembers } from '../../repositories/memberRepository'
 
+
 export function PeoplePage() {
+  usePageMetadata()
   const [members, setMembers] = useState<Member[]>()
   const [error, setError] = useState(false)
   const [retry, setRetry] = useState(0)

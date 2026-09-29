@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
 import { ArchiveLayout, PageHeading } from '../../components/archive/ArchiveComponents'
@@ -28,7 +29,9 @@ export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
     </article>
   )
 }
+
 export function MathematicsPage() {
+  usePageMetadata()
   const { data, error, field, type, year, search, sort, change, resetFilters } =
     useArchiveResults(mathematicsRepository)
   const filters = [

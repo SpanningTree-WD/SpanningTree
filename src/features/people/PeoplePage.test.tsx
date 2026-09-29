@@ -1,5 +1,6 @@
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { initialMembers } from '../../content/people'
 import type { Member } from '../../models/people'
 import { PeoplePage } from './PeoplePage'
@@ -14,7 +15,7 @@ vi.mock('../../repositories/memberRepository', () => ({
 }))
 afterEach(cleanup)
 it('shows the corrected cohorts and three leaders, without connection lines, and reflects roster updates', () => {
-  const { container } = render(<PeoplePage />)
+  const { container } = render(<MemoryRouter initialEntries={['/people']}><PeoplePage /></MemoryRouter>)
   expect(
     within(screen.getByRole('region', { name: '36기' })).getAllByRole('listitem')
   ).toHaveLength(9)

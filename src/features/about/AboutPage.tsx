@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
 import { club } from '../../content/club'
 
@@ -13,7 +14,9 @@ const archives = [
   ['/publications', '출판물', '책, 노트, 보고서 등 동아리 출판물'],
 ]
 
+
 export function AboutPage() {
+  usePageMetadata()
   return (
     <div className="page-container">
       <section className="about-hero">

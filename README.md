@@ -34,3 +34,6 @@ Admin edits never fall back to browser-local storage. Both Hosting workflows set
 See [Firebase operations](docs/FIREBASE.md) for account setup, rules, deployment,
 emulator tests, and data migration, and [Admin guide](docs/ADMIN.md) for editing.
 Image/PDF upload controls remain a separate implementation stage.
+
+Google 검색 설정, 사이트맵 자동 갱신 및 Search Console 등록은
+[검색 운영 가이드](docs/SEO.md)를 참고하세요.

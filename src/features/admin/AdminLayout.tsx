@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import {
@@ -7,7 +8,9 @@ import {
 import { isFirebaseConfigured } from '../../services/firebase/firebase'
 import { adminErrorMessage } from './adminErrors'
 
+
 export function AdminLayout() {
+  usePageMetadata({ noindex: true })
   const configured = isFirebaseConfigured()
   const [access, setAccess] = useState<AdminAccessState>({ status: 'loading' })
   const [busy, setBusy] = useState(false)

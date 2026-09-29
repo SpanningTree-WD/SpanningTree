@@ -9,5 +9,5 @@
     "strict": true,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "eslint.config.js", "scripts/uploads/**/*.ts", "workers/**/*.ts"]
+  "include": ["vite.config.ts", "eslint.config.js", "scripts/uploads/**/*.ts", "scripts/seo/**/*.ts", "workers/**/*.ts"]
 }

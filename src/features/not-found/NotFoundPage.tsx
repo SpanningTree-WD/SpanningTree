@@ -1,6 +1,9 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
 
+
 export function NotFoundPage() {
+  usePageMetadata({ title: '페이지를 찾을 수 없습니다', noindex: true })
   return (
     <section className="page-container page-heading placeholder-page">
       <p className="eyebrow">404</p>

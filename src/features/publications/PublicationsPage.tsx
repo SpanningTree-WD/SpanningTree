@@ -1,3 +1,4 @@
+import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
 import { ArchiveLayout, PageHeading } from '../../components/archive/ArchiveComponents'
@@ -29,7 +30,9 @@ export function PublicationArchiveRow({ item }: { item: Publication }) {
     </article>
   )
 }
+
 export function PublicationsPage() {
+  usePageMetadata()
   const { data, error, type, year, search, sort, change, resetFilters } =
     useArchiveResults(publicationRepository)
   const filters = [

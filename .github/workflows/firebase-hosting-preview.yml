@@ -21,6 +21,7 @@ jobs:
       - run: npm run build
         env:
           VITE_PUBLIC_DATA_SOURCE: firebase
+          VITE_SEO_NOINDEX: 'true'
           # Preview domains intentionally use the scheduled queue; Worker CORS allows live origins only.
           VITE_UPLOAD_TRIGGER_URL: ''
           VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}

@@ -6,6 +6,7 @@ import { MarkdownRenderer } from '../../components/content/MarkdownRenderer'
 import { ContentState, MissingContent } from '../../components/ui/ContentState'
 import { mathematicsRepository, resolveRelated } from '../../repositories/publicRepositories'
 import { useRepository } from '../shared/useRepository'
+import { usePageMetadata } from '../shared/usePageMetadata'
 export function MathematicsDetailPage() {
   const { slug = '' } = useParams()
   const { data, error } = useRepository(async () => {
@@ -21,6 +22,11 @@ export function MathematicsDetailPage() {
         }
       : null
   }, [slug])
+  usePageMetadata({
+    title: data?.record.title,
+    description: data?.record.summary,
+    noindex: error || data === null,
+  })
   if (error)
     return (
       <div className="page-container">
