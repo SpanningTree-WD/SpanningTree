@@ -6,8 +6,10 @@
 공개 주소는 `https://spanningtree-upload-trigger.spanning-tree-website.workers.dev/trigger`입니다.
 GitHub 실행 전용 `GITHUB_DISPATCH_TOKEN`이 Secret으로 등록되어 있으며, 운영 사이트 빌드에
 Worker 주소가 반영된 것을 확인했습니다. CORS 연결과 인증 없는 요청(401), 잘못된 Firebase
-토큰(403) 거부도 실제 서버에서 확인했습니다. 인증된 관리자의 실제 파일 업로드로
-`workflow_dispatch`가 실행되는 최종 확인은 아직 별도로 필요합니다.
+토큰(403) 거부도 실제 서버에서 확인했습니다. 인증된 관리자의 실제 업로드로
+[즉시 실행과 배포 성공](https://github.com/SpanningTree-WD/SpanningTree/actions/runs/36555954784)을
+확인했습니다. 전송한 PNG 54,001바이트는 Hosting 응답 200, 원본 크기·SHA-256 일치,
+대기열 `complete`, 남은 임시 조각 0개까지 검증했습니다.
 사이트에 결제 수단이나 Blaze 설정을 추가할 필요는 없습니다.
 
 ## 동작
