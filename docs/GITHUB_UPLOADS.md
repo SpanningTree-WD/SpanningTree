@@ -77,6 +77,10 @@ GitHub/Firebase 운영 권한 인계는 `docs/ADMIN.md`에 따라 별도로 진�
 바이트 확인을 테스트합니다. `npm run test:rules`는 에뮬레이터에서 소유자 격리,
 크기 제한, 상태 위조 차단, chunk 잠금과 권한 회수를 검증합니다.
 
+2026-09-29 운영 환경에서 점검용 PNG의 대기열 처리 → GitHub 커밋 → Hosting 배포 →
+해시 확인 → 임시 조각 삭제까지 확인했습니다. 점검용 글과 요청, 최종 파일은 확인 후
+정리했으며 공개 아카이브에 점검 글을 게시하지 않았습니다.
+
 ## 공식 문서
 
 - [GitHub Contents API](https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents)
