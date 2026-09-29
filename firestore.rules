@@ -11,15 +11,17 @@ service cloud.firestore {
     function text(value, maximum) { return value is string && value.size() <= maximum; }
     function media(value) {
       return value is map && value.keys().hasAll(['alt', 'variant'])
-        && value.keys().hasOnly(['alt', 'variant', 'caption'])
+        && value.keys().hasOnly(['alt', 'variant', 'caption', 'url'])
         && text(value.alt, 1000) && text(value.variant, 100)
-        && (!('caption' in value) || text(value.caption, 5000));
+        && (!('caption' in value) || text(value.caption, 5000))
+        && (!('url' in value) || value.url.matches('/uploads/[a-f0-9]{64}[.](jpg|png|webp)'));
     }
     function attachment(value) {
       return value is map && value.keys().hasAll(['label', 'fileName', 'mediaType', 'sizeLabel'])
-        && value.keys().hasOnly(['label', 'fileName', 'mediaType', 'sizeLabel'])
+        && value.keys().hasOnly(['label', 'fileName', 'mediaType', 'sizeLabel', 'url'])
         && text(value.label, 1000) && text(value.fileName, 1000)
-        && value.mediaType == 'application/pdf' && text(value.sizeLabel, 1000);
+        && value.mediaType == 'application/pdf' && text(value.sizeLabel, 1000)
+        && (!('url' in value) || value.url.matches('/uploads/[a-f0-9]{64}[.]pdf'));
     }
     function common(data, id) {
       return data.keys().hasAll(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt'])
@@ -31,10 +33,11 @@ service cloud.firestore {
     }
     function activity(data) {
       return data.keys().hasAll(['description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured'])
-        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured', 'attachments'])
         && text(data.description, 800000) && data.date is string && data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && data.gallery is list && data.gallery.size() <= 100 && data.tags is list
-        && data.relatedMathematics is list && data.relatedPublications is list && data.featured is bool;
+        && data.relatedMathematics is list && data.relatedPublications is list && data.featured is bool
+        && (!('attachments' in data) || (data.attachments is list && data.attachments.size() <= 100));
     }
     function mathematics(data) {
       return data.keys().hasAll(['content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics'])
@@ -57,6 +60,50 @@ service cloud.firestore {
       let claim = getAfter(/databases/$(database)/documents/contentSlugs/$(name + ':' + data.slug)).data;
       return common(data, id) && claim.recordId == id && claim.collection == name && claim.slug == data.slug
         && ((name == 'activities' && activity(data)) || (name == 'mathematics' && mathematics(data)) || (name == 'publications' && publication(data)));
+    }
+
+    // One private, bounded upload slot per administrator. Only the worker can finish it.
+    function uploadOwner(uid) { return isAdmin() && request.auth.uid == uid; }
+    function newUpload(data, uid) {
+      return data.keys().hasAll(['uploadId', 'ownerId', 'collection', 'recordId', 'fileName', 'mediaType', 'size', 'sha256', 'chunkCount', 'state', 'publicConsent', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uploadId', 'ownerId', 'collection', 'recordId', 'fileName', 'mediaType', 'size', 'sha256', 'chunkCount', 'state', 'publicConsent', 'createdAt', 'updatedAt'])
+        && data.uploadId is string && data.uploadId.matches('[a-f0-9-]{36}') && data.ownerId == uid
+        && contentCollection(data.collection) && text(data.recordId, 128) && data.recordId.matches('[a-zA-Z0-9_-]+')
+        && exists(/databases/$(database)/documents/$(data.collection)/$(data.recordId))
+        && text(data.fileName, 120) && data.fileName.size() > 0
+        && data.mediaType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+        && data.size is int && data.size > 0 && data.size <= (data.mediaType == 'application/pdf' ? 20971520 : 8388608)
+        && data.sha256 is string && data.sha256.matches('[a-f0-9]{64}')
+        && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 40
+        && (data.chunkCount - 1) * 524288 < data.size && data.size <= data.chunkCount * 524288
+        && data.state == 'uploading' && data.publicConsent == true
+        && data.createdAt == request.time && data.updatedAt == request.time;
+    }
+    match /uploadRequests/{uid} {
+      allow get: if uploadOwner(uid);
+      allow list, delete: if false;
+      allow create: if uploadOwner(uid) && newUpload(request.resource.data, uid);
+      allow update: if uploadOwner(uid) && (
+        (resource.data.state in ['complete', 'failed'] && newUpload(request.resource.data, uid)
+          && request.resource.data.uploadId != resource.data.uploadId)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && ((resource.data.state == 'uploading' && request.resource.data.state == 'queued')
+            || (resource.data.state in ['uploading', 'queued'] && request.resource.data.state == 'cancelled')))
+      );
+      match /chunks/{chunkId} {
+        allow read, delete: if false;
+        allow create, update: if uploadOwner(uid) && validChunk(uid, chunkId);
+      }
+    }
+    function validChunk(uid, chunkId) {
+      let parent = get(/databases/$(database)/documents/uploadRequests/$(uid)).data;
+      let chunk = request.resource.data;
+      return parent.state == 'uploading'
+        && chunk.keys().hasOnly(['uploadId', 'index', 'data'])
+        && chunk.uploadId == parent.uploadId && chunk.index is int
+        && chunk.index >= 0 && chunk.index < parent.chunkCount && chunkId == string(chunk.index)
+        && chunk.data is bytes && chunk.data.size() == (chunk.index == parent.chunkCount - 1 ? parent.size - chunk.index * 524288 : 524288);
     }
 
     // Membership is provisioned with the Console/Admin SDK, never by browser clients.

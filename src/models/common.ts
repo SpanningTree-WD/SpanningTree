@@ -4,6 +4,7 @@ export interface MediaReference {
   alt: string
   variant: string
   caption?: string
+  url?: string
 }
 
 export interface Attachment {
@@ -11,6 +12,7 @@ export interface Attachment {
   fileName: string
   mediaType: 'application/pdf'
   sizeLabel: string
+  url?: string
 }
 
 export interface Page<T> { items: T[]; total: number }

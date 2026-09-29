@@ -1,0 +1,59 @@
+name: GitHub file uploads
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/github-uploads.yml'
+      - 'scripts/uploads/**'
+permissions:
+  contents: write
+concurrency:
+  group: firebase-production
+  cancel-in-progress: false
+jobs:
+  uploads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Verify and store queued files
+        id: queue
+        run: npx tsx scripts/uploads/worker.ts process
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # GITHUB_TOKEN commits do not trigger another push workflow. Deploy explicitly here.
+      - name: Get committed files
+        if: steps.queue.outputs.deploy == 'true'
+        run: git pull --ff-only origin main
+      - if: steps.queue.outputs.deploy == 'true'
+        run: npm ci --no-audit --no-fund
+      - if: steps.queue.outputs.deploy == 'true'
+        run: npm run build
+        env:
+          VITE_PUBLIC_DATA_SOURCE: firebase
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.queue.outputs.deploy == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+          projectId: spanningtree-math
+          channelId: live
+      - name: Verify deployed bytes and clear temporary chunks
+        if: steps.queue.outputs.deploy == 'true'
+        run: npx tsx scripts/uploads/worker.ts finalize
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}

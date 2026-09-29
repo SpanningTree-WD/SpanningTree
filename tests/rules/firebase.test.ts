@@ -7,6 +7,7 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
 import {
+  Bytes,
   collection,
   deleteDoc,
   doc,
@@ -223,6 +224,80 @@ describe('Firestore admin repositories', () => {
     await expect(
       repository.update(original.id, { ...edited, slug: activityFixtures[0].slug })
     ).rejects.toThrow('이미 사용')
+  })
+})
+
+describe('GitHub upload queue authorization', () => {
+  const input = () => ({
+    uploadId: '00000000-0000-4000-8000-000000000000', ownerId: 'editor', collection: 'activities',
+    recordId: 'activity-draft', fileName: 'file.pdf', mediaType: 'application/pdf', size: 5,
+    sha256: 'a'.repeat(64), chunkCount: 1, state: 'uploading', publicConsent: true,
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  })
+  const chunk = () => ({ uploadId: input().uploadId, index: 0, data: Bytes.fromUint8Array(new Uint8Array([37, 80, 68, 70, 45])) })
+  it('isolates queue access to its verified enabled owner, including from other administrators', async () => {
+    const own = doc(db('editor'), 'uploadRequests/editor')
+    await assertSucceeds(setDoc(own, input()))
+    await assertSucceeds(getDoc(own))
+    await env.withSecurityRulesDisabled(context => context.firestore().doc('admins/other').set({ enabled: true }))
+    for (const store of [db(), db('outsider'), db('other'), db('editor', { ...verified, email_verified: false })]) {
+      await assertFails(getDoc(doc(store, 'uploadRequests/editor')))
+      await assertFails(setDoc(doc(store, 'uploadRequests/editor'), input()))
+    }
+    await assertFails(getDocs(collection(db('editor'), 'uploadRequests')))
+    await assertFails(setDoc(doc(db('editor'), 'uploadRequests/other'), { ...input(), ownerId: 'other' }))
+  })
+  it('rejects arbitrary destinations, oversize requests and client-supplied completion fields', async () => {
+    for (const patch of [{ collection: 'admins' }, { recordId: 'missing' }, { size: 20971521 }, { size: 8388609, mediaType: 'image/png' }, { mediaType: 'text/html' }, { chunkCount: 41 }, { url: '/uploads/fake.pdf' }, { state: 'complete' }, { publicConsent: false }]) {
+      await assertFails(setDoc(doc(db('editor'), 'uploadRequests/editor'), { ...input(), ...patch }))
+    }
+  })
+  it('bounds chunk names, size and ownership, then freezes bytes and metadata when queued', async () => {
+    const store = db('editor'), own = doc(store, 'uploadRequests/editor')
+    await setDoc(own, input())
+    const file = doc(own, 'chunks/0')
+    await assertSucceeds(setDoc(file, chunk()))
+    await assertFails(getDoc(file))
+    await assertFails(setDoc(doc(own, 'chunks/00'), chunk()))
+    await assertFails(setDoc(file, { ...chunk(), index: 1 }))
+    await assertFails(setDoc(file, { ...chunk(), uploadId: 'previous' }))
+    await assertFails(setDoc(file, { ...chunk(), data: Bytes.fromUint8Array(new Uint8Array(6)) }))
+    await assertFails(updateDoc(own, { sha256: 'b'.repeat(64), updatedAt: serverTimestamp() }))
+    await assertSucceeds(updateDoc(own, { state: 'queued', updatedAt: serverTimestamp() }))
+    await assertFails(setDoc(file, chunk()))
+    for (const state of ['processing', 'committed', 'complete', 'failed', 'uploading']) {
+      await assertFails(updateDoc(own, { state, updatedAt: serverTimestamp() }))
+    }
+    await assertSucceeds(updateDoc(own, { state: 'cancelled', updatedAt: serverTimestamp() }))
+    await assertFails(setDoc(own, { ...input(), uploadId: '11111111-1111-4111-8111-111111111111' }))
+    await assertFails(deleteDoc(own))
+  })
+  it('allows maximum-size chunks in batches and permits replacement only after worker cleanup', async () => {
+    const store = db('editor'), own = doc(store, 'uploadRequests/editor')
+    await setDoc(own, { ...input(), size: 524289, chunkCount: 2 })
+    const batch = writeBatch(store)
+    batch.set(doc(own, 'chunks/0'), { ...chunk(), data: Bytes.fromUint8Array(new Uint8Array(524288)) })
+    batch.set(doc(own, 'chunks/1'), { ...chunk(), index: 1, data: Bytes.fromUint8Array(new Uint8Array(1)) })
+    await assertSucceeds(batch.commit())
+    await env.withSecurityRulesDisabled(async context => {
+      const ref = context.firestore().doc('uploadRequests/editor')
+      await ref.collection('chunks').doc('0').delete()
+      await ref.collection('chunks').doc('1').delete()
+      await ref.update({ state: 'complete', url: `/uploads/${'a'.repeat(64)}.pdf` })
+    })
+    await assertSucceeds(setDoc(own, { ...input(), uploadId: '11111111-1111-4111-8111-111111111111' }))
+    await env.withSecurityRulesDisabled(context => context.firestore().doc('admins/editor').update({ enabled: false }))
+    await assertFails(updateDoc(own, { state: 'queued', updatedAt: serverTimestamp() }))
+  })
+  it('stores uploaded media with content but rejects external cover URLs', async () => {
+    const repository = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
+    const original = (await repository.getById('activity-draft'))!
+    const image = { ...original.coverImage, url: `/uploads/${'a'.repeat(64)}.png` }
+    const pdf = { label: 'PDF', fileName: 'file.pdf', mediaType: 'application/pdf' as const, sizeLabel: '1 MB', url: `/uploads/${'b'.repeat(64)}.pdf` }
+    const saved = await repository.update(original.id, { ...original, coverImage: image, attachments: [pdf] })
+    expect(saved.coverImage.url).toBe(image.url)
+    expect(saved.attachments).toEqual([pdf])
+    await assertFails(repository.update(saved.id, { ...saved, coverImage: { ...image, url: 'https://example.com/image.png' } }))
   })
 })
 

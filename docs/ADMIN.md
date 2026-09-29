@@ -77,8 +77,14 @@ warns before leaving; internal-navigation protection is still future work.
 
 ## Files and limits
 
-Upload, file selection, and real download links are not yet implemented. The
-simplified editor omits their placeholder inputs. Existing media metadata is
-preserved. Storage authorization is prepared for the later media UI.
+**이미지·PDF 첨부 (선택)**에서 JPEG·PNG·WebP(8 MiB 이하), PDF(20 MiB 이하)를
+올릴 수 있습니다. 글을 먼저 임시 저장한 뒤 파일을 선택하고, 배포 완료 후
+**글에 첨부 → 저장**을 누르세요. GitHub Actions가 5분 간격으로 확인하며 지연될 수
+있습니다. 기존 Google 관리자 계정으로 사용하며 GitHub 토큰은 입력하지 않습니다.
+
+파일은 **공개 GitHub 저장소와 Hosting에 공개**됩니다. 글을 비공개로 바꾸거나
+첨부를 해제해도 파일은 남습니다. [업로드 운영 안내](GITHUB_UPLOADS.md)에
+처리 상태, 실패 시 재시도, 예약 작업 재활성화, 할당량과 인계 절차가 있습니다.
+
 Content deletion, revision history, and automatic local-prototype import are
 also not implemented.

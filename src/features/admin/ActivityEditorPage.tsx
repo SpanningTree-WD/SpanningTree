@@ -11,6 +11,7 @@ import {
 } from './EditorFields'
 import { activityTypes } from './editorOptions'
 import { useAdminEditor } from './useAdminEditor'
+import { UploadPanel } from './UploadPanel'
 
 const empty: Activity = {
   id: '',
@@ -112,6 +113,26 @@ export function ActivityEditorPage() {
           name="description"
           value={form.description}
           onChange={(v) => set('description', v)}
+        />
+        <UploadPanel
+          collection="activities"
+          recordId={form.id}
+          disabled={saving}
+          image={form.coverImage}
+          files={form.attachments ?? []}
+          onImage={(url) => set('coverImage', { ...form.coverImage, url })}
+          onRemovePdf={(url) =>
+            set(
+              'attachments',
+              (form.attachments ?? []).filter((file) => file.url !== url)
+            )
+          }
+          onPdf={(file) =>
+            set('attachments', [
+              ...(form.attachments ?? []).filter((item) => item.url !== file.url),
+              file,
+            ])
+          }
         />
         <EditorActions
           status={form.status}

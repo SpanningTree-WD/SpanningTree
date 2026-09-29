@@ -19,8 +19,8 @@ Hosting. Hosted builds read Firestore; local development can use fixtures via
   verifies their Gmail addresses when they sign in.
 - Cloud billing is not enabled and the Firebase Storage API is disabled.
   Storage rules are tested locally but have not been deployed to a live bucket.
-  File uploads require the club to enable the Blaze plan and create the bucket,
-  followed by a Storage rules deployment and implementation of the upload UI.
+  File uploads now use the [GitHub Actions queue](GITHUB_UPLOADS.md) without Storage.
+  A future move to Firebase Storage would require enabling Blaze and creating a bucket.
   See [Firebase's Storage billing requirements](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024).
 
 ## First-time setup
@@ -78,8 +78,9 @@ operators access to the Firebase project and document annual account handoff.
 Storage accepts only `content/{activities|mathematics|publications}/{recordId}/{fileName}`.
 Approved members can manage files for existing records. Public SDK reads require
 the parent record to be published. Limits: JPEG/PNG/WebP up to 10 MiB; PDF up to
-25 MiB; empty files and other paths/types are denied. The upload UI and media model
-are still placeholders. When connecting downloads later, do not treat token-bearing
+25 MiB; empty files and other paths/types are denied. These unused Storage rules are
+separate from the active GitHub upload limits (8 MiB images / 20 MiB PDFs).
+When connecting Storage downloads later, do not treat token-bearing
 download URLs as private: an issued URL is a bearer link and must not be used to
 promise draft confidentiality merely by changing Firestore status.
 
@@ -138,6 +139,16 @@ Create a demo Auth user and matching enabled membership in the emulator, not in
 production. No real Google credentials are needed for emulator sign-in.
 
 ## GitHub deployment and recovery
+
+`github-uploads.yml` processes private `uploadRequests/{uid}` records with the
+existing deployment service account and commits verified bytes using `GITHUB_TOKEN`.
+That service account requires an operator-approved `roles/datastore.user` grant,
+which covers project-wide Firestore data, not just the upload queue. Browser
+rules do not constrain Admin SDK access. See [upload operations](GITHUB_UPLOADS.md).
+
+The `chunks.data` field is exempt from indexing. Deploy `firestore.indexes.json`
+along with rules. Only the verified owner can submit/read a request; only the
+worker can mark it processing or complete. Files themselves are public once committed.
 
 The Hosting workflows run npm ci, lint, unit tests, emulator rules tests and build. They read Web App values
 from Actions variables, deployment credentials from

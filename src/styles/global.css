@@ -1002,6 +1002,15 @@ main {
 .admin-gate-panel small { overflow-wrap: anywhere; }
 .admin-signout { margin-left: 12px; padding: 8px 13px; border: 1px solid var(--color-green); background: transparent; color: var(--color-green); cursor: pointer; }
 .admin-editor-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.admin-upload-panel { border-top: 1px solid var(--color-line); margin-top: 24px; padding-top: 18px; font-size: 13px; }
+.admin-upload-panel summary { cursor: pointer; font-weight: 650; color: var(--color-green); }
+.admin-upload-panel .admin-form-grid { margin-top: 20px; }
+.admin-upload-panel a { text-decoration: underline; }
+.upload-status { padding: 14px; border: 1px solid var(--color-line); background: var(--color-paper); overflow-wrap: anywhere; }
+.upload-status progress { display: block; width: 100%; margin-top: 10px; }
+.upload-status button { margin: 10px 10px 0 0; padding: 7px 12px; border: 1px solid var(--color-green); background: transparent; color: var(--color-green); cursor: pointer; }
+.upload-help { margin-top: 16px; }
+img.uploaded-image { display: block; width: 100%; object-fit: cover; padding: 0; }
 .admin-shell button:disabled, .admin-gate button:disabled { opacity: .6; cursor: wait; }
 .admin-gate-panel label { display: grid; gap: 7px; margin: 24px 0 8px; font-weight: 700; }
 .admin-gate-panel input { width: 100%; padding: 10px; border: 1px solid var(--color-line-strong); background: white; }
@@ -1011,6 +1020,8 @@ main {
 .admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px 24px; margin-bottom: 22px; }
 .admin-field { display: grid; align-content: start; gap: 6px; margin-bottom: 22px; font-weight: 650; font-size: 13px; }
 .admin-field > span, .field-label { font-weight: 650; font-size: 13px; }
+.selected-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; overflow-wrap: anywhere; }
+.selected-upload button { border: 1px solid var(--color-line-strong); background: var(--color-paper); padding: 5px 10px; cursor: pointer; }
 .admin-field em { margin-left: 7px; color: var(--color-green); font-size: 9px; font-style: normal; text-transform: uppercase; }
 .admin-field input, .admin-field textarea, .admin-field select { width: 100%; padding: 10px 11px; border: 1px solid var(--color-line-strong); border-radius: 0; color: var(--color-text); background: #fff; font: inherit; }
 .admin-field textarea { resize: vertical; line-height: 1.6; }

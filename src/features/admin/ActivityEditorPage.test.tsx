@@ -12,6 +12,7 @@ const repository = vi.hoisted(() => ({
   unpublish: vi.fn(),
 }))
 vi.mock('../../repositories/adminRepositories', () => ({ activityRepository: repository }))
+vi.mock('../../services/uploads/GitHubUploadService', () => ({ watchUpload: () => () => {} }))
 const record = { ...activityFixtures[0], status: 'draft' as const }
 beforeEach(() => {
   vi.clearAllMocks()

@@ -74,7 +74,22 @@ Possible types:
 - createdAt
 - updatedAt
 
-## Principle
+## Implemented uploaded media
+
+`MediaReference` retains `alt`, `variant`, optional `caption`, and adds optional
+`url` for a GitHub-uploaded JPEG/PNG/WebP file. `variant` remains the prototype
+fallback when no image has been attached.
+
+PDF attachment metadata is `{ label, fileName, mediaType, sizeLabel, url? }`.
+Mathematics uses `attachments[]`; Activity adds optional `attachments[]`;
+Publication uses optional `pdf` (the earlier `pdfUrl` proposal is not used).
+Uploaded URLs are site-relative `/uploads/{sha256}.{extension}`. Files are public
+independently of the parent record's publication status.
+
+The private `uploadRequests/{uid}` processing model is separate from content.
+See [GitHub upload operations](GITHUB_UPLOADS.md).
+
+## Separation
 
 UI code should not depend directly on Firestore document structure.
 

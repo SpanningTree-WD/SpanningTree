@@ -12,6 +12,7 @@ import {
 } from './EditorFields'
 import { publicationTypes } from './editorOptions'
 import { useAdminEditor } from './useAdminEditor'
+import { UploadPanel } from './UploadPanel'
 
 const empty: Publication = {
   id: '',
@@ -115,6 +116,16 @@ export function PublicationEditorPage() {
           name="description"
           value={form.description}
           onChange={(v) => set('description', v)}
+        />
+        <UploadPanel
+          collection="publications"
+          recordId={form.id}
+          disabled={saving}
+          image={form.coverImage}
+          files={form.pdf ? [form.pdf] : []}
+          onImage={(url) => set('coverImage', { ...form.coverImage, url })}
+          onPdf={(file) => set('pdf', file)}
+          onRemovePdf={() => set('pdf', undefined)}
         />
         <EditorActions
           status={form.status}

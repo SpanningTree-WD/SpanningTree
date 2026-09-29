@@ -5,6 +5,7 @@ import { MathematicsEditorPage } from './MathematicsEditorPage'
 import { PublicationEditorPage } from './PublicationEditorPage'
 
 const repository = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn() }))
+vi.mock('../../services/uploads/GitHubUploadService', () => ({ watchUpload: () => () => {} }))
 vi.mock('../../repositories/adminRepositories', () => ({
   mathematicsRepository: repository,
   publicationRepository: repository,

@@ -4,11 +4,15 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: firebase-production
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { ref: main }
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: npm ci --no-audit --no-fund

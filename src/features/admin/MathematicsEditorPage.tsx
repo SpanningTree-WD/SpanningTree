@@ -13,6 +13,7 @@ import {
 } from './EditorFields'
 import { mathematicsFields, mathematicsTypes } from './editorOptions'
 import { useAdminEditor } from './useAdminEditor'
+import { UploadPanel } from './UploadPanel'
 
 const empty: Mathematics = {
   id: '',
@@ -143,6 +144,23 @@ export function MathematicsEditorPage() {
             <MarkdownRenderer content={form.content} />
           </div>
         </section>
+        <UploadPanel
+          collection="mathematics"
+          recordId={form.id}
+          disabled={saving}
+          image={form.coverImage}
+          files={form.attachments}
+          onImage={(url) => set('coverImage', { ...form.coverImage, url })}
+          onRemovePdf={(url) =>
+            set(
+              'attachments',
+              form.attachments.filter((file) => file.url !== url)
+            )
+          }
+          onPdf={(file) =>
+            set('attachments', [...form.attachments.filter((item) => item.url !== file.url), file])
+          }
+        />
         <EditorActions
           status={form.status}
           saving={saving}
