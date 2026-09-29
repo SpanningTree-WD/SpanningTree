@@ -54,7 +54,3 @@ export const mentoringGroups: readonly MentoringGroup[] = [
     mentees: ['고호영', '김인호'],
   },
 ]
-
-export function memberGeneration(name: string) {
-  return peopleGenerations.find((generation) => generation.members.includes(name))?.number
-}

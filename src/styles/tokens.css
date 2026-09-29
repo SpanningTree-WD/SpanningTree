@@ -5,6 +5,11 @@
   --color-muted: #697169;
   --color-green: #214d36;
   --color-green-secondary: #3f6f55;
+  --color-mentoring-discrete: #3f6f55;
+  --color-mentoring-linear-algebra: #617e91;
+  --color-mentoring-topology: #9a7950;
+  --color-mentoring-analysis: #86697f;
+  --color-mentoring-abstract-algebra: #778149;
   --color-line: #d7ddd6;
   --color-line-strong: #b9c5bb;
   --color-panel: #ffffffaa;

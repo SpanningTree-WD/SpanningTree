@@ -419,84 +419,44 @@ main {
   color:var(--color-muted);
   font-size:14px
 }
-.people-tree {
-  padding:0 0 36px
+.people-graph { margin:0; padding-bottom:56px; min-width:0; }
+.people-graph-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+.people-graph-canvas { display:block; width:100%; min-width:1120px; }
+.people-graph-generation { fill:var(--color-green); font-family:var(--font-serif); font-size:30px; }
+.people-graph-count { fill:var(--color-muted); font-size:13px; }
+.people-graph-cohort { stroke:var(--color-line); stroke-width:1; }
+.people-graph-edge {
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.6;
+  stroke-dasharray:4 5;
+  stroke-linecap:round
 }
-.generation {
+.people-graph-edge.is-highlighted { stroke-width:2.8; }
+.people-graph-person { outline:none; }
+.people-graph-person circle { fill:var(--color-background); stroke:var(--color-line-strong); stroke-width:1.2; }
+.people-graph-person text { fill:var(--color-text); font-size:14px; font-weight:600; }
+.people-graph-person:hover circle,.people-graph-person:focus-visible circle { stroke:var(--color-green); stroke-width:2.5; }
+.people-graph-key,.people-graph-help { font-size:13px; color:var(--color-muted); margin:16px 0 0; }
+.people-graph-help { display:none; }
+.people-graph-legend {
   display:grid;
-  grid-template-columns:160px 1fr;
-  align-items:center;
-  gap:22px;
-  margin:32px 0
-}
-.generation-label h2 {
-  font-size:31px;
-  color:var(--color-green);
-  margin:0
-}
-.generation-label small {
-  color:var(--color-muted)
-}
-.nodes {
-  display:flex;
-  flex-wrap:wrap;
-  gap:26px;
-  align-items:center;
-  margin:0;
-  padding:0;
-  list-style:none;
-  min-height:72px
-}
-.person {
-  flex-shrink:0;
-  width:72px;
-  height:72px;
-  border-radius:50%;
-  background:var(--color-background);
-  border:1px solid var(--color-line-strong);
-  display:grid;
-  place-items:center;
-  position:relative;
-  z-index:2;
-  font-weight:600;
-  font-size:14px
-}
-.mentoring-section { padding-bottom:60px; }
-.mentoring-legend {
-  color:var(--color-muted);
-  font-size:13px
-}
-.mentoring-groups { border-top:1px solid var(--color-line); }
-.mentoring-group {
-  display:grid;
-  grid-template-columns:160px minmax(0,1fr);
-  gap:22px;
-  padding:28px 0;
-  border-bottom:1px solid var(--color-line);
-  align-items:center
-}
-.mentoring-subject p { margin:0 0 5px; font-size:13px; color:var(--color-muted); }
-.mentoring-subject h3 { margin:0; font-size:24px; color:var(--color-green); }
-.mentoring-connection {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);
-  align-items:center;
-  gap:18px
-}
-.mentoring-role { margin:0 0 12px; color:var(--color-green); font-size:13px; font-weight:600; }
-.mentoring-names {
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px 18px;
-  margin:0;
-  padding:0;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:20px;
+  border-top:1px solid var(--color-line);
+  padding:22px 0 0;
+  margin:22px 0 0;
   list-style:none
 }
-.mentoring-names li { text-align:center; }
-.mentoring-names small { display:block; margin-top:5px; font-size:12px; color:var(--color-muted); }
-.mentoring-link { display:flex; align-items:center; color:var(--color-green); padding-top:18px; }
-.mentoring-link::before { content:""; flex:1; border-top:1px dashed var(--color-green-secondary); }
-.mentoring-link span { font-size:23px; line-height:1; }
+.people-graph-legend li { display:flex; align-items:baseline; gap:10px; }
+.people-graph-legend strong { display:block; font-size:14px; font-weight:600; }
+.people-graph-legend div > span { display:block; font-size:12px; color:var(--color-muted); margin-top:4px; }
+.mentoring-swatch { display:block; width:24px; flex-shrink:0; border-top:2px dashed currentColor; }
+.mentoring-color-discrete { color:var(--color-mentoring-discrete); }
+.mentoring-color-linear-algebra { color:var(--color-mentoring-linear-algebra); }
+.mentoring-color-topology { color:var(--color-mentoring-topology); }
+.mentoring-color-analysis { color:var(--color-mentoring-analysis); }
+.mentoring-color-abstract-algebra { color:var(--color-mentoring-abstract-algebra); }
 .archive-layout {
   display:grid;
   grid-template-columns:250px 1fr;
@@ -954,19 +914,8 @@ main {
   .archive-row>:last-child {
     grid-column:2
   }
-  .generation,.mentoring-group {
-    grid-template-columns:110px 1fr
-  }
-  .mentoring-connection { grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr); gap:12px; }
-  .mentoring-names { gap:12px; }
-  .nodes {
-    gap:10px
-  }
-  .person {
-    width:58px;
-    height:58px;
-    font-size:12px
-  }
+  .people-graph-help { display:block; }
+  .people-graph-legend { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
 @media(max-width:650px) {
   .page-container,.header-inner,.hero-grid,.footer-inner {
@@ -997,16 +946,7 @@ main {
   .archive-row>:last-child {
     grid-column:auto
   }
-  .generation,.mentoring-group {
-    grid-template-columns:1fr
-  }
-  .mentoring-connection { grid-template-columns:1fr; gap:14px; }
-  .mentoring-link { width:24px; height:38px; margin-left:17px; padding:0; flex-direction:column; }
-  .mentoring-link::before { border-top:0; border-left:1px dashed var(--color-green-secondary); }
-  .mentoring-link span { transform:rotate(90deg); }
-  .nodes {
-    flex-wrap:wrap
-  }
+  .people-graph-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .footer-inner {
     flex-direction:column;
     align-items:flex-start
