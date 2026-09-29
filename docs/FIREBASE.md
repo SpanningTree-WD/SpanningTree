@@ -1,13 +1,34 @@
 # Firebase operations
 
 The canonical production project is `spanningtree-math` on regular Firebase
-Hosting. Public fixtures remain the default until reviewed content and access
-configuration are ready. Admin editing always uses Firestore.
+Hosting. Hosted builds read Firestore; local development can use fixtures via
+`.env.example`. Admin editing always uses Firestore.
+
+## Production setup (2026-09-29)
+
+- Google sign-in is enabled, with the club account as the support contact.
+- Both default Hosting domains are authorized for sign-in.
+- Firestore rules and indexes are deployed. The archive starts empty by choice;
+  sample records have not been imported.
+- The club account and the current Web Developer have enabled UID memberships.
+  Personal account identifiers are managed in Firebase, not in source code.
+- Both Hosting workflows explicitly build with `VITE_PUBLIC_DATA_SOURCE=firebase`.
+  A repository variable is no longer needed to select the public data source.
+- Browser sign-in must be completed by the account holder. Pre-created accounts
+  have no password and are not marked verified by the setup operator; Google
+  verifies their Gmail addresses when they sign in.
+- Cloud billing is not enabled and the Firebase Storage API is disabled.
+  Storage rules are tested locally but have not been deployed to a live bucket.
+  File uploads require the club to enable the Blaze plan and create the bucket,
+  followed by a Storage rules deployment and implementation of the upload UI.
+  See [Firebase's Storage billing requirements](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024).
 
 ## First-time setup
 
-1. In Firebase Console, enable Authentication → Sign-in method → **Google**.
-   Set the club's support email and register the Hosting/custom domains in
+1. Deploy the Google provider configuration in `firebase.json` with
+   `npx firebase-tools@15.32.0 deploy --only auth --project spanningtree-math`.
+   Alternatively, enable Authentication → Sign-in method → **Google** in Console.
+   Set the club's support email and register any additional custom domains in
    Authentication → Settings → Authorized domains. Add `localhost` for local
    Google sign-in if needed.
 2. Copy `.env.example` to `.env.local` and fill the six registered Web App
@@ -26,9 +47,9 @@ configuration are ready. Admin editing always uses Firestore.
    Authentication UID (shown on the access-denied screen or in the Console).
    Using **Firestore Console**, create `admins/{UID}` with `enabled: true`
    (boolean). Do not use an email address as the document ID.
-6. Set `VITE_PUBLIC_DATA_SOURCE=firebase` in the local build environment and the
-   GitHub Actions repository variable of the same name. Build and deploy after
-   verifying the content. Without this switch the public site displays fixtures.
+6. Set `VITE_PUBLIC_DATA_SOURCE=firebase` in `.env.local` when local development
+   should use the live archive. The Hosting workflows already set this value.
+   A local build with `local` still displays fixtures.
 
 Membership changes are restricted to trusted Console/Admin SDK operators.
 Even approved browser administrators cannot create, enumerate or edit membership
@@ -120,8 +141,8 @@ production. No real Google credentials are needed for emulator sign-in.
 
 The Hosting workflows run npm ci, lint, unit tests, emulator rules tests and build. They read Web App values
 from Actions variables, deployment credentials from
-`FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH`, and the public data mode from
-`VITE_PUBLIC_DATA_SOURCE` (default `local`). Values are embedded at build time.
+`FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH`, and explicitly select the `firebase`
+public data mode. Values are embedded at build time.
 Rules are deployed separately by an operator; Hosting deploys do not deploy rules.
 
 Before launch, verify Google sign-in on the actual domain, one approved and one
@@ -137,6 +158,7 @@ the implemented behavior.
 ## Firebase references
 
 - [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin)
+- [Configure providers with the CLI](https://firebase.google.com/docs/auth/configure-providers-cli)
 - [Authentication persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence)
 - [Transactions and getAfter rules](https://firebase.google.com/docs/firestore/manage-data/transactions)
 - [Storage rules and Firestore authorization](https://firebase.google.com/docs/storage/security/rules-conditions)

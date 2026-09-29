@@ -12,6 +12,26 @@ Permission changes are observed while the page is open; revocation closes the
 editor and Firestore/Storage independently deny subsequent private operations.
 The first permission check requires a server connection.
 
+## Annual Web Developer handoff
+
+Keep `spanningtree.official@gmail.com` as the permanent club administrator.
+Use each developer's own Google account; do not share the club password for
+routine content editing.
+
+1. Have the incoming developer sign in at `/admin` and provide the UID shown
+   on the access-denied screen.
+2. A trusted Firebase project operator checks that UID's email in
+   Authentication → Users, then creates `admins/{UID}` in Firestore with
+   `enabled: true` (boolean). An optional `email` string helps identify the record.
+3. Verify that the new developer can open the editor and save a draft.
+4. At handoff, set the outgoing developer's membership to `enabled: false`.
+   Keep the club account enabled and retain its account recovery information.
+
+Website membership grants content editing. Firebase Console and GitHub access
+are managed separately by the club's project and repository owners. When handing
+over infrastructure maintenance, review and transfer those permissions as well.
+Membership changes do not require a code change or Hosting deployment.
+
 ## Editing
 
 Activities, Mathematics, and Publications share the same workflow:

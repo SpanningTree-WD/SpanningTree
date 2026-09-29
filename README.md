@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Open the URL printed by Vite. Public routes are `/`, `/about`, `/people`, `/activities`, `/publications`, and `/mathematics`. The three archives support linkable URL filters and local fixture-backed detail routes such as `/activities/ksa-spanning-tree-forum`.
+Open the URL printed by Vite. Public routes are `/`, `/about`, `/people`, `/activities`, `/publications`, and `/mathematics`. The three archives support linkable URL filters. Local fixture mode includes example detail routes such as `/activities/ksa-spanning-tree-forum`.
 
 ## Checks
 
@@ -25,10 +25,11 @@ npm run build
 npm run preview
 ```
 
-Public routes use typed repositories and default to reviewed local fixtures.
+Hosted public routes use typed Firestore repositories and start with an empty archive.
+Local development defaults to fixtures unless `.env.local` selects Firebase mode.
 `/admin` uses Google sign-in, an approved-member allowlist, and Firestore storage.
-Admin edits never fall back to browser-local storage. Set `VITE_PUBLIC_DATA_SOURCE=firebase`
-after setup to show published Firestore records on the public site.
+Admin edits never fall back to browser-local storage. Both Hosting workflows set
+`VITE_PUBLIC_DATA_SOURCE=firebase` to display published records.
 
 See [Firebase operations](docs/FIREBASE.md) for account setup, rules, deployment,
 emulator tests, and data migration, and [Admin guide](docs/ADMIN.md) for editing.
