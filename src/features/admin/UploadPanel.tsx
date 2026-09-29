@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Attachment, MediaReference } from '../../models/common'
 import {
@@ -11,20 +11,12 @@ import {
   isUploadActive,
   isUploadUrl,
   type UploadCollection,
+  type UploadConnection,
   type UploadRequest,
 } from '../../services/uploads/uploadTypes'
 import { adminErrorMessage } from './adminErrors'
 import { hasUploadTrigger, triggerUpload } from '../../services/uploads/triggerUpload'
-
-const stateLabels = {
-  uploading: '파일 전송 중',
-  queued: 'GitHub 저장 대기 중',
-  processing: '파일 확인 및 GitHub 저장 중',
-  committed: '사이트 배포 대기 중',
-  complete: '배포 완료 · 글에 첨부할 수 있습니다',
-  cancelled: '취소 처리 중',
-  failed: '업로드를 완료하지 못했습니다',
-}
+import { UploadProgress, type PendingUpload } from './UploadProgress'
 export function UploadPanel({
   collection,
   recordId,
@@ -44,19 +36,34 @@ export function UploadPanel({
   onPdf: (file: Attachment) => void
   onRemovePdf: (url: string) => void
 }) {
-  const [request, setRequest] = useState<UploadRequest | null>(null)
+  const [storedRequest, setRequest] = useState<UploadRequest | null>(null)
+  const [pending, setPending] = useState<PendingUpload | null>(null)
+  const [connection, setConnection] = useState<UploadConnection>('connecting')
+  const panel = useRef<HTMLDetailsElement>(null)
   const [error, setError] = useState('')
   const [progress, setProgress] = useState<number | null>(null)
   const [triggerNotice, setTriggerNotice] = useState('')
+  const [scheduledFallback, setScheduledFallback] = useState(false)
   const [triggering, setTriggering] = useState(false)
   useEffect(() => {
     try {
-      return watchUpload(setRequest, (failure) => setError(adminErrorMessage(failure)))
+      return watchUpload(
+        setRequest,
+        (failure) => setError(adminErrorMessage(failure)),
+        setConnection
+      )
     } catch (failure) {
+      setConnection('error')
       setError(adminErrorMessage(failure))
     }
   }, [])
+  // Show the new file immediately, even before its Firestore request is created.
+  const request =
+    pending && storedRequest?.uploadId === pending.previousUploadId ? null : storedRequest
   const active = request && isUploadActive(request.state)
+  useEffect(() => {
+    if ((active || pending) && panel.current) panel.current.open = true
+  }, [active, pending, request?.uploadId])
   const own = request?.collection === collection && request.recordId === recordId
   const attached =
     request?.url && (image.url === request.url || files.some((file) => file.url === request.url))
@@ -64,9 +71,17 @@ export function UploadPanel({
     if (!file) return
     setError('')
     setTriggerNotice('')
+    setScheduledFallback(false)
     setProgress(0)
+    setPending({
+      fileName: file.name,
+      size: file.size,
+      startedAtMs: Date.now(),
+      previousUploadId: storedRequest?.uploadId,
+    })
     try {
       const result = await queueGitHubUpload(file, collection, recordId, setProgress)
+      setScheduledFallback(result?.trigger === 'scheduled')
       if (hasUploadTrigger())
         setTriggerNotice(
           result?.trigger === 'scheduled'
@@ -77,6 +92,7 @@ export function UploadPanel({
       setError(adminErrorMessage(failure))
     } finally {
       setProgress(null)
+      setPending(null)
     }
   }
   async function startNow() {
@@ -84,11 +100,13 @@ export function UploadPanel({
     setTriggering(true)
     setError('')
     try {
-      await triggerUpload(request.uploadId)
+      const result = await triggerUpload(request.uploadId)
+      setScheduledFallback(result === 'scheduled')
       setTriggerNotice(
         '처리 시작을 요청했습니다. GitHub 실행과 사이트 배포가 끝날 때까지 기다려 주세요.'
       )
     } catch (failure) {
+      setScheduledFallback(true)
       setError(adminErrorMessage(failure))
     } finally {
       setTriggering(false)
@@ -107,8 +125,11 @@ export function UploadPanel({
     else onImage(request.url)
   }
   return (
-    <details className="admin-upload-panel">
-      <summary>이미지·PDF 첨부 (선택)</summary>
+    <details className="admin-upload-panel" ref={panel}>
+      <summary>
+        이미지·PDF 첨부 (선택)
+        {(active || pending) && <span className="upload-summary-state">업로드 진행 중</span>}
+      </summary>
       <p>파일은 GitHub에 공개 저장됩니다. 글을 비공개로 해도 파일은 공개됩니다.</p>
       {!recordId ? (
         <p>글을 먼저 임시 저장하면 파일을 올릴 수 있습니다.</p>
@@ -152,52 +173,63 @@ export function UploadPanel({
           {error}
         </p>
       )}
-      {request && (
-        <div className="upload-status" role="status">
-          <strong>{request.fileName}</strong> · {stateLabels[request.state]}
-          {progress !== null && (
-            <progress aria-label="파일 전송 진행률" value={progress} max={100} />
-          )}
-          {request.error && <p>{request.error}</p>}
-          {triggerNotice && isUploadActive(request.state) && <p>{triggerNotice}</p>}
-          {!own && (
-            <p>
-              다른 글에 올린 파일입니다.{' '}
-              <Link to={`/admin/${request.collection}/${request.recordId}/edit`}>
-                해당 글로 이동
-              </Link>
+      {(request || pending) && (
+        <div className="upload-status">
+          <UploadProgress
+            request={request}
+            pending={pending}
+            percent={progress}
+            connection={connection}
+            immediate={hasUploadTrigger() && !scheduledFallback}
+          />
+          {request?.error && (
+            <p className="field-error" role="alert">
+              {request.error}
             </p>
           )}
-          {own && request.state === 'complete' && !attached && (
-            <button type="button" disabled={disabled} onClick={attach}>
-              글에 첨부
-            </button>
-          )}
-          {own && attached && (
-            <p>첨부된 파일입니다. 변경한 내용은 아래 저장 버튼으로 반영해 주세요.</p>
-          )}
-          {hasUploadTrigger() &&
-            own &&
-            ['queued', 'committed'].includes(request.state) &&
-            progress === null && (
-              <button
-                type="button"
-                disabled={disabled || triggering}
-                onClick={() => void startNow()}
-              >
-                {triggering ? '실행 요청 중…' : '지금 처리 요청'}
-              </button>
-            )}
-          {['uploading', 'queued'].includes(request.state) && progress === null && (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() =>
-                void cancelUpload().catch((failure) => setError(adminErrorMessage(failure)))
-              }
-            >
-              대기 취소
-            </button>
+          {request && (
+            <>
+              {triggerNotice && isUploadActive(request.state) && <p>{triggerNotice}</p>}
+              {!own && (
+                <p>
+                  다른 글에 올린 파일입니다.{' '}
+                  <Link to={`/admin/${request.collection}/${request.recordId}/edit`}>
+                    해당 글로 이동
+                  </Link>
+                </p>
+              )}
+              {own && request.state === 'complete' && !attached && (
+                <button type="button" disabled={disabled} onClick={attach}>
+                  글에 첨부
+                </button>
+              )}
+              {own && attached && (
+                <p>첨부된 파일입니다. 변경한 내용은 아래 저장 버튼으로 반영해 주세요.</p>
+              )}
+              {hasUploadTrigger() &&
+                own &&
+                ['queued', 'committed'].includes(request.state) &&
+                progress === null && (
+                  <button
+                    type="button"
+                    disabled={disabled || triggering}
+                    onClick={() => void startNow()}
+                  >
+                    {triggering ? '실행 요청 중…' : '지금 처리 요청'}
+                  </button>
+                )}
+              {['uploading', 'queued'].includes(request.state) && progress === null && (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() =>
+                    void cancelUpload().catch((failure) => setError(adminErrorMessage(failure)))
+                  }
+                >
+                  대기 취소
+                </button>
+              )}
+            </>
           )}
         </div>
       )}

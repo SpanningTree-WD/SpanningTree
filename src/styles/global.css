@@ -1006,8 +1006,27 @@ main {
 .admin-upload-panel summary { cursor: pointer; font-weight: 650; color: var(--color-green); }
 .admin-upload-panel .admin-form-grid { margin-top: 20px; }
 .admin-upload-panel a { text-decoration: underline; }
-.upload-status { padding: 14px; border: 1px solid var(--color-line); background: var(--color-paper); overflow-wrap: anywhere; }
-.upload-status progress { display: block; width: 100%; margin-top: 10px; }
+.upload-status { padding: 20px; border: 1px solid var(--color-line); background: var(--color-paper); overflow-wrap: anywhere; }
+.upload-summary-state { margin-left: 12px; font-size: 11px; font-weight: 400; }
+.upload-progress-heading, .upload-progress-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.upload-progress-heading strong { min-width: 0; }
+.upload-progress-heading > span, .upload-progress-meta { color: var(--color-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.upload-progress-title { margin: 14px 0; color: var(--color-green); font-size: 17px; font-weight: 650; }
+.upload-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 18px 0; }
+.upload-steps li { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; border-top: 2px solid var(--color-line); padding-top: 10px; color: var(--color-muted); font-size: 12px; word-break: keep-all; overflow-wrap: normal; }
+.upload-steps li > span { font-variant-numeric: tabular-nums; }
+.upload-steps .is-done, .upload-steps [aria-current="step"] { border-color: var(--color-green); color: var(--color-green); }
+.upload-steps [aria-current="step"] { font-weight: 700; }
+.upload-meter { height: 6px; overflow: hidden; background: var(--color-line); }
+.upload-meter > span { display: block; height: 100%; background: var(--color-green); transition: width .2s ease; }
+.upload-meter.is-indeterminate > span { width: 35%; animation: upload-wait 1.8s ease-in-out infinite; }
+.upload-meter.is-paused > span { animation: none; background: var(--color-muted); }
+.upload-progress-meta { margin-top: 10px; }
+.upload-progress-detail { margin: 16px 0 6px; }
+.upload-progress-estimate { margin: 6px 0; color: var(--color-muted); font-size: 12px; }
+.upload-progress-note { margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--color-line-strong); background: var(--color-background); font-size: 12px; }
+@keyframes upload-wait { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+@media (prefers-reduced-motion: reduce) { .upload-meter > span { transition: none; } .upload-meter.is-indeterminate > span { animation: none; } }
 .upload-status button { margin: 10px 10px 0 0; padding: 7px 12px; border: 1px solid var(--color-green); background: transparent; color: var(--color-green); cursor: pointer; }
 .upload-help { margin-top: 16px; }
 img.uploaded-image { display: block; width: 100%; object-fit: cover; padding: 0; }

@@ -8,7 +8,10 @@ const service = vi.hoisted(() => ({
   queueGitHubUpload: vi.fn(),
   cancelUpload: vi.fn(),
 }))
-const trigger = vi.hoisted(() => ({ hasUploadTrigger: vi.fn(), triggerUpload: vi.fn() }))
+const trigger = vi.hoisted(() => ({
+  hasUploadTrigger: vi.fn(),
+  triggerUpload: vi.fn(),
+}))
 vi.mock('../../services/uploads/triggerUpload', () => trigger)
 vi.mock('../../services/uploads/GitHubUploadService', () => service)
 let notify: (request: UploadRequest | null) => void
@@ -37,8 +40,9 @@ const props = {
 }
 beforeEach(() => {
   vi.clearAllMocks()
-  service.watchUpload.mockImplementation((callback) => {
+  service.watchUpload.mockImplementation((callback, _error, connection) => {
     notify = callback
+    connection?.('live')
     return () => {}
   })
   service.queueGitHubUpload.mockResolvedValue(undefined)
@@ -64,7 +68,9 @@ it('queues a selected file, blocks overlapping uploads and only attaches after d
   show()
   const file = new File(['%PDF-1.4'], '포럼.pdf', { type: 'application/pdf' })
   await act(async () =>
-    fireEvent.change(screen.getByLabelText('PDF · 20MB 이하'), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText('PDF · 20MB 이하'), {
+      target: { files: [file] },
+    })
   )
   expect(service.queueGitHubUpload).toHaveBeenCalledWith(
     file,
@@ -75,12 +81,27 @@ it('queues a selected file, blocks overlapping uploads and only attaches after d
   act(() => notify(request))
   expect(screen.getByLabelText('PDF · 20MB 이하')).toBeDisabled()
   expect(screen.queryByRole('button', { name: '글에 첨부' })).not.toBeInTheDocument()
-  act(() => notify({ ...request, state: 'committed', url: `/uploads/${request.sha256}.pdf` }))
+  act(() =>
+    notify({
+      ...request,
+      state: 'committed',
+      url: `/uploads/${request.sha256}.pdf`,
+    })
+  )
   expect(screen.queryByRole('button', { name: '글에 첨부' })).not.toBeInTheDocument()
-  act(() => notify({ ...request, state: 'complete', url: `/uploads/${request.sha256}.pdf` }))
+  act(() =>
+    notify({
+      ...request,
+      state: 'complete',
+      url: `/uploads/${request.sha256}.pdf`,
+    })
+  )
   fireEvent.click(screen.getByRole('button', { name: '글에 첨부' }))
   expect(props.onPdf).toHaveBeenCalledWith(
-    expect.objectContaining({ fileName: '포럼.pdf', url: `/uploads/${request.sha256}.pdf` })
+    expect.objectContaining({
+      fileName: '포럼.pdf',
+      url: `/uploads/${request.sha256}.pdf`,
+    })
   )
 })
 it('keeps another record’s upload attached to its original target', () => {
@@ -108,4 +129,26 @@ it('explains immediate dispatch and allows retrying a queued file without re-upl
   expect(trigger.triggerUpload).toHaveBeenCalledWith(request.uploadId)
   expect(service.queueGitHubUpload).not.toHaveBeenCalled()
   expect(screen.getByText(/처리 시작을 요청했습니다/)).toBeVisible()
+})
+it('replaces an old completion with the new file progress before the new server request arrives', async () => {
+  show()
+  act(() => notify({ ...request, state: 'complete' }))
+  let finish: (value: { trigger: string }) => void = () => {}
+  service.queueGitHubUpload.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve
+    })
+  )
+  const file = new File(['%PDF-1.4'], '다음 파일.pdf', {
+    type: 'application/pdf',
+  })
+  fireEvent.change(screen.getByLabelText('PDF · 20MB 이하'), {
+    target: { files: [file] },
+  })
+  expect(screen.getByText('다음 파일.pdf')).toBeVisible()
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
+  expect(screen.queryByText('완료 100%')).not.toBeInTheDocument()
+  act(() => notify({ ...request, uploadId: 'next', fileName: file.name }))
+  await act(async () => finish({ trigger: 'scheduled' }))
+  expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow')
 })

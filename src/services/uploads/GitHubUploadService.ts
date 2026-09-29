@@ -15,6 +15,7 @@ import {
   UPLOAD_CHUNK_BYTES,
   validateUpload,
   type UploadCollection,
+  type UploadConnection,
   type UploadRequest,
 } from './uploadTypes'
 
@@ -22,18 +23,36 @@ function context() {
   const { auth, firestore } = getFirebaseServices()
   const user = auth.currentUser
   if (!user?.emailVerified) throw new Error('관리자 계정으로 다시 로그인해 주세요.')
-  return { db: firestore, uid: user.uid, reference: doc(firestore, 'uploadRequests', user.uid) }
+  return {
+    db: firestore,
+    uid: user.uid,
+    reference: doc(firestore, 'uploadRequests', user.uid),
+  }
 }
 
 export function watchUpload(
   onChange: (value: UploadRequest | null) => void,
-  onError: (error: unknown) => void
+  onError: (error: unknown) => void,
+  onConnection?: (connection: UploadConnection) => void
 ) {
   const { reference } = context()
   return onSnapshot(
     reference,
-    (snapshot) => onChange(snapshot.exists() ? (snapshot.data() as UploadRequest) : null),
-    onError
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      onConnection?.(snapshot.metadata.fromCache ? 'cached' : 'live')
+      if (!snapshot.exists()) return onChange(null)
+      const { createdAt, updatedAt, ...data } = snapshot.data()
+      onChange({
+        ...data,
+        createdAtMs: createdAt?.toMillis(),
+        updatedAtMs: updatedAt?.toMillis(),
+      } as UploadRequest)
+    },
+    (error) => {
+      onConnection?.('error')
+      onError(error)
+    }
   )
 }
 
@@ -89,13 +108,17 @@ export async function queueGitHubUpload(
         })
       }
       await batch.commit()
-      onProgress(Math.round((Math.min(start + 8, request.chunkCount) / request.chunkCount) * 100))
+      const sentBytes = Math.min((start + 8) * UPLOAD_CHUNK_BYTES, file.size)
+      onProgress(Math.floor((sentBytes / file.size) * 100))
     }
     await runTransaction(db, async (transaction) => {
       const current = await transaction.get(reference)
       if (current.data()?.uploadId !== request.uploadId || current.data()?.state !== 'uploading')
         throw new Error('업로드 요청이 변경되었습니다. 다시 확인해 주세요.')
-      transaction.update(reference, { state: 'queued', updatedAt: serverTimestamp() })
+      transaction.update(reference, {
+        state: 'queued',
+        updatedAt: serverTimestamp(),
+      })
     })
   } catch (error) {
     await cancelUpload(request.uploadId).catch(() => {})
@@ -118,7 +141,10 @@ export async function cancelUpload(expectedId?: string) {
       (!expectedId || current.data().uploadId === expectedId) &&
       ['uploading', 'queued'].includes(current.data().state)
     ) {
-      transaction.update(reference, { state: 'cancelled', updatedAt: serverTimestamp() })
+      transaction.update(reference, {
+        state: 'cancelled',
+        updatedAt: serverTimestamp(),
+      })
     }
   })
 }
