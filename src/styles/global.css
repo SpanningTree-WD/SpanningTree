@@ -419,40 +419,8 @@ main {
   color:var(--color-muted);
   font-size:14px
 }
-.people-tools {
-  display:flex;
-  justify-content:flex-end;
-  margin-top:-6px;
-  margin-bottom:26px
-}
-.toggle {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  border:1px solid var(--color-line);
-  padding:10px 13px;
-  background:rgba(255,255,255,.45);
-  color:inherit
-}
-.switch {
-  width:42px;
-  height:22px;
-  background:var(--color-green);
-  border-radius:99px;
-  position:relative
-}
-.switch::after {
-  content:"";
-  position:absolute;
-  width:16px;
-  height:16px;
-  border-radius:50%;
-  background:white;
-  right:3px;
-  top:3px
-}
 .people-tree {
-  padding:18px 0 60px
+  padding:0 0 36px
 }
 .generation {
   display:grid;
@@ -471,22 +439,16 @@ main {
 }
 .nodes {
   display:flex;
+  flex-wrap:wrap;
   gap:26px;
   align-items:center;
-  justify-content:space-around;
-  position:relative;
-  min-height:96px
-}
-.nodes::before {
-  content:"";
-  position:absolute;
-  left:4%;
-  right:4%;
-  top:50%;
-  height:1px;
-  background:var(--color-line-strong)
+  margin:0;
+  padding:0;
+  list-style:none;
+  min-height:72px
 }
 .person {
+  flex-shrink:0;
   width:72px;
   height:72px;
   border-radius:50%;
@@ -499,23 +461,42 @@ main {
   font-weight:600;
   font-size:14px
 }
-.person::after {
-  content:"";
-  position:absolute;
-  left:50%;
-  top:72px;
-  width:1px;
-  height:45px;
-  border-left:1px dashed #bcc8be
-}
-.generation:last-of-type .person::after {
-  display:none
-}
-.tree-note {
-  margin-left:182px;
+.mentoring-section { padding-bottom:60px; }
+.mentoring-legend {
   color:var(--color-muted);
   font-size:13px
 }
+.mentoring-groups { border-top:1px solid var(--color-line); }
+.mentoring-group {
+  display:grid;
+  grid-template-columns:160px minmax(0,1fr);
+  gap:22px;
+  padding:28px 0;
+  border-bottom:1px solid var(--color-line);
+  align-items:center
+}
+.mentoring-subject p { margin:0 0 5px; font-size:13px; color:var(--color-muted); }
+.mentoring-subject h3 { margin:0; font-size:24px; color:var(--color-green); }
+.mentoring-connection {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);
+  align-items:center;
+  gap:18px
+}
+.mentoring-role { margin:0 0 12px; color:var(--color-green); font-size:13px; font-weight:600; }
+.mentoring-names {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 18px;
+  margin:0;
+  padding:0;
+  list-style:none
+}
+.mentoring-names li { text-align:center; }
+.mentoring-names small { display:block; margin-top:5px; font-size:12px; color:var(--color-muted); }
+.mentoring-link { display:flex; align-items:center; color:var(--color-green); padding-top:18px; }
+.mentoring-link::before { content:""; flex:1; border-top:1px dashed var(--color-green-secondary); }
+.mentoring-link span { font-size:23px; line-height:1; }
 .archive-layout {
   display:grid;
   grid-template-columns:250px 1fr;
@@ -973,9 +954,11 @@ main {
   .archive-row>:last-child {
     grid-column:2
   }
-  .generation {
+  .generation,.mentoring-group {
     grid-template-columns:110px 1fr
   }
+  .mentoring-connection { grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr); gap:12px; }
+  .mentoring-names { gap:12px; }
   .nodes {
     gap:10px
   }
@@ -1014,17 +997,15 @@ main {
   .archive-row>:last-child {
     grid-column:auto
   }
-  .generation {
+  .generation,.mentoring-group {
     grid-template-columns:1fr
   }
-  .tree-note {
-    margin-left:0
-  }
+  .mentoring-connection { grid-template-columns:1fr; gap:14px; }
+  .mentoring-link { width:24px; height:38px; margin-left:17px; padding:0; flex-direction:column; }
+  .mentoring-link::before { border-top:0; border-left:1px dashed var(--color-green-secondary); }
+  .mentoring-link span { transform:rotate(90deg); }
   .nodes {
     flex-wrap:wrap
-  }
-  .nodes::before,.person::after {
-    display:none
   }
   .footer-inner {
     flex-direction:column;
