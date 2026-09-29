@@ -11,7 +11,7 @@ import {
   TextAreaField,
   type Errors,
 } from './EditorFields'
-import { mathematicsFields, mathematicsTypes } from './editorOptions'
+import { mathematicsFields, mathematicsTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
 

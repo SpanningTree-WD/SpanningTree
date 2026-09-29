@@ -20,7 +20,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="header-actions">
-          <button className="search-icon" type="button" aria-label="Search" disabled />
+          <NavLink className="search-icon" to="/search" aria-label="자료 검색" title="자료 검색" />
         </div>
       </div>
     </header>

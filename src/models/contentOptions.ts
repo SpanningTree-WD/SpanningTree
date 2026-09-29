@@ -1,4 +1,4 @@
-import type { Choice } from './EditorFields'
+export type Choice = readonly [value: string, label: string]
 
 export const activityTypes: readonly Choice[] = [
   ['Internal Lecture', '내부 강연'],

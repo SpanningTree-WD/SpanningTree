@@ -9,7 +9,7 @@ import {
   TextAreaField,
   type Errors,
 } from './EditorFields'
-import { activityTypes } from './editorOptions'
+import { activityTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
 

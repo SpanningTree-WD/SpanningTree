@@ -1,10 +1,12 @@
 import { ContentImage } from '../../components/content/ContentImage'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ArchiveLayout, PageHeading } from '../../components/archive/ArchiveComponents'
 import { ContentState } from '../../components/ui/ContentState'
 import type { Activity } from '../../models/activity'
 import { activityRepository } from '../../repositories/publicRepositories'
-import { useRepository } from '../shared/useRepository'
+import { activityTypes } from '../../models/contentOptions'
+import { archiveFilter } from '../shared/archiveFilters'
+import { useArchiveResults } from '../shared/useArchiveResults'
 export function ActivityArchiveRow({ item }: { item: Activity }) {
   return (
     <article className="archive-row">
@@ -25,34 +27,11 @@ export function ActivityArchiveRow({ item }: { item: Activity }) {
   )
 }
 export function ActivitiesPage() {
-  const [params, setParams] = useSearchParams()
-  const year = params.get('year') || undefined
-  const type = params.get('type') || undefined
-  const { data, error } = useRepository(
-    () => activityRepository.listPublished({ year: year ? Number(year) : undefined, type }),
-    [year, type]
-  )
-  const change = (key: string, value?: string) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    setParams(next)
-  }
+  const { data, error, year, type, search, sort, change, resetFilters } =
+    useArchiveResults(activityRepository)
   const filters = [
-    {
-      title: 'Year',
-      parameter: 'year',
-      selected: year,
-      options: ['All', '2026', '2025', '2024'].map((label) => ({ label })),
-    },
-    {
-      title: 'Type',
-      parameter: 'type',
-      selected: type,
-      options: ['All', 'Forum', 'Mini Lecture', 'Competition', 'Exchange', 'Workshop'].map(
-        (label) => ({ label })
-      ),
-    },
+    archiveFilter('Year', 'year', year, [], data?.facets.years ?? []),
+    archiveFilter('Type', 'type', type, activityTypes, data?.facets.types ?? []),
   ]
   return (
     <div className="page-container">
@@ -64,7 +43,16 @@ export function ActivitiesPage() {
       ) : !data ? (
         <ContentState title="Loading archive">활동 기록을 불러오는 중입니다.</ContentState>
       ) : (
-        <ArchiveLayout filters={filters} count={data.total} onFilter={change}>
+        <ArchiveLayout
+          filters={filters}
+          count={data.total}
+          onFilter={change}
+          onResetFilters={resetFilters}
+          search={search}
+          sort={sort}
+          onSearch={(value) => change('q', value)}
+          onSort={(value) => change('sort', value)}
+        >
           {data.items.length ? (
             data.items.map((item) => <ActivityArchiveRow item={item} key={item.id} />)
           ) : (

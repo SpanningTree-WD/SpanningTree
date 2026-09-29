@@ -1,4 +1,4 @@
-import type { Attachment, ContentStatus, MediaReference } from './common'
+import type { ArchiveQuery, Attachment, ContentStatus, MediaReference } from './common'
 
 export interface Activity {
   id: string; slug: string; title: string; summary: string; description: string
@@ -7,4 +7,4 @@ export interface Activity {
   featured: boolean; status: ContentStatus; createdAt: string; updatedAt: string
   attachments?: Attachment[]
 }
-export interface ActivityListQuery { year?: number; type?: string; sort?: 'latest'; limit?: number; featured?: boolean }
+export type ActivityListQuery = ArchiveQuery

@@ -1,6 +1,6 @@
 import type { Activity, ActivityListQuery } from '../models/activity'
 import type { Mathematics, MathematicsListQuery } from '../models/mathematics'
-import type { Page } from '../models/common'
+import type { ArchivePage as Page } from '../models/common'
 import type { Publication, PublicationListQuery } from '../models/publication'
 
 export interface AdminRepository<T> {

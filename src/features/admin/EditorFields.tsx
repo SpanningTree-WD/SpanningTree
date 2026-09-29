@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import type { Choice } from '../../models/contentOptions'
 
 export type Errors = Record<string, string>
 type FieldProps = {
@@ -10,7 +11,6 @@ type FieldProps = {
   onChange: (value: string) => void
   required?: boolean
 }
-export type Choice = readonly [value: string, label: string]
 
 export function Field({
   label,

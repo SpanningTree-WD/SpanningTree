@@ -1,10 +1,12 @@
 import { ContentImage } from '../../components/content/ContentImage'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ArchiveLayout, PageHeading } from '../../components/archive/ArchiveComponents'
 import { ContentState } from '../../components/ui/ContentState'
 import type { Mathematics } from '../../models/mathematics'
 import { mathematicsRepository } from '../../repositories/publicRepositories'
-import { useRepository } from '../shared/useRepository'
+import { mathematicsFields, mathematicsTypes } from '../../models/contentOptions'
+import { archiveFilter } from '../shared/archiveFilters'
+import { useArchiveResults } from '../shared/useArchiveResults'
 export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
   return (
     <article className="archive-row math-row">
@@ -27,36 +29,12 @@ export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
   )
 }
 export function MathematicsPage() {
-  const [params, setParams] = useSearchParams()
-  const field = params.get('field') || undefined,
-    type = params.get('type') || undefined,
-    year = params.get('year') || undefined
-  const { data, error } = useRepository(
-    () =>
-      mathematicsRepository.listPublished({ field, type, year: year ? Number(year) : undefined }),
-    [field, type, year]
-  )
-  const change = (key: string, value?: string) => {
-    const next = new URLSearchParams(params)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    setParams(next)
-  }
-  const option = (labels: string[]) => labels.map((label) => ({ label }))
+  const { data, error, field, type, year, search, sort, change, resetFilters } =
+    useArchiveResults(mathematicsRepository)
   const filters = [
-    {
-      title: 'Category',
-      parameter: 'field',
-      selected: field,
-      options: option(['All', 'Algebra', 'Topology', 'Combinatorics', 'Number Theory']),
-    },
-    {
-      title: 'Type',
-      parameter: 'type',
-      selected: type,
-      options: option(['All', 'Lecture Note', 'Article', 'Problem Set']),
-    },
-    { title: 'Year', parameter: 'year', selected: year, options: option(['All', '2026', '2025']) },
+    archiveFilter('Category', 'field', field, mathematicsFields, data?.facets.fields ?? []),
+    archiveFilter('Type', 'type', type, mathematicsTypes, data?.facets.types ?? []),
+    archiveFilter('Year', 'year', year, [], data?.facets.years ?? []),
   ]
   return (
     <div className="page-container">
@@ -68,7 +46,16 @@ export function MathematicsPage() {
       ) : !data ? (
         <ContentState title="Loading archive">수학 기록을 불러오는 중입니다.</ContentState>
       ) : (
-        <ArchiveLayout filters={filters} count={data.total} onFilter={change}>
+        <ArchiveLayout
+          filters={filters}
+          count={data.total}
+          onFilter={change}
+          onResetFilters={resetFilters}
+          search={search}
+          sort={sort}
+          onSearch={(value) => change('q', value)}
+          onSort={(value) => change('sort', value)}
+        >
           {data.items.length ? (
             data.items.map((item) => <MathematicsArchiveRow item={item} key={item.id} />)
           ) : (

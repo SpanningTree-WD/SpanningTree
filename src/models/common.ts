@@ -15,5 +15,25 @@ export interface Attachment {
   url?: string
 }
 
-export interface Page<T> { items: T[]; total: number }
-export type SortOrder = 'latest'
+export interface Page<T> {
+  items: T[]
+  total: number
+}
+export interface ArchiveFacets {
+  years: string[]
+  types: string[]
+  fields: string[]
+}
+export interface ArchivePage<T> extends Page<T> {
+  facets: ArchiveFacets
+}
+export type SortOrder = 'latest' | 'oldest' | 'title'
+export interface ArchiveQuery {
+  search?: string
+  sort?: SortOrder
+  year?: number
+  type?: string
+  field?: string
+  featured?: boolean
+  limit?: number
+}

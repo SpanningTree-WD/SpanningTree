@@ -10,7 +10,7 @@ import {
   TextAreaField,
   type Errors,
 } from './EditorFields'
-import { publicationTypes } from './editorOptions'
+import { publicationTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
 

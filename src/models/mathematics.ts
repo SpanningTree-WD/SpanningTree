@@ -1,4 +1,4 @@
-import type { Attachment, ContentStatus, MediaReference } from './common'
+import type { ArchiveQuery, Attachment, ContentStatus, MediaReference } from './common'
 
 export interface Mathematics {
   id: string; slug: string; title: string; summary: string; content: string
@@ -7,4 +7,4 @@ export interface Mathematics {
   relatedPublications: string[]; relatedMathematics: string[]; status: ContentStatus
   createdAt: string; updatedAt: string; publishedAt?: string
 }
-export interface MathematicsListQuery { field?: string; type?: string; year?: number; sort?: 'latest'; limit?: number }
+export type MathematicsListQuery = ArchiveQuery

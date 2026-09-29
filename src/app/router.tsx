@@ -17,6 +17,7 @@ import { AdminListPage } from '../features/admin/AdminListPage'
 import { ActivityEditorPage } from '../features/admin/ActivityEditorPage'
 import { MathematicsEditorPage } from '../features/admin/MathematicsEditorPage'
 import { PublicationEditorPage } from '../features/admin/PublicationEditorPage'
+import { SearchPage } from '../features/search/SearchPage'
 
 export const router = createBrowserRouter([{ path:'/admin', element:<AdminLayout/>, children:[
   {index:true,element:<AdminDashboard/>},
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([{ path:'/admin', element:<AdminLayout
 ]},{ element: <PublicLayout />, children: [
   { path: '/', element: <HomePage /> }, { path: '/about', element: <AboutPage /> },
   { path: '/people', element: <PeoplePage /> }, { path: '/activities', element: <ActivitiesPage /> },
+  { path: '/search', element: <SearchPage /> },
   { path: '/activities/:slug', element: <ActivityDetailPage /> },
   { path: '/publications', element: <PublicationsPage /> }, { path: '/publications/:slug', element: <PublicationDetailPage /> },
   { path: '/mathematics', element: <MathematicsPage /> }, { path: '/mathematics/:slug', element: <MathematicsDetailPage /> },
