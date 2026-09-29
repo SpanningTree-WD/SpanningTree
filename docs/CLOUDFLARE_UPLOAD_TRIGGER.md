@@ -2,11 +2,10 @@
 
 ## 현재 상태
 
-즉시 실행용 Worker와 관리자 화면 코드는 구현되어 있습니다. **Cloudflare 무료 계정
-가입·로그인과 GitHub 실행 전용 secret 등록 전에는 연결 완료 상태가 아닙니다.**
-`VITE_UPLOAD_TRIGGER_URL`을 설정하지 않으면 기존 5분 예약 처리만 사용합니다.
-계정 소유자가 새 비밀번호 입력·약관 동의·이메일 인증을 완료해야 실제 배포를 진행할
-수 있습니다. 사이트에 결제 수단이나 Blaze 설정을 추가할 필요는 없습니다.
+2026-09-29에 동아리 공용 계정 `spanningtree.official@gmail.com`으로 Worker를 배포했습니다.
+공개 주소는 `https://spanningtree-upload-trigger.spanning-tree-website.workers.dev/trigger`입니다.
+GitHub 실행 전용 secret 등록과 사이트 연결의 최종 확인이 남아 있습니다.
+사이트에 결제 수단이나 Blaze 설정을 추가할 필요는 없습니다.
 
 ## 동작
 
@@ -31,9 +30,11 @@
 1. [Cloudflare](https://dash.cloudflare.com/sign-up)에서 동아리 공용 이메일로 가입하고
    이메일을 인증합니다. Workers Free를 사용하며 유료 플랜에 가입하지 않습니다.
 2. 공식 Wrangler로 해당 계정에 연결합니다:
-   `npx --yes wrangler@4.143.0 login`
+   `npx --yes wrangler@4.143.0 login --scopes account:read user:read workers_scripts:write`
    브라우저에서 계정과 요청 권한을 확인하고 승인합니다. 기존 로그인은
-   `npx --yes wrangler@4.143.0 whoami`로 확인합니다.
+   `npx --yes wrangler@4.143.0 whoami`로 확인합니다. Wrangler가 다른 기본 권한이 없다고
+   경고해도 이 Worker 배포에는 위 세 범위면 충분합니다. `wrangler.jsonc`의 계정 ID는
+   동아리 공용 계정으로 고정되어 있습니다.
 3. `npm run worker:deploy`로 `spanningtree-upload-trigger`를 배포합니다.
    첫 계정에서는 사용할 `workers.dev` 하위 도메인을 설정해야 할 수 있습니다.
 4. GitHub에서 실행 전용 fine-grained PAT를 발급합니다. Resource owner는 이 저장소의
@@ -46,7 +47,8 @@
    토큰을 채팅, `.env`의 VITE 변수, GitHub 저장소, 문서, 일반 Text 변수에 넣지 않습니다.
    Worker는 토큰으로 Actions를 실행할 수 있으므로 이 secret과 Worker 편집 권한은
    신뢰할 수 있는 운영자에게만 부여합니다.
-6. GitHub 저장소의 **Settings → Secrets and variables → Actions → Variables**에
+6. 운영 workflow에는 위의 공개 Worker 주소가 기본값으로 들어 있습니다. 다른 주소로
+   옮길 때만 GitHub 저장소의 **Settings → Secrets and variables → Actions → Variables**에
    `VITE_UPLOAD_TRIGGER_URL`을 등록합니다. 값은 배포 결과의 실제 주소 끝에 `/trigger`를
    붙인 `https://spanningtree-upload-trigger.<계정>.workers.dev/trigger`입니다.
 7. Firebase Hosting live를 다시 실행해 주소를 프런트엔드 빌드에 반영합니다.
@@ -61,7 +63,9 @@
   아니며 계정의 사용량을 확인합니다. 이 코드는 유료 플랜 가입이나 업그레이드를 수행하지 않습니다.
 - GitHub PAT 만료 전 갱신하고 Cloudflare Secret을 교체합니다. 만료돼도 예약 작업은
   기존 Actions 자체 토큰으로 동작하므로 파일이 사라지지 않습니다.
-- 즉시 실행만 끄려면 `VITE_UPLOAD_TRIGGER_URL`을 비우고 Hosting을 다시 배포합니다.
+- 즉시 실행만 끄려면 GitHub 변수 `VITE_UPLOAD_TRIGGER_URL`을 `disabled`로 설정하고
+  Hosting을 다시 배포합니다. 변수를 삭제하면 workflow의 기본 Worker 주소로 돌아갑니다.
+  로컬 개발에서는 빈 값도 예약 처리만 사용합니다.
 - Worker 수정은 `npm run worker:deploy`로 배포합니다. 웹사이트 GitHub push만으로
   Cloudflare 코드가 자동 배포되는 구조는 아닙니다. Cloudflare 배포 자격 증명을
   GitHub에 추가로 복사하지 않기 위한 선택입니다.

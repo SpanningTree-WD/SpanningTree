@@ -28,9 +28,10 @@ it('sends only the signed-in user and queued upload ID with their Firebase token
   expect(JSON.parse(options.body)).toEqual({ uid: 'editor', uploadId: 'request-id' })
   expect(options.credentials).toBe('omit')
 })
-it('uses the scheduled fallback when the Worker has not been configured', async () => {
-  vi.stubEnv('VITE_UPLOAD_TRIGGER_URL', '')
-  const { triggerUpload } = await import('./triggerUpload')
+it.each(['', 'disabled'])('uses the scheduled fallback for configuration %j', async (endpoint) => {
+  vi.stubEnv('VITE_UPLOAD_TRIGGER_URL', endpoint)
+  const { triggerUpload, hasUploadTrigger } = await import('./triggerUpload')
+  expect(hasUploadTrigger()).toBe(false)
   expect(await triggerUpload('request-id')).toBe('scheduled')
   expect(network).not.toHaveBeenCalled()
 })

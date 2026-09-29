@@ -1,6 +1,7 @@
 import { getFirebaseServices } from '../firebase/firebase'
 
-const endpoint = import.meta.env.VITE_UPLOAD_TRIGGER_URL?.trim() ?? ''
+const configuredEndpoint = import.meta.env.VITE_UPLOAD_TRIGGER_URL?.trim() ?? ''
+const endpoint = configuredEndpoint === 'disabled' ? '' : configuredEndpoint
 export const hasUploadTrigger = () => Boolean(endpoint)
 export type TriggerResult = 'requested' | 'already-processing' | 'scheduled'
 

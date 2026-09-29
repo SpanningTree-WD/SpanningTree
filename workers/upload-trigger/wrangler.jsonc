@@ -1,5 +1,6 @@
 {
   "name": "spanningtree-upload-trigger",
+  "account_id": "84dc4893eeb790117fb92bea2e4eb2ad",
   "main": "index.ts",
   "compatibility_date": "2026-09-29",
   "workers_dev": true,
