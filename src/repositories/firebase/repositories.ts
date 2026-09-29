@@ -8,7 +8,7 @@ type PublicRecord = { id: string; slug: string; status: 'draft' | 'published' }
 type ListQuery = ActivityListQuery | MathematicsListQuery | PublicationListQuery
 const disabledWrite = async (): Promise<never> => { throw new Error('Stage 5 Firebase repositories are public read-only repositories.') }
 
-function normalize(value: unknown): unknown {
+export function normalize(value: unknown): unknown {
   if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') return value.toDate().toISOString()
   if (Array.isArray(value)) return value.map(normalize)
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalize(item)]))

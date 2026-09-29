@@ -1,10 +1,90 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isPublished() { return resource.data.status == 'published'; }
-    match /activities/{recordId} { allow read: if isPublished(); allow write: if false; }
-    match /mathematics/{recordId} { allow read: if isPublished(); allow write: if false; }
-    match /publications/{recordId} { allow read: if isPublished(); allow write: if false; }
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
+    function contentCollection(name) {
+      return name in ['activities', 'mathematics', 'publications'];
+    }
+    function text(value, maximum) { return value is string && value.size() <= maximum; }
+    function media(value) {
+      return value is map && value.keys().hasAll(['alt', 'variant'])
+        && value.keys().hasOnly(['alt', 'variant', 'caption'])
+        && text(value.alt, 1000) && text(value.variant, 100)
+        && (!('caption' in value) || text(value.caption, 5000));
+    }
+    function attachment(value) {
+      return value is map && value.keys().hasAll(['label', 'fileName', 'mediaType', 'sizeLabel'])
+        && value.keys().hasOnly(['label', 'fileName', 'mediaType', 'sizeLabel'])
+        && text(value.label, 1000) && text(value.fileName, 1000)
+        && value.mediaType == 'application/pdf' && text(value.sizeLabel, 1000);
+    }
+    function common(data, id) {
+      return data.keys().hasAll(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt'])
+        && data.id == id && text(data.title, 500) && data.title.matches('.*[^\\s].*')
+        && text(data.slug, 160) && data.slug.matches('[a-z0-9]+(-[a-z0-9]+)*')
+        && text(data.summary, 20000) && text(data.type, 100) && data.type.size() > 0
+        && media(data.coverImage) && data.status in ['draft', 'published']
+        && data.updatedAt == request.time;
+    }
+    function activity(data) {
+      return data.keys().hasAll(['description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured'])
+        && text(data.description, 800000) && data.date is string && data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && data.gallery is list && data.gallery.size() <= 100 && data.tags is list
+        && data.relatedMathematics is list && data.relatedPublications is list && data.featured is bool;
+    }
+    function mathematics(data) {
+      return data.keys().hasAll(['content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics', 'publishedAt'])
+        && text(data.content, 800000) && data.authors is list && text(data.field, 100) && data.field.size() > 0
+        && data.year is int && data.year >= 1900 && data.year <= 9999
+        && data.tags is list && data.attachments is list && data.attachments.size() <= 100
+        && data.relatedActivities is list && data.relatedPublications is list && data.relatedMathematics is list
+        && (!('publishedAt' in data) || data.publishedAt is timestamp || data.publishedAt is string);
+    }
+    function publication(data) {
+      return data.keys().hasAll(['description', 'year', 'authors', 'editors', 'relatedActivities', 'relatedMathematics'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'year', 'authors', 'editors', 'relatedActivities', 'relatedMathematics', 'pdf'])
+        && text(data.description, 800000) && data.year is int && data.year >= 1900 && data.year <= 9999
+        && data.authors is list && data.editors is list && data.relatedActivities is list && data.relatedMathematics is list
+        && (!('pdf' in data) || attachment(data.pdf));
+    }
+    function validContent(name, id) {
+      let data = request.resource.data;
+      let claim = getAfter(/databases/$(database)/documents/contentSlugs/$(name + ':' + data.slug)).data;
+      return common(data, id) && claim.recordId == id && claim.collection == name && claim.slug == data.slug
+        && ((name == 'activities' && activity(data)) || (name == 'mathematics' && mathematics(data)) || (name == 'publications' && publication(data)));
+    }
+
+    // Membership is provisioned with the Console/Admin SDK, never by browser clients.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+    match /{name}/{id} {
+      allow read: if contentCollection(name) && (resource.data.status == 'published' || isAdmin());
+      allow create: if contentCollection(name) && isAdmin() && validContent(name, id)
+        && request.resource.data.status == 'draft' && request.resource.data.createdAt == request.time;
+      allow update: if contentCollection(name) && isAdmin() && validContent(name, id)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (request.resource.data.slug == resource.data.slug
+          || !existsAfter(/databases/$(database)/documents/contentSlugs/$(name + ':' + resource.data.slug)));
+      allow delete: if false;
+    }
+    match /contentSlugs/{key} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['collection', 'slug', 'recordId'])
+        && contentCollection(request.resource.data.collection)
+        && key == request.resource.data.collection + ':' + request.resource.data.slug
+        && (!exists(/databases/$(database)/documents/contentSlugs/$(key)) || resource.data.recordId == request.resource.data.recordId)
+        && getAfter(/databases/$(database)/documents/$(request.resource.data.collection)/$(request.resource.data.recordId)).data.slug == request.resource.data.slug;
+      allow delete: if isAdmin()
+        && getAfter(/databases/$(database)/documents/$(resource.data.collection)/$(resource.data.recordId)).data.slug != resource.data.slug;
+    }
     match /{document=**} { allow read, write: if false; }
   }
 }

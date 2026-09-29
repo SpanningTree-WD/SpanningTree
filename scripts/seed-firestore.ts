@@ -17,7 +17,10 @@ const groups = [
   ['mathematics', mathematicsFixtures],
   ['publications', publicationFixtures],
 ] as const
-const documents = groups.flatMap(([collection, records]) => records.map(record => ({ ref: db.collection(collection).doc(record.id), record })))
+const documents = groups.flatMap(([collection, records]) => records.flatMap(record => [
+  { ref: db.collection(collection).doc(record.id), record },
+  { ref: db.collection('contentSlugs').doc(`${collection}:${record.slug}`), record: { collection, slug: record.slug, recordId: record.id } },
+]))
 const existing = await db.getAll(...documents.map(document => document.ref))
 const collisions = existing.filter(snapshot => snapshot.exists).map(snapshot => snapshot.ref.path)
 if (collisions.length) throw new Error(`Import cancelled without writes; documents already exist: ${collisions.join(', ')}`)

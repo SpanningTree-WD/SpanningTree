@@ -1,6 +1,24 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.enabled == true;
+    }
+    function validCollection(name) { return name in ['activities', 'mathematics', 'publications']; }
+    function validFile() {
+      return request.resource.size > 0 && (
+        (request.resource.contentType.matches('image/(jpeg|png|webp)') && request.resource.size <= 10 * 1024 * 1024)
+        || (request.resource.contentType == 'application/pdf' && request.resource.size <= 25 * 1024 * 1024));
+    }
+    // Upload UI and media references are a separate stage. All other paths stay closed.
+    match /content/{collection}/{recordId}/{fileName} {
+      allow read: if validCollection(collection) && (isAdmin()
+        || firestore.get(/databases/(default)/documents/$(collection)/$(recordId)).data.status == 'published');
+      allow create, update: if validCollection(collection) && isAdmin() && validFile()
+        && firestore.exists(/databases/(default)/documents/$(collection)/$(recordId));
+      allow delete: if validCollection(collection) && isAdmin();
+    }
     match /{allPaths=**} { allow read, write: if false; }
   }
 }

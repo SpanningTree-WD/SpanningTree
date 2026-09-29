@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
-import { getFirestore, type Firestore } from 'firebase/firestore'
-import { getStorage, type FirebaseStorage } from 'firebase/storage'
+import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage'
 
 const env = import.meta.env
 const firebaseConfig: FirebaseOptions = {
@@ -17,13 +18,26 @@ function requireFirebaseConfig() {
   if (missing.length) throw new Error(`Firebase mode requires configuration: ${missing.join(', ')}`)
 }
 
-let services: { app: FirebaseApp; firestore: Firestore; storage: FirebaseStorage } | undefined
+export function isFirebaseConfigured() {
+  return Object.values(firebaseConfig).every(Boolean)
+}
+
+let services: { app: FirebaseApp; auth: Auth; firestore: Firestore; storage: FirebaseStorage } | undefined
 
 export function getFirebaseServices() {
   if (!services) {
     requireFirebaseConfig()
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
-    services = { app, firestore: getFirestore(app), storage: getStorage(app) }
+    const auth = getAuth(app)
+    const firestore = getFirestore(app)
+    const storage = getStorage(app)
+    // Emulators are opt-in and only available in a local development build.
+    if (env.DEV && env.VITE_USE_FIREBASE_EMULATORS === 'true') {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099')
+      connectFirestoreEmulator(firestore, '127.0.0.1', 8080)
+      connectStorageEmulator(storage, '127.0.0.1', 9199)
+    }
+    services = { app, auth, firestore, storage }
   }
   return services
 }

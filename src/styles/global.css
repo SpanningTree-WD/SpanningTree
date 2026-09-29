@@ -999,6 +999,10 @@ main {
 .admin-gate { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--color-background); }
 .admin-gate-panel { max-width: 520px; padding: 42px; border: 1px solid var(--color-line-strong); background: var(--color-paper); }
 .admin-gate-panel h1 { margin: 5px 0 14px; font-size: 44px; }
+.admin-gate-panel small { overflow-wrap: anywhere; }
+.admin-signout { margin-left: 12px; padding: 8px 13px; border: 1px solid var(--color-green); background: transparent; color: var(--color-green); cursor: pointer; }
+.admin-editor-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.admin-shell button:disabled, .admin-gate button:disabled { opacity: .6; cursor: wait; }
 .admin-gate-panel label { display: grid; gap: 7px; margin: 24px 0 8px; font-weight: 700; }
 .admin-gate-panel input { width: 100%; padding: 10px; border: 1px solid var(--color-line-strong); background: white; }
 .back-link { display: inline-block; margin-bottom: 16px; color: var(--color-green); font-size: 13px; }

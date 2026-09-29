@@ -1,11 +1,90 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { activityRepository, mathematicsRepository, publicationRepository } from '../../repositories/local/repositories'
+import {
+  activityRepository,
+  mathematicsRepository,
+  publicationRepository,
+} from '../../repositories/adminRepositories'
+import { adminErrorMessage } from './adminErrors'
 
 type Counts = { published: number; draft: number }
-const count = <T extends { status: string }>(records: T[]): Counts => ({ published: records.filter(r => r.status === 'published').length, draft: records.filter(r => r.status === 'draft').length })
+const count = <T extends { status: string }>(records: T[]): Counts => ({
+  published: records.filter((r) => r.status === 'published').length,
+  draft: records.filter((r) => r.status === 'draft').length,
+})
+
 export function AdminDashboard() {
-  const [counts, setCounts] = useState<Record<string, Counts>>({})
-  useEffect(() => { Promise.all([activityRepository.listAll(), mathematicsRepository.listAll(), publicationRepository.listAll()]).then(([a,m,p]) => setCounts({Activities:count(a),Mathematics:count(m),Publications:count(p)})) }, [])
-  return <div className="admin-page"><header className="admin-page-head"><p className="eyebrow">Management interface</p><h1>Dashboard</h1><p>Create, review, and publish the club’s archive records locally.</p></header><div className="admin-dashboard">{['Activities','Mathematics','Publications'].map(name => { const path=name.toLowerCase(); const value=counts[name]??{published:0,draft:0}; return <section key={name}><h2>{name}</h2><dl><div><dt>Published</dt><dd>{value.published}</dd></div><div><dt>Draft</dt><dd>{value.draft}</dd></div></dl><div className="admin-card-actions"><Link to={`/admin/${path}`}>Manage</Link><Link className="admin-primary" to={`/admin/${path}/new`}>New</Link></div></section>})}</div><div className="admin-notice"><strong>Prototype only.</strong> Changes are stored in this browser’s local storage. Firebase and real authentication are not connected.</div></div>
+  const [counts, setCounts] = useState<Record<string, Counts>>()
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    let active = true
+    setError('')
+    Promise.all([
+      activityRepository.listAll(),
+      mathematicsRepository.listAll(),
+      publicationRepository.listAll(),
+    ])
+      .then(([a, m, p]) => {
+        if (active)
+          setCounts({ Activities: count(a), Mathematics: count(m), Publications: count(p) })
+      })
+      .catch((failure) => {
+        if (active) setError(adminErrorMessage(failure))
+      })
+    return () => {
+      active = false
+    }
+  }, [retry])
+  return (
+    <div className="admin-page">
+      <header className="admin-page-head">
+        <p className="eyebrow">Management interface</p>
+        <h1>Dashboard</h1>
+        <p>동아리 기록을 작성하고 공개 상태를 관리합니다.</p>
+      </header>
+      {error ? (
+        <div role="alert">
+          <p>{error}</p>
+          <button onClick={() => setRetry((value) => value + 1)}>다시 시도</button>
+        </div>
+      ) : !counts ? (
+        <p role="status">자료를 불러오고 있습니다.</p>
+      ) : (
+        <div className="admin-dashboard">
+          {['Activities', 'Mathematics', 'Publications'].map((name) => {
+            const path = name.toLowerCase(),
+              value = counts[name]
+            return (
+              <section key={name}>
+                <h2>{name}</h2>
+                <dl>
+                  <div>
+                    <dt>Published</dt>
+                    <dd>{value.published}</dd>
+                  </div>
+                  <div>
+                    <dt>Draft</dt>
+                    <dd>{value.draft}</dd>
+                  </div>
+                </dl>
+                <div className="admin-card-actions">
+                  <Link to={'/admin/' + path}>Manage</Link>
+                  <Link className="admin-primary" to={'/admin/' + path + '/new'}>
+                    New
+                  </Link>
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      )}
+      {(import.meta.env.VITE_PUBLIC_DATA_SOURCE || 'local') === 'local' && (
+        <p className="admin-notice">
+          현재 공개 사이트는 샘플 자료를 표시하고 있습니다. 여기서 저장한 자료는 서버에 저장되며,
+          공개 사이트를 실제 자료 모드로 전환한 뒤 표시됩니다.
+        </p>
+      )}
+    </div>
+  )
 }

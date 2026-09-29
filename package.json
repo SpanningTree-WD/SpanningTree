@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "seed:firestore": "tsx scripts/seed-firestore.ts"
+    "seed:firestore": "tsx scripts/seed-firestore.ts",
+    "migrate:slugs": "tsx scripts/migrate-content-slugs.ts",
+    "test:rules": "npx --yes firebase-tools@14.14.0 emulators:exec --project demo-spanning-tree --only auth,firestore,storage \"vitest run --config vitest.rules.config.ts\""
   },
   "engines": {
     "node": ">=20.19.0"
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.34.0",
+    "@firebase/rules-unit-testing": "5.0.0",
     "@testing-library/jest-dom": "6.8.0",
     "@testing-library/react": "16.3.0",
     "@types/node": "24.3.0",
@@ -37,8 +40,8 @@
     "firebase-admin": "13.4.0",
     "globals": "16.3.0",
     "jsdom": "26.1.0",
-    "typescript": "5.9.2",
     "tsx": "4.20.5",
+    "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",
     "vite": "7.1.3",
     "vitest": "3.2.4"

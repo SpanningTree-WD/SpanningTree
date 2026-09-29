@@ -1,5 +1,10 @@
 # Spanning Tree Website — Production Architecture Proposal
 
+> Implementation status: Firebase Google authentication, UID-based administrator
+> membership, remote admin repositories, and authorization rules now replace the
+> prototype gate described below. This document retains the original staged plan;
+> use `docs/FIREBASE.md` and `docs/ADMIN.md` for current setup and operations.
+
 ## 1. Purpose and scope
 
 This document proposes how to turn `reference/spanning_tree_sample.html` into a

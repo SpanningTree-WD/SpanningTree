@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { expect, it } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { PublicLayout } from '../components/layout/PublicLayout'
 import { ActivitiesPage } from '../features/activities/ActivitiesPage'

@@ -1,92 +1,142 @@
-# Stage 5 Firebase operations
+# Firebase operations
 
-## Project and safe defaults
+The canonical production project is `spanningtree-math` on regular Firebase
+Hosting. Public fixtures remain the default until reviewed content and access
+configuration are ready. Admin editing always uses Firestore.
 
-The canonical project is `spanningtree-math`, using regular Firebase Hosting.
-The build deliberately defaults to reviewed local fixtures, so an unseeded
-Firestore database cannot make the first website empty. Analytics and Firebase
-Authentication are not initialized in Stage 5.
+## First-time setup
 
-## Local setup and environment
+1. In Firebase Console, enable Authentication → Sign-in method → **Google**.
+   Set the club's support email and register the Hosting/custom domains in
+   Authentication → Settings → Authorized domains. Add `localhost` for local
+   Google sign-in if needed.
+2. Copy `.env.example` to `.env.local` and fill the six registered Web App
+   `VITE_FIREBASE_*` values. These identify the public web app, not a service account.
+   Keep private keys and deployment credentials outside this repository.
+3. Review/import the initial records, or start with empty collections and use
+   the admin UI. If records were imported before slug reservations existed, run
+   the migration below before enabling remote editing.
+4. Deploy the rules intentionally from an authenticated operator machine:
+   `npx firebase-tools@14.14.0 deploy --only firestore:rules,firestore:indexes,storage --project spanningtree-math`.
+   Enable the default Storage bucket first if needed. Storage rules access
+   Firestore; allow Firebase to provision the required cross-service permission
+   when prompted. If Storage is not yet enabled, deploy only Firestore rules
+   first and keep Storage closed until its rules can be deployed.
+5. Have the intended administrator sign in at `/admin`. Copy their Firebase
+   Authentication UID (shown on the access-denied screen or in the Console).
+   Using **Firestore Console**, create `admins/{UID}` with `enabled: true`
+   (boolean). Do not use an email address as the document ID.
+6. Set `VITE_PUBLIC_DATA_SOURCE=firebase` in the local build environment and the
+   GitHub Actions repository variable of the same name. Build and deploy after
+   verifying the content. Without this switch the public site displays fixtures.
 
-Use Node 20.19 or newer, then run `npm install`, copy `.env.example` to
-`.env.local`, and run `npm run dev` or `npm run build`. Fill `.env.local` with the
-registered Web App values. Firebase configuration is read only by
-`src/services/firebase/firebase.ts`. Set `VITE_PUBLIC_DATA_SOURCE=local` (the
-default) for fixtures or `firebase` only after the import has been reviewed.
+Membership changes are restricted to trusted Console/Admin SDK operators.
+Even approved browser administrators cannot create, enumerate or edit membership
+documents. Revoke a member by setting `enabled: false` or deleting their document.
+A user can read only their own membership document. Grant the minimum club
+operators access to the Firebase project and document annual account handoff.
 
-GitHub Actions reads the six Web App values from GitHub Actions **variables**
-with the matching `VITE_FIREBASE_*` names. Hosting does not inject runtime
-variables; Vite embeds them during the build. Both workflows currently force
-fixture mode. Intentionally change both to `firebase` only after reviewing the
-import and rules.
+## Data and authorization
 
-## Firestore repositories and rules
+- `activities`, `mathematics`, `publications`: public clients may read only
+  published records. Verified approved members may also read drafts and create/
+  update content. New client-created records must be drafts. Deletes are denied.
+- `admins/{uid}`: trusted operator-managed membership.
+- `contentSlugs/{collection}:{slug}`: private URL reservations updated atomically
+  with content. Rules enforce the record/reservation relationship, preventing
+  duplicate slugs even when two editors create records simultaneously.
+- Admin repositories use server reads, transactions and server timestamps.
+  Domain models receive ISO strings. Content update rejects a stale `updatedAt`;
+  ordinary save preserves status, while publish/unpublish are explicit operations.
+- Imported legacy ISO creation timestamps are preserved; new timestamps use
+  Firestore Timestamp. The first Mathematics publication timestamp is retained.
+- No offline admin persistence or fallback writes are enabled. Public repositories
+  still query `status == published`; filtering/sorting is currently in memory.
+  No composite indexes are needed by these queries.
 
-Only `activities`, `mathematics`, and `publications` are used. Firebase adapters
-issue a `status == "published"` query and map SDK timestamps to ISO strings before
-returning application models. Filters, details, and relationships operate only
-on that published result. Rules independently allow reads only for published
-documents, deny every write, and deny every other collection. Queries must carry
-the published constraint because Firestore rules are not result filters.
+Storage accepts only `content/{activities|mathematics|publications}/{recordId}/{fileName}`.
+Approved members can manage files for existing records. Public SDK reads require
+the parent record to be published. Limits: JPEG/PNG/WebP up to 10 MiB; PDF up to
+25 MiB; empty files and other paths/types are denied. The upload UI and media model
+are still placeholders. When connecting downloads later, do not treat token-bearing
+download URLs as private: an issued URL is a bearer link and must not be used to
+promise draft confidentiality merely by changing Firestore status.
 
-No composite indexes are required by the current status-only query; archive
-sorting/filtering occurs inside the repository. Admin components intentionally
-continue using local repositories.
+## Reviewed import and existing-data migration
 
-## Controlled fixture import
+Authenticate Application Default Credentials externally; never put service-account
+JSON in the repository. Review fixture records before running the import. In
+PowerShell:
 
-The import is never run at application startup. Review fixtures and authenticate
-Application Default Credentials externally (never copy credentials into this
-repository), then intentionally run:
-
-```sh
-gcloud auth application-default login
-GOOGLE_CLOUD_PROJECT=spanningtree-math \
-CONFIRM_FIRESTORE_IMPORT=spanningtree-math npm run seed:firestore
+```powershell
+$env:GOOGLE_CLOUD_PROJECT = 'spanningtree-math'
+$env:CONFIRM_FIRESTORE_IMPORT = 'spanningtree-math'
+npm run seed:firestore
 ```
 
-The script preflights every stable document ID and cancels before writing if any
-target exists. It then uses one atomic create-only batch, preserving IDs, slugs,
-statuses, dates, Markdown, media metadata, and relationships. The operator needs
-Firestore IAM permission; browser rules are not weakened for importing.
+The import creates content and slug reservations in one create-only atomic batch.
+It cancels if any target exists. It is never called by the website or deployment.
+Existing localStorage edits are not part of this fixture import.
 
-## Storage
+For records already in Firestore, take a backup and suspend editing, then run:
 
-`FirebaseStorageService` provides upload, metadata/download URL, delete, and
-replace operations for JPEG, PNG, WebP, and PDF. It is not connected to admin and
-is not a raw-photo archive. Storage rules deny all access until managed public
-assets and real Authentication are designed. If Storage is not enabled, enable
-the default bucket in Firebase Console later; Hosting and placeholders still work.
+```powershell
+$env:GOOGLE_CLOUD_PROJECT = 'spanningtree-math'
+$env:CONFIRM_FIRESTORE_SLUG_MIGRATION = 'spanningtree-math'
+npm run migrate:slugs
+```
 
-## Hosting and GitHub deployment
+The migration checks duplicate/invalid slugs and conflicting reservations before
+writing. It creates missing reservations in retryable batches and never rewrites
+content. Rerunning is safe. Complete it before exposing admin creation, or an old
+unreserved slug could be claimed by a new record.
 
-`firebase.json` publishes `dist/`, rewrites client routes to `index.html`, avoids
-caching HTML, and long-caches hashed assets. An authenticated local deployment is:
+## Local verification
+
+Use Node 20.19+ and Java 21+ (on PATH or JAVA_HOME) for the Firebase emulators:
 
 ```sh
+npm ci
+npm run lint
+npm test
 npm run build
-npx firebase-tools deploy --only hosting --project spanningtree-math
+npm run test:rules
 ```
 
-Pull requests receive seven-day preview channels and pushes to `main` deploy live
-through `FirebaseExtended/action-hosting-deploy`. Both install Node 20, install the pinned direct dependency versions, build, and deploy.
+Rules tests start Auth, Firestore and Storage emulators using
+`demo-spanning-tree`; they refuse to run without emulator endpoints. They exercise
+public/draft reads, unauthorized writes, membership escalation/revocation, schema
+checks, all three repository lifecycles, conflicting edits, slug uniqueness and
+Storage authorization. Never point these tests at a real Firebase project.
 
-### One-time GitHub/Firebase authorization
+For manual local work, start the same emulators, use a demo Web App configuration
+(project ID `demo-spanning-tree`, matching demo bucket/auth domain and nonempty
+dummy Web App values), and set both `VITE_PUBLIC_DATA_SOURCE=firebase` and
+`VITE_USE_FIREBASE_EMULATORS=true`. Emulator routing is disabled in production builds.
+Create a demo Auth user and matching enabled membership in the emulator, not in
+production. No real Google credentials are needed for emulator sign-in.
 
-On a trusted machine authenticated to the club project, run
-`npx firebase-tools init hosting:github`, select `spanningtree-math` and this
-repository, and authorize creation of the least-privilege service account. Store
-its JSON in the repository secret named exactly
-`FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH`; keep the checked-in workflows rather
-than regenerating them. Add the six public Web App values as Actions variables.
-Never paste a deployment credential into YAML.
+## GitHub deployment and recovery
 
-## Security, recovery, and limitations
+The Hosting workflows run npm ci, lint, unit tests, emulator rules tests and build. They read Web App values
+from Actions variables, deployment credentials from
+`FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH`, and the public data mode from
+`VITE_PUBLIC_DATA_SOURCE` (default `local`). Values are embedded at build time.
+Rules are deployed separately by an operator; Hosting deploys do not deploy rules.
 
-`/admin` remains an insecure, browser-local prototype. It can create, edit,
-preview, publish, and unpublish local records only. It has no Firebase authority;
-Firestore and Storage writes remain denied. Firebase Authentication is the next
-stage and must precede remote editing. Configure managed scheduled Firestore
-exports (or documented manual exports to a protected project bucket) before
-Firestore becomes live, with recovery access retained by the club account.
+Before launch, verify Google sign-in on the actual domain, one approved and one
+unapproved account, cross-browser create/edit/publish/unpublish, and draft isolation.
+Confirm project authorization and preview/live deployments in GitHub.
+
+Set up scheduled or documented manual Firestore exports before using it as the
+live archive. Back up content, membership and slug reservations together, document
+restore access, and verify restoration. Retain account recovery with the club.
+The original `docs/ARCHITECTURE.md` is a historical plan; this document describes
+the implemented behavior.
+
+## Firebase references
+
+- [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin)
+- [Authentication persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence)
+- [Transactions and getAfter rules](https://firebase.google.com/docs/firestore/manage-data/transactions)
+- [Storage rules and Firestore authorization](https://firebase.google.com/docs/storage/security/rules-conditions)

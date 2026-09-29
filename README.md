@@ -26,6 +26,10 @@ npm run preview
 ```
 
 Public routes use typed repositories and default to reviewed local fixtures.
-Stage 5 prepares secure Firebase repositories and Hosting while `/admin` remains
-a browser-local prototype. See [Firebase operations](docs/FIREBASE.md) for setup,
-deployment, import, rules, and handoff instructions.
+`/admin` uses Google sign-in, an approved-member allowlist, and Firestore storage.
+Admin edits never fall back to browser-local storage. Set `VITE_PUBLIC_DATA_SOURCE=firebase`
+after setup to show published Firestore records on the public site.
+
+See [Firebase operations](docs/FIREBASE.md) for account setup, rules, deployment,
+emulator tests, and data migration, and [Admin guide](docs/ADMIN.md) for editing.
+Image/PDF upload controls remain a separate implementation stage.
