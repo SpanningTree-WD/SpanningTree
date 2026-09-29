@@ -1012,7 +1012,7 @@ main {
 .admin-field { display: grid; align-content: start; gap: 6px; margin-bottom: 22px; font-weight: 650; font-size: 13px; }
 .admin-field > span, .field-label { font-weight: 650; font-size: 13px; }
 .admin-field em { margin-left: 7px; color: var(--color-green); font-size: 9px; font-style: normal; text-transform: uppercase; }
-.admin-field input, .admin-field textarea { width: 100%; padding: 10px 11px; border: 1px solid var(--color-line-strong); border-radius: 0; color: var(--color-text); background: #fff; font: inherit; }
+.admin-field input, .admin-field textarea, .admin-field select { width: 100%; padding: 10px 11px; border: 1px solid var(--color-line-strong); border-radius: 0; color: var(--color-text); background: #fff; font: inherit; }
 .admin-field textarea { resize: vertical; line-height: 1.6; }
 .admin-field [aria-invalid="true"] { border-color: #934b42; }
 .field-error { margin: 0; color: #893f36 !important; font-size: 12px; }

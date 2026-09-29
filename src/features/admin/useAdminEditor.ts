@@ -2,13 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { AdminRepository } from '../../repositories/contracts'
 import { adminErrorMessage } from './adminErrors'
-import { slugPattern, type Errors } from './EditorFields'
+import type { Errors } from './EditorFields'
+import { prepareEditorRecord } from './editorMetadata'
 
 interface EditableRecord {
   id: string
   title: string
   slug: string
   type: string
+  summary: string
+  content?: string
+  description?: string
+  coverImage: { alt: string; variant: string; caption?: string }
   status: 'draft' | 'published'
   createdAt: string
   updatedAt: string
@@ -32,6 +37,7 @@ export function useAdminEditor<T extends EditableRecord>(
   const [loadError, setLoadError] = useState('')
   const [retry, setRetry] = useState(0)
   const inFlight = useRef(false)
+  const previous = useRef(empty)
 
   useEffect(() => {
     let active = true
@@ -41,7 +47,9 @@ export function useAdminEditor<T extends EditableRecord>(
     setNotice('')
     setDirty(false)
     if (!id) {
-      setForm(empty)
+      const initial = { ...empty, slug: `${path.split('/').pop()}-${crypto.randomUUID()}` }
+      setForm(initial)
+      previous.current = initial
       setLoadedId('new')
       return
     }
@@ -54,6 +62,7 @@ export function useAdminEditor<T extends EditableRecord>(
           return
         }
         setForm(record)
+        previous.current = record
         setLoadedId(id)
       })
       .catch((error) => {
@@ -62,7 +71,7 @@ export function useAdminEditor<T extends EditableRecord>(
     return () => {
       active = false
     }
-  }, [id, repository, empty, retry])
+  }, [id, repository, empty, path, retry])
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -82,11 +91,8 @@ export function useAdminEditor<T extends EditableRecord>(
     if (inFlight.current || loadedId !== (id ?? 'new') || loadError) return
     const next: Errors = {
       ...validateExtra(form),
-      ...(!form.title.trim() ? { title: 'Enter a title.' } : {}),
-      ...(!slugPattern.test(form.slug) || form.slug.length > 160
-        ? { slug: 'Use lowercase letters, numbers, and single hyphens (up to 160 characters).' }
-        : {}),
-      ...(!form.type.trim() ? { type: 'Enter a content type.' } : {}),
+      ...(!form.title.trim() ? { title: '제목을 입력해 주세요.' } : {}),
+      ...(!form.type.trim() ? { type: '유형을 선택해 주세요.' } : {}),
     }
     if (action !== 'unpublish' && Object.keys(next).length) {
       setErrors(next)
@@ -111,13 +117,16 @@ export function useAdminEditor<T extends EditableRecord>(
       if (action === 'unpublish') {
         record = await repository.unpublish(form.id)
       } else {
-        record = form.id ? await repository.update(form.id, form) : await repository.create(form)
+        const input = prepareEditorRecord(form, previous.current)
+        record = form.id ? await repository.update(form.id, input) : await repository.create(input)
         // Retain a successful save even if the following publish request fails.
         setForm(record)
+        previous.current = record
         setDirty(false)
         if (action === 'publish') record = await repository.publish(record.id)
       }
       setForm(record)
+      previous.current = record
       setDirty(false)
       setNotice(
         action === 'publish'

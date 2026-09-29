@@ -53,7 +53,7 @@ it('never mounts private routes until membership is confirmed, and removes them 
   expect(screen.getByText('Private editor')).toBeInTheDocument()
   act(() => notify({ status: 'denied', user: { uid: 'editor', email: 'editor@example.com' } }))
   expect(screen.queryByText('Private editor')).not.toBeInTheDocument()
-  expect(screen.getByText('UID: editor')).toBeInTheDocument()
+  expect(screen.getByText('계정 식별번호: editor')).toBeInTheDocument()
 })
 
 it('explains missing configuration without starting Firebase or offering a local bypass', () => {

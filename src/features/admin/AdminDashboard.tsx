@@ -27,7 +27,7 @@ export function AdminDashboard() {
     ])
       .then(([a, m, p]) => {
         if (active)
-          setCounts({ Activities: count(a), Mathematics: count(m), Publications: count(p) })
+          setCounts({ activities: count(a), mathematics: count(m), publications: count(p) })
       })
       .catch((failure) => {
         if (active) setError(adminErrorMessage(failure))
@@ -39,8 +39,8 @@ export function AdminDashboard() {
   return (
     <div className="admin-page">
       <header className="admin-page-head">
-        <p className="eyebrow">Management interface</p>
-        <h1>Dashboard</h1>
+        <p className="eyebrow">콘텐츠 관리</p>
+        <h1>관리 홈</h1>
         <p>동아리 기록을 작성하고 공개 상태를 관리합니다.</p>
       </header>
       {error ? (
@@ -52,26 +52,31 @@ export function AdminDashboard() {
         <p role="status">자료를 불러오고 있습니다.</p>
       ) : (
         <div className="admin-dashboard">
-          {['Activities', 'Mathematics', 'Publications'].map((name) => {
-            const path = name.toLowerCase(),
-              value = counts[name]
+          {(
+            [
+              ['activities', '활동'],
+              ['mathematics', '수학 자료'],
+              ['publications', '출판물'],
+            ] as const
+          ).map(([path, name]) => {
+            const value = counts[path]
             return (
               <section key={name}>
                 <h2>{name}</h2>
                 <dl>
                   <div>
-                    <dt>Published</dt>
+                    <dt>공개</dt>
                     <dd>{value.published}</dd>
                   </div>
                   <div>
-                    <dt>Draft</dt>
+                    <dt>비공개</dt>
                     <dd>{value.draft}</dd>
                   </div>
                 </dl>
                 <div className="admin-card-actions">
-                  <Link to={'/admin/' + path}>Manage</Link>
+                  <Link to={'/admin/' + path}>목록 보기</Link>
                   <Link className="admin-primary" to={'/admin/' + path + '/new'}>
-                    New
+                    새로 작성
                   </Link>
                 </div>
               </section>

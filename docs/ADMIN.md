@@ -36,12 +36,27 @@ Membership changes do not require a code change or Hosting deployment.
 
 Activities, Mathematics, and Publications share the same workflow:
 
-1. Select the content category and choose **New**.
-2. Enter the title, URL slug, type and other required metadata.
-3. **Save Draft** stores a private draft in Firestore.
-4. **Publish** asks for confirmation, saves the entered content, then publishes.
-5. **Unpublish** returns the record to draft; it does not delete the record and
+1. Select the content category and choose **새로 작성**.
+2. Fill in the essential fields listed below. Categories are selected in Korean.
+3. **임시 저장** stores a private draft in Firestore; **변경사항 저장** updates a published record.
+4. **공개하기** asks for confirmation, saves the entered content, then publishes.
+5. **비공개로 전환** returns the record to draft; it does not delete the record and
    does not save unsaved form changes.
+
+| 종류 | 입력 항목 |
+| --- | --- |
+| 활동 | 제목, 활동 날짜, 활동 유형, 활동 내용 |
+| 수학 자료 | 제목, 작성자, 작성 연도, 수학 분야, 자료 유형, 본문 |
+| 출판물 | 제목, 저자, 발행 연도, 출판물 유형, 출판물 소개 |
+
+연도는 올해로 미리 채워집니다. 작성자와 저자가 여러 명이면 쉼표로 구분합니다.
+수학 본문은 마크다운과 수식을 지원하며 미리보기를 제공합니다.
+
+새 자료의 주소와 목록용 요약, 이미지 설명은 자동으로 생성합니다. 요약은 본문
+앞부분에서 가져오며 본문 수정 시 함께 갱신됩니다. 기존에 별도로 작성한 요약과
+이미지 설명은 보존합니다. 태그, 관련 자료, 편집자, 파일 정보는 입력 화면에서
+제외했지만 기존 저장값은 유지됩니다. 새 활동은 공개하면 홈 화면의 최근 활동에도
+표시됩니다. 기존 활동의 홈 표시 설정은 바뀌지 않습니다.
 
 Saving changes to an already published record updates the public record.
 There is no separate working revision of published content in this version.
@@ -51,10 +66,9 @@ Saved edits are available on other devices. Public pages use these records
 only in Firebase mode; the dashboard warns when the public site is still a
 local fixture preview. No admin write is stored only in localStorage.
 
-Slugs must be unique within each category. They are reserved transactionally,
-including for drafts. Renaming a slug releases its previous reservation; old
-public URLs do not redirect automatically, so avoid changing published URLs.
-Related content continues to use stable IDs.
+URLs are generated once with a unique identifier and reserved transactionally,
+including for drafts. Editing a title does not change the URL. Existing URLs and
+relationships are preserved; the simplified editor does not expose their IDs.
 
 If another editor saves the same record, a stale save is rejected. Copy your
 unsaved text, reload, and reconcile the changes. Network/permission failures
@@ -63,8 +77,8 @@ warns before leaving; internal-navigation protection is still future work.
 
 ## Files and limits
 
-Image and PDF fields still contain metadata/placeholders. Upload, file selection,
-and real download links are not part of the authentication/storage connection
-stage. The server's Storage authorization is prepared for the later media UI.
+Upload, file selection, and real download links are not yet implemented. The
+simplified editor omits their placeholder inputs. Existing media metadata is
+preserved. Storage authorization is prepared for the later media UI.
 Content deletion, revision history, and automatic local-prototype import are
 also not implemented.

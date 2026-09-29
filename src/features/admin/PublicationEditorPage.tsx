@@ -1,9 +1,17 @@
-import { useAdminEditor } from './useAdminEditor'
-import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { Publication } from '../../models/publication'
 import { publicationRepository } from '../../repositories/adminRepositories'
-import { csv, EditorActions, Field, join, TextAreaField, type Errors } from './EditorFields'
+import {
+  EditorActions,
+  EditorFrame,
+  Field,
+  NamesField,
+  SelectField,
+  TextAreaField,
+  type Errors,
+} from './EditorFields'
+import { publicationTypes } from './editorOptions'
+import { useAdminEditor } from './useAdminEditor'
 
 const empty: Publication = {
   id: '',
@@ -23,11 +31,11 @@ const empty: Publication = {
   updatedAt: '',
 }
 function validateExtra(form: Publication): Errors {
-  const errors: Errors = {}
-  if (!Number.isInteger(form.year) || form.year < 1900 || form.year > 9999)
-    errors.year = 'Enter a valid year.'
-  return errors
+  return Number.isInteger(form.year) && form.year >= 1900 && form.year <= 9999
+    ? {}
+    : { year: '올바른 연도를 입력해 주세요.' }
 }
+
 export function PublicationEditorPage() {
   const {
     form,
@@ -49,7 +57,7 @@ export function PublicationEditorPage() {
         <p>{loadError}</p>
         <button onClick={retryLoad}>다시 불러오기</button>
         <p>
-          <Link to="/admin/publications">← publications</Link>
+          <Link to="/admin/publications">← 출판물 목록</Link>
         </p>
       </div>
     )
@@ -60,7 +68,12 @@ export function PublicationEditorPage() {
       </div>
     )
   return (
-    <Editor title={form.id ? 'Edit Publication' : 'New Publication'} status={form.status}>
+    <EditorFrame
+      title={form.id ? '출판물 수정' : '새 출판물 작성'}
+      section="출판물"
+      path="/admin/publications"
+      status={form.status}
+    >
       {operationError && (
         <p className="field-error" role="alert">
           {operationError}
@@ -68,25 +81,18 @@ export function PublicationEditorPage() {
       )}
       {notice && <p role="status">{notice}</p>}
       <fieldset className="admin-editor-fields" disabled={saving}>
+        <Field
+          label="제목"
+          name="title"
+          value={form.title}
+          error={errors.title}
+          required
+          onChange={(v) => set('title', v)}
+        />
+        <NamesField label="저자" value={form.authors} onChange={(v) => set('authors', v)} />
         <div className="admin-form-grid">
           <Field
-            label="Title"
-            name="title"
-            value={form.title}
-            error={errors.title}
-            required
-            onChange={(v) => set('title', v)}
-          />
-          <Field
-            label="Slug"
-            name="slug"
-            value={form.slug}
-            error={errors.slug}
-            required
-            onChange={(v) => set('slug', v)}
-          />
-          <Field
-            label="Year"
+            label="발행 연도"
             name="year"
             type="number"
             value={form.year}
@@ -94,81 +100,22 @@ export function PublicationEditorPage() {
             required
             onChange={(v) => set('year', Number(v))}
           />
-          <Field
-            label="Type"
+          <SelectField
+            label="출판물 유형"
             name="type"
             value={form.type}
+            options={publicationTypes}
             error={errors.type}
             required
             onChange={(v) => set('type', v)}
           />
-          <Field
-            label="Authors (comma separated)"
-            name="authors"
-            value={join(form.authors)}
-            onChange={(v) => set('authors', csv(v))}
-          />
-          <Field
-            label="Editors (comma separated)"
-            name="editors"
-            value={join(form.editors)}
-            onChange={(v) => set('editors', csv(v))}
-          />
         </div>
         <TextAreaField
-          label="Summary"
-          name="summary"
-          value={form.summary}
-          onChange={(v) => set('summary', v)}
-        />
-        <TextAreaField
-          label="Description"
+          label="출판물 소개"
           name="description"
-          rows={8}
           value={form.description}
           onChange={(v) => set('description', v)}
         />
-        <div className="admin-form-grid">
-          <Field
-            label="Cover image alt text (placeholder)"
-            name="cover-alt"
-            value={form.coverImage.alt}
-            onChange={(v) => set('coverImage', { ...form.coverImage, alt: v })}
-          />
-          <Field
-            label="Related Activity IDs"
-            name="activities"
-            value={join(form.relatedActivities)}
-            onChange={(v) => set('relatedActivities', csv(v))}
-          />
-          <Field
-            label="Related Mathematics IDs"
-            name="mathematics"
-            value={join(form.relatedMathematics)}
-            onChange={(v) => set('relatedMathematics', csv(v))}
-          />
-          <Field
-            label="PDF file name (placeholder)"
-            name="pdf-name"
-            value={form.pdf?.fileName ?? ''}
-            onChange={(v) =>
-              set(
-                'pdf',
-                v
-                  ? {
-                      label: form.pdf?.label ?? 'PDF',
-                      fileName: v,
-                      mediaType: 'application/pdf',
-                      sizeLabel: form.pdf?.sizeLabel ?? 'PDF · placeholder',
-                    }
-                  : undefined
-              )
-            }
-          />
-        </div>
-        <p className="media-placeholder">
-          이미지와 PDF 업로드는 아직 지원하지 않습니다. 현재는 파일 설명만 저장합니다.
-        </p>
         <EditorActions
           status={form.status}
           saving={saving}
@@ -177,33 +124,6 @@ export function PublicationEditorPage() {
           onUnpublish={() => void unpublish()}
         />
       </fieldset>
-    </Editor>
-  )
-}
-function Editor({
-  title,
-  status,
-  children,
-}: {
-  title: string
-  status: string
-  children: ReactNode
-}) {
-  return (
-    <div className="admin-page editor-page">
-      <header className="admin-page-head">
-        <Link className="back-link" to="/admin/publications">
-          ← Publications
-        </Link>
-        <div className="editor-title">
-          <div>
-            <p className="eyebrow">Publication editor</p>
-            <h1>{title}</h1>
-          </div>
-          <span className={`status status-${status}`}>{status}</span>
-        </div>
-      </header>
-      <form onSubmit={(e) => e.preventDefault()}>{children}</form>
-    </div>
+    </EditorFrame>
   )
 }

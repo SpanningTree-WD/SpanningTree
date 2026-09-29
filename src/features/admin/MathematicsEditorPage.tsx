@@ -1,10 +1,18 @@
-import { useAdminEditor } from './useAdminEditor'
-import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { MarkdownRenderer } from '../../components/content/MarkdownRenderer'
 import type { Mathematics } from '../../models/mathematics'
 import { mathematicsRepository } from '../../repositories/adminRepositories'
-import { csv, EditorActions, Field, join, TextAreaField, type Errors } from './EditorFields'
+import {
+  EditorActions,
+  EditorFrame,
+  Field,
+  NamesField,
+  SelectField,
+  TextAreaField,
+  type Errors,
+} from './EditorFields'
+import { mathematicsFields, mathematicsTypes } from './editorOptions'
+import { useAdminEditor } from './useAdminEditor'
 
 const empty: Mathematics = {
   id: '',
@@ -15,13 +23,12 @@ const empty: Mathematics = {
   type: '',
   year: new Date().getFullYear(),
   summary: '',
+  content: '',
   tags: [],
   relatedActivities: [],
   relatedPublications: [],
   relatedMathematics: [],
   status: 'draft',
-  content:
-    '# New mathematics article\n\nWrite the article in Markdown. Inline math: \\(G\\).\n\n$$\nn_p \\equiv 1 \\pmod p\n$$',
   coverImage: { alt: '', variant: 'blue' },
   attachments: [],
   createdAt: '',
@@ -30,10 +37,11 @@ const empty: Mathematics = {
 function validateExtra(form: Mathematics): Errors {
   const errors: Errors = {}
   if (!Number.isInteger(form.year) || form.year < 1900 || form.year > 9999)
-    errors.year = 'Enter a valid year.'
-  if (!form.field.trim()) errors.field = 'Enter a mathematics field.'
+    errors.year = '올바른 연도를 입력해 주세요.'
+  if (!form.field.trim()) errors.field = '수학 분야를 선택해 주세요.'
   return errors
 }
+
 export function MathematicsEditorPage() {
   const {
     form,
@@ -55,7 +63,7 @@ export function MathematicsEditorPage() {
         <p>{loadError}</p>
         <button onClick={retryLoad}>다시 불러오기</button>
         <p>
-          <Link to="/admin/mathematics">← mathematics</Link>
+          <Link to="/admin/mathematics">← 수학 자료 목록</Link>
         </p>
       </div>
     )
@@ -66,7 +74,12 @@ export function MathematicsEditorPage() {
       </div>
     )
   return (
-    <Editor title={form.id ? 'Edit Mathematics' : 'New Mathematics'} status={form.status}>
+    <EditorFrame
+      title={form.id ? '수학 자료 수정' : '새 수학 자료 작성'}
+      section="수학 자료"
+      path="/admin/mathematics"
+      status={form.status}
+    >
       {operationError && (
         <p className="field-error" role="alert">
           {operationError}
@@ -74,31 +87,18 @@ export function MathematicsEditorPage() {
       )}
       {notice && <p role="status">{notice}</p>}
       <fieldset className="admin-editor-fields" disabled={saving}>
+        <Field
+          label="제목"
+          name="title"
+          value={form.title}
+          error={errors.title}
+          required
+          onChange={(v) => set('title', v)}
+        />
         <div className="admin-form-grid">
+          <NamesField label="작성자" value={form.authors} onChange={(v) => set('authors', v)} />
           <Field
-            label="Title"
-            name="title"
-            value={form.title}
-            error={errors.title}
-            required
-            onChange={(v) => set('title', v)}
-          />
-          <Field
-            label="Slug"
-            name="slug"
-            value={form.slug}
-            error={errors.slug}
-            required
-            onChange={(v) => set('slug', v)}
-          />
-          <Field
-            label="Authors (comma separated)"
-            name="authors"
-            value={join(form.authors)}
-            onChange={(v) => set('authors', csv(v))}
-          />
-          <Field
-            label="Year"
+            label="작성 연도"
             name="year"
             type="number"
             value={form.year}
@@ -106,71 +106,40 @@ export function MathematicsEditorPage() {
             required
             onChange={(v) => set('year', Number(v))}
           />
-          <Field
-            label="Field"
+          <SelectField
+            label="수학 분야"
             name="field"
             value={form.field}
+            options={mathematicsFields}
             error={errors.field}
             required
             onChange={(v) => set('field', v)}
           />
-          <Field
-            label="Type"
+          <SelectField
+            label="자료 유형"
             name="type"
             value={form.type}
+            options={mathematicsTypes}
             error={errors.type}
             required
             onChange={(v) => set('type', v)}
           />
         </div>
-        <TextAreaField
-          label="Summary"
-          name="summary"
-          value={form.summary}
-          onChange={(v) => set('summary', v)}
-        />
-        <div className="admin-form-grid">
-          <Field
-            label="Tags (comma separated)"
-            name="tags"
-            value={join(form.tags)}
-            onChange={(v) => set('tags', csv(v))}
-          />
-          <Field
-            label="Related Activity IDs"
-            name="activities"
-            value={join(form.relatedActivities)}
-            onChange={(v) => set('relatedActivities', csv(v))}
-          />
-          <Field
-            label="Related Publication IDs"
-            name="publications"
-            value={join(form.relatedPublications)}
-            onChange={(v) => set('relatedPublications', csv(v))}
-          />
-          <Field
-            label="Cover image alt text (placeholder)"
-            name="cover-alt"
-            value={form.coverImage.alt}
-            onChange={(v) => set('coverImage', { ...form.coverImage, alt: v })}
-          />
-        </div>
         <section className="markdown-editor">
           <div>
             <TextAreaField
-              label="Markdown content"
+              label="본문"
               name="content"
-              rows={24}
+              rows={16}
               value={form.content}
               onChange={(v) => set('content', v)}
             />
             <p className="field-help">
-              Supports headings, paragraphs, lists, links, fenced code, inline math with \(…\), and
-              display math with $$…$$. Stored HTML is sanitized.
+              마크다운으로 작성할 수 있습니다. 수식은 \(…\), 독립된 수식은 $$…$$로 감싸 주세요.
             </p>
           </div>
           <div className="markdown-preview">
-            <span className="field-label">Preview</span>
+            <span className="field-label">미리보기</span>
             <MarkdownRenderer content={form.content} />
           </div>
         </section>
@@ -182,33 +151,6 @@ export function MathematicsEditorPage() {
           onUnpublish={() => void unpublish()}
         />
       </fieldset>
-    </Editor>
-  )
-}
-function Editor({
-  title,
-  status,
-  children,
-}: {
-  title: string
-  status: string
-  children: ReactNode
-}) {
-  return (
-    <div className="admin-page editor-page">
-      <header className="admin-page-head">
-        <Link className="back-link" to="/admin/mathematics">
-          ← Mathematics
-        </Link>
-        <div className="editor-title">
-          <div>
-            <p className="eyebrow">Mathematics editor</p>
-            <h1>{title}</h1>
-          </div>
-          <span className={`status status-${status}`}>{status}</span>
-        </div>
-      </header>
-      <form onSubmit={(e) => e.preventDefault()}>{children}</form>
-    </div>
+    </EditorFrame>
   )
 }

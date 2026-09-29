@@ -32,8 +32,8 @@ export function AdminLayout() {
     return (
       <main className="admin-gate">
         <section className="admin-gate-panel">
-          <p className="eyebrow">Member access</p>
-          <h1>Spanning Tree Admin</h1>
+          <p className="eyebrow">관리자 로그인</p>
+          <h1>Spanning Tree 관리</h1>
           {!configured ? (
             <p>관리자 기능이 아직 설정되지 않았습니다. 사이트 운영자에게 문의해 주세요.</p>
           ) : access.status === 'loading' ? (
@@ -44,7 +44,7 @@ export function AdminLayout() {
               <p>
                 {access.user.email}
                 <br />
-                <small>UID: {access.user.uid}</small>
+                <small>계정 식별번호: {access.user.uid}</small>
               </p>
             </>
           ) : access.status === 'error' ? (
@@ -86,16 +86,16 @@ export function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <NavLink className="admin-brand" to="/admin">
-          Spanning Tree <span>ADMIN</span>
+          Spanning Tree <span>관리자</span>
         </NavLink>
-        <nav aria-label="Admin navigation">
+        <nav aria-label="관리자 메뉴">
           <NavLink end to="/admin">
-            Dashboard
+            관리 홈
           </NavLink>
-          <NavLink to="/admin/activities">Activities</NavLink>
-          <NavLink to="/admin/mathematics">Mathematics</NavLink>
-          <NavLink to="/admin/publications">Publications</NavLink>
-          <NavLink to="/">Public site ↗</NavLink>
+          <NavLink to="/admin/activities">활동</NavLink>
+          <NavLink to="/admin/mathematics">수학 자료</NavLink>
+          <NavLink to="/admin/publications">출판물</NavLink>
+          <NavLink to="/">공개 사이트 ↗</NavLink>
         </nav>
         <button className="admin-lock" disabled={busy} onClick={() => void authenticate('signOut')}>
           로그아웃

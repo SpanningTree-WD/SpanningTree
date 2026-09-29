@@ -57,7 +57,7 @@ function validate(record: DocumentData, name: CollectionName) {
     record.slug.length > 160 ||
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(record.slug)
   )
-    throw new Error('Slug는 영문 소문자, 숫자, 하이픈으로 입력해 주세요 (최대 160자).')
+    throw new Error('자료 주소 형식이 올바르지 않습니다. 사이트 운영자에게 문의해 주세요.')
   if (typeof record.type !== 'string' || !record.type.trim())
     throw new Error('자료 유형을 입력해 주세요.')
   if (name === 'activities' && !/^\d{4}-\d{2}-\d{2}$/.test(record.date))
@@ -108,7 +108,7 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
       const target = slugRef(next.slug)
       const claim = await transaction.get(target)
       if (claim.exists() && claim.data().recordId !== id)
-        throw new Error('이미 사용 중인 Slug입니다. 다른 주소를 입력해 주세요.')
+        throw new Error('이미 사용 중인 자료 주소입니다. 사이트 운영자에게 문의해 주세요.')
       if (next.slug !== current.slug) {
         const previous = await transaction.get(slugRef(current.slug))
         if (previous.exists() && previous.data().recordId === id) transaction.delete(previous.ref)
@@ -143,7 +143,7 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
       await runTransaction(db, async (transaction) => {
         const target = slugRef(record.slug)
         if ((await transaction.get(target)).exists())
-          throw new Error('이미 사용 중인 Slug입니다. 다른 주소를 입력해 주세요.')
+          throw new Error('이미 사용 중인 자료 주소입니다. 사이트 운영자에게 문의해 주세요.')
         transaction.set(target, { collection: name, slug: record.slug, recordId: reference.id })
         transaction.set(reference, record)
       })

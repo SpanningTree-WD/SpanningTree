@@ -11,24 +11,21 @@ import { adminErrorMessage } from './adminErrors'
 type Item = { id: string; title: string; status: 'draft' | 'published'; updatedAt: string }
 const definitions = {
   activities: {
-    title: 'Activities',
-    singular: 'Activity',
+    title: '활동',
     repository: activityRepository as AdminRepository<Item>,
   },
   mathematics: {
-    title: 'Mathematics',
-    singular: 'Mathematics',
+    title: '수학 자료',
     repository: mathematicsRepository as AdminRepository<Item>,
   },
   publications: {
-    title: 'Publications',
-    singular: 'Publication',
+    title: '출판물',
     repository: publicationRepository as AdminRepository<Item>,
   },
 }
 
 export function AdminListPage({ type }: { type: keyof typeof definitions }) {
-  const { title, singular, repository } = definitions[type]
+  const { title, repository } = definitions[type]
   const [records, setRecords] = useState<Item[]>()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -77,14 +74,14 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
     <div className="admin-page">
       <header className="admin-page-head admin-page-head-row">
         <div>
-          <p className="eyebrow">Content management</p>
+          <p className="eyebrow">콘텐츠 관리</p>
           <h1>{title}</h1>
           <p>
-            {records ? records.length + ' records, including drafts.' : '자료를 불러오고 있습니다.'}
+            {records ? `총 ${records.length}건 · 비공개 자료 포함` : '자료를 불러오고 있습니다.'}
           </p>
         </div>
         <Link className="admin-primary" to={'/admin/' + type + '/new'}>
-          New {singular}
+          새 {title} 작성
         </Link>
       </header>
       {error && (
@@ -98,10 +95,10 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Last updated</th>
-                <th>Actions</th>
+                <th>제목</th>
+                <th>공개 상태</th>
+                <th>최근 수정일</th>
+                <th>관리</th>
               </tr>
             </thead>
             <tbody>
@@ -112,14 +109,14 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
                   </td>
                   <td>
                     <span className={'status status-' + record.status}>
-                      {record.status === 'published' ? 'Published' : 'Draft'}
+                      {record.status === 'published' ? '공개' : '비공개'}
                     </span>
                   </td>
-                  <td>{new Date(record.updatedAt).toLocaleDateString()}</td>
+                  <td>{new Date(record.updatedAt).toLocaleDateString('ko-KR')}</td>
                   <td className="table-actions">
-                    <Link to={'/admin/' + type + '/' + record.id + '/edit'}>Edit</Link>
+                    <Link to={'/admin/' + type + '/' + record.id + '/edit'}>수정</Link>
                     <button disabled={busy} onClick={() => void toggle(record)}>
-                      {record.status === 'published' ? 'Unpublish' : 'Publish'}
+                      {record.status === 'published' ? '비공개로 전환' : '공개하기'}
                     </button>
                   </td>
                 </tr>
