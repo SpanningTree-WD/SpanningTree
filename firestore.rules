@@ -106,6 +106,24 @@ service cloud.firestore {
         && chunk.data is bytes && chunk.data.size() == (chunk.index == parent.chunkCount - 1 ? parent.size - chunk.index * 524288 : 524288);
     }
 
+    // Public roster is separate from the private administrator allowlist.
+    function validMember(data) {
+      return data.keys().hasAll(['name', 'generation', 'isLeader', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'generation', 'isLeader', 'createdAt', 'updatedAt'])
+        && text(data.name, 40) && data.name.matches('.*[^\\s].*')
+        && data.generation is int && data.generation >= 1 && data.generation <= 999
+        && data.isLeader is bool && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+    match /members/{id} {
+      allow read: if true;
+      allow create: if isAdmin() && validMember(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validMember(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
     // Membership is provisioned with the Console/Admin SDK, never by browser clients.
     match /admins/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;

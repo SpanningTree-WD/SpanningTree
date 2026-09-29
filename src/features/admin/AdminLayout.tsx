@@ -95,6 +95,7 @@ export function AdminLayout() {
           <NavLink to="/admin/activities">활동</NavLink>
           <NavLink to="/admin/mathematics">수학 자료</NavLink>
           <NavLink to="/admin/publications">출판물</NavLink>
+          <NavLink to="/admin/people">구성원 명단</NavLink>
           <NavLink to="/">공개 사이트 ↗</NavLink>
         </nav>
         <button className="admin-lock" disabled={busy} onClick={() => void authenticate('signOut')}>

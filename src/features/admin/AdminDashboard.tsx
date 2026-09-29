@@ -43,6 +43,7 @@ export function AdminDashboard() {
         <h1>관리 홈</h1>
         <p>동아리 기록을 작성하고 공개 상태를 관리합니다.</p>
       </header>
+      <p><Link className="article-link" to="/admin/people">구성원 명단 관리 →</Link></p>
       {error ? (
         <div role="alert">
           <p>{error}</p>
