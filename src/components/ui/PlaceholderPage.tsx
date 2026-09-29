@@ -9,7 +9,7 @@ export function PlaceholderPage({ title, description, isHome = false }: Placehol
         <div className="page-container placeholder-content">
           <p className="eyebrow">SPANNING TREE</p>
           <h1>{title}</h1>
-          <p>함께 탐구하고, 함께 성장하며,<br />더욱 멀리 뻗어가는 Spanning Tree</p>
+          <p>{description}</p>
           <Link className="button-link" to="/about">About Spanning Tree <span aria-hidden="true">→</span></Link>
         </div>
       </section>

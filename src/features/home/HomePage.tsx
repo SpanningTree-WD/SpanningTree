@@ -8,6 +8,7 @@ import {
 } from '../../repositories/publicRepositories'
 import { useRepository } from '../shared/useRepository'
 import { TreeArtwork } from './TreeArtwork'
+import { club } from '../../content/club'
 function SectionHeading({ title, to }: { title: string; to: string }) {
   return (
     <div className="section-head">
@@ -36,15 +37,11 @@ export function HomePage() {
       <section className="hero">
         <div className="hero-grid">
           <div>
-            <h1>
-              Together in Mathematics,
-              <br />
-              Growing Further
-            </h1>
+            <h1>{club.name}</h1>
             <p>
-              함께 탐구하고, 함께 성장하며,
+              {club.affiliation} {club.koreanName}
               <br />
-              더욱 멀리 뻗어가는 Spanning Tree
+              활동 기록과 수학 자료를 제공합니다.
             </p>
             <Link className="button-link" to="/about">
               About Spanning Tree <span aria-hidden="true">→</span>

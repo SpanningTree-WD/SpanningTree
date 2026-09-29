@@ -408,17 +408,21 @@ main {
   font-size:13px;
   color:#596259
 }
-.quote {
-  font-family:var(--font-serif);
-  font-size:24px;
-  line-height:1.4;
-  color:#203d2d;
-  margin:28px 0 0
-}
-.philosophy-copy {
+.contact-copy {
   color:var(--color-muted);
   font-size:14px
 }
+.contact-link {
+  color:var(--color-green);
+  font-size:14px;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  overflow-wrap:anywhere
+}
+.footer-details { min-width:0; }
+.footer-contact { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:8px; }
+.footer-contact > span { color:#cfdbd2; font-size:12px; }
+.footer-contact .contact-link { color:#eef2ed; }
 .people-roster { padding:18px 0 56px; }
 .people-generation { display:grid; grid-template-columns:110px minmax(0,1fr); align-items:center; gap:24px; margin:24px 0 48px; }
 .people-generation-label h2 { margin:0; font-size:31px; color:var(--color-green); }
@@ -675,6 +679,7 @@ main {
   gap:16px
 }
 .footer-logo {
+  flex-shrink:0;
   width:42px;
   height:42px;
   border:1px solid #dce7de;
