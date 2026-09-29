@@ -47,10 +47,12 @@ it('validates the current administrator through Firestore rules before dispatchi
     'https://firestore.googleapis.com/v1/projects/spanningtree-math/databases/(default)/documents/uploadRequests/editor'
   )
   expect(network.mock.calls[0][1].headers.Authorization).toBe(bearer)
+  expect(network.mock.calls[0][1].redirect).toBe('manual')
   expect(network.mock.calls[1][0]).toBe(
     'https://api.github.com/repos/SpanningTree-WD/SpanningTree/actions/workflows/github-uploads.yml/dispatches'
   )
   expect(network.mock.calls[1][1].headers.Authorization).toBe('Bearer server-only-test-secret')
+  expect(network.mock.calls[1][1].redirect).toBe('manual')
   expect(JSON.parse(network.mock.calls[1][1].body)).toEqual({ ref: 'main' })
   expect(limiter).toHaveBeenCalledWith({ key: 'uploader:editor' })
   expect(await response.text()).not.toContain('secret')
@@ -127,6 +129,17 @@ it('limits repeated requests from a verified administrator', async () => {
   limiter.mockResolvedValueOnce({ success: false })
   expect((await worker.fetch(request(), env)).status).toBe(429)
   expect(network).toHaveBeenCalledTimes(1)
+})
+it('rejects upstream redirects instead of forwarding either credential', async () => {
+  network.mockResolvedValueOnce(Response.redirect('https://other.example/', 302))
+  expect((await worker.fetch(request(), env)).status).toBe(503)
+  expect(network).toHaveBeenCalledTimes(1)
+  network.mockReset()
+  network
+    .mockResolvedValueOnce(metadata())
+    .mockResolvedValueOnce(Response.redirect('https://other.example/', 307))
+  expect((await worker.fetch(request(), env)).status).toBe(502)
+  expect(network).toHaveBeenCalledTimes(2)
 })
 it('fails closed during upstream failures and never returns credentials or raw upstream errors', async () => {
   network.mockResolvedValueOnce(new Response('private upstream error', { status: 500 }))

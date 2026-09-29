@@ -19,8 +19,8 @@
 
 ## 처리 구조
 
-즉시 실행 요청을 추가하는 [Cloudflare 연결 코드와 설정 안내](CLOUDFLARE_UPLOAD_TRIGGER.md)가
-준비되어 있습니다. Worker 배포·secret·공개 URL 설정까지 끝나면 업로드 직후 실행을 요청하며,
+즉시 실행을 위한 [Cloudflare 연결](CLOUDFLARE_UPLOAD_TRIGGER.md)이 설정되어 있습니다.
+파일 전송 후 업로드 작업의 실행을 요청하며, GitHub 실행 대기와 빌드·배포 시간은 남습니다.
 아래 5분 예약 작업은 장애 시 재시도와 임시 데이터 정리를 위해 유지합니다.
 
 - 브라우저는 Firebase 로그인과 기존 `admins/{uid}` 권한을 사용합니다.

@@ -4,7 +4,10 @@
 
 2026-09-29에 동아리 공용 계정 `spanningtree.official@gmail.com`으로 Worker를 배포했습니다.
 공개 주소는 `https://spanningtree-upload-trigger.spanning-tree-website.workers.dev/trigger`입니다.
-GitHub 실행 전용 secret 등록과 사이트 연결의 최종 확인이 남아 있습니다.
+GitHub 실행 전용 `GITHUB_DISPATCH_TOKEN`이 Secret으로 등록되어 있으며, 운영 사이트 빌드에
+Worker 주소가 반영된 것을 확인했습니다. CORS 연결과 인증 없는 요청(401), 잘못된 Firebase
+토큰(403) 거부도 실제 서버에서 확인했습니다. 인증된 관리자의 실제 파일 업로드로
+`workflow_dispatch`가 실행되는 최종 확인은 아직 별도로 필요합니다.
 사이트에 결제 수단이나 Blaze 설정을 추가할 필요는 없습니다.
 
 ## 동작
@@ -72,6 +75,9 @@ GitHub 실행 전용 secret 등록과 사이트 연결의 최종 확인이 남�
 - `npm test`에 Worker 인증·소유자·상태·CORS·입력 제한·호출 제한과 클라이언트
   즉시 실행 실패 시 기존 대기열 유지 테스트가 포함됩니다. `npm run build`는 Worker도
   타입 검사하며 `wrangler deploy --dry-run`으로 Cloudflare 번들을 확인할 수 있습니다.
+- Worker의 외부 요청에는 `redirect: 'manual'`을 쓰고 3xx 응답을 실패로 처리합니다.
+  Cloudflare 런타임은 Node와 달리 `redirect: 'error'`를 거절하므로 이를 바꾸지 마세요.
+  어떤 경우에도 리디렉션 목적지로 인증 정보를 전달하지 않습니다.
 
 ## 참고
 

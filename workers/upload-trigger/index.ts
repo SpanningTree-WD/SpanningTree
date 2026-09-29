@@ -82,7 +82,8 @@ export default {
       const check = await fetch(`${firestore}/uploadRequests/${input.uid}`, {
         headers: { Authorization: authorization },
         signal: AbortSignal.timeout(10_000),
-        redirect: 'error',
+        // Workers supports manual/follow; reject 3xx below without forwarding credentials.
+        redirect: 'manual',
       })
       if (check.status === 401 || check.status === 403)
         return reply(403, { error: '관리자 권한을 확인할 수 없습니다.' })
@@ -108,7 +109,7 @@ export default {
         return reply(429, { error: '실행 요청이 많습니다. 잠시 후 다시 시도해 주세요.' })
       const dispatch = await fetch(workflow, {
         method: 'POST',
-        redirect: 'error',
+        redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
         headers: {
           Authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
