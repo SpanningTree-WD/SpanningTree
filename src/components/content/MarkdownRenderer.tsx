@@ -13,7 +13,11 @@ export function renderMarkdown(markdown: string): string {
   const restored = rendered
     .replace(/MATHBLOCK(\d+)ENDMATH/g, (_, index: string) => math[Number(index)])
     .replace(/MATHINLINE(\d+)ENDMATH/g, (_, index: string) => math[Number(index)])
-  return DOMPurify.sanitize(restored, { USE_PROFILES: { html: true }, ADD_ATTR: ['aria-hidden'] })
+  // KaTeX draws radicals with SVG and includes MathML for accessible equations.
+  return DOMPurify.sanitize(restored, {
+    USE_PROFILES: { html: true, svg: true, mathMl: true },
+    ADD_ATTR: ['aria-hidden'],
+  })
 }
 
 export function MarkdownRenderer({ content, className = '' }: { content: string; className?: string }) {
