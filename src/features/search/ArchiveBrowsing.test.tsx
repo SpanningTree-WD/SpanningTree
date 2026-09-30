@@ -119,3 +119,19 @@ it('opens global search from the header and searches across sections without exp
   expect(screen.getByText('검색 결과가 없습니다')).toBeInTheDocument()
   expect(screen.queryAllByRole('article')).toHaveLength(0)
 })
+
+it('shows all article fields and finds the article from a secondary field or Korean topic search', async () => {
+  await mathematicsRepository.update('math-sylow', {
+    field: '대수기하', fields: ['대수기하', 'Topology', '복소해석학'],
+  })
+  const router = open('/mathematics?field=%EB%B3%B5%EC%86%8C%ED%95%B4%EC%84%9D%ED%95%99')
+  await screen.findByText('1개 결과')
+  expect(titles()).toEqual(['Sylow’s Theorems'])
+  expect(screen.getByRole('article')).toHaveTextContent('대수기하 · 위상수학 · 복소해석학')
+  fireEvent.click(screen.getByRole('button', { name: 'Topology', exact: true }))
+  expect(titles()).toEqual(['Sylow’s Theorems'])
+  await act(() => router.navigate('/search?q=' + encodeURIComponent('복소해석학')))
+  await screen.findByText('1개 결과')
+  expect(titles()).toEqual(['Sylow’s Theorems'])
+  expect(screen.getByRole('article')).toHaveTextContent('대수기하 · 위상수학 · 복소해석학')
+})

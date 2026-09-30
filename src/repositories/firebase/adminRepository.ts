@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import type { AdminRepository } from '../contracts'
 import { normalize } from './repositories'
+import { MAX_MATHEMATICS_FIELDS } from '../../models/mathematicsFields'
 
 interface RecordBase {
   id: string
@@ -69,6 +70,18 @@ function validate(record: DocumentData, name: CollectionName) {
     throw new Error('올바른 연도를 입력해 주세요.')
   if (name === 'mathematics' && (typeof record.field !== 'string' || !record.field.trim()))
     throw new Error('수학 분야를 입력해 주세요.')
+  if (name === 'mathematics' && record.fields !== undefined) {
+    const fields: unknown = record.fields
+    if (
+      !Array.isArray(fields) ||
+      fields.length === 0 ||
+      fields.length > MAX_MATHEMATICS_FIELDS ||
+      fields.some((field) => typeof field !== 'string' || !field.trim() || field.length > 100) ||
+      new Set(fields).size !== fields.length ||
+      fields[0] !== record.field
+    )
+      throw new Error('수학 분야를 한 개 이상 올바르게 선택해 주세요.')
+  }
 }
 
 export function createFirebaseAdminRepository<T extends RecordBase>(

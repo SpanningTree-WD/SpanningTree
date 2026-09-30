@@ -11,7 +11,9 @@ import {
   TextAreaField,
   type Errors,
 } from './EditorFields'
-import { mathematicsFields, mathematicsTypes } from '../../models/contentOptions'
+import { mathematicsTypes } from '../../models/contentOptions'
+import { getMathematicsFields } from '../../models/mathematicsFields'
+import { MathematicsFieldPicker } from './MathematicsFieldPicker'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
 
@@ -21,6 +23,7 @@ const empty: Mathematics = {
   slug: '',
   authors: [],
   field: '',
+  fields: [],
   type: '',
   year: new Date().getFullYear(),
   summary: '',
@@ -39,7 +42,7 @@ function validateExtra(form: Mathematics): Errors {
   const errors: Errors = {}
   if (!Number.isInteger(form.year) || form.year < 1900 || form.year > 9999)
     errors.year = '올바른 연도를 입력해 주세요.'
-  if (!form.field.trim()) errors.field = '수학 분야를 선택해 주세요.'
+  if (!getMathematicsFields(form).length) errors.field = '수학 분야를 한 개 이상 선택해 주세요.'
   return errors
 }
 
@@ -108,15 +111,6 @@ export function MathematicsEditorPage() {
             onChange={(v) => set('year', Number(v))}
           />
           <SelectField
-            label="수학 분야"
-            name="field"
-            value={form.field}
-            options={mathematicsFields}
-            error={errors.field}
-            required
-            onChange={(v) => set('field', v)}
-          />
-          <SelectField
             label="자료 유형"
             name="type"
             value={form.type}
@@ -126,6 +120,15 @@ export function MathematicsEditorPage() {
             onChange={(v) => set('type', v)}
           />
         </div>
+        <MathematicsFieldPicker
+          value={getMathematicsFields(form)}
+          error={errors.field}
+          onChange={(fields) => {
+            set('fields', fields)
+            // Retain the first selection for older clients during rollout.
+            set('field', fields[0] ?? '')
+          }}
+        />
         <section className="markdown-editor">
           <div>
             <TextAreaField

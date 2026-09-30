@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { MathematicsEditorPage } from './MathematicsEditorPage'
 import { PublicationEditorPage } from './PublicationEditorPage'
 
-const repository = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn() }))
+const repository = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn(), listAll: vi.fn() }))
 vi.mock('../../services/uploads/GitHubUploadService', () => ({ watchUpload: () => () => {} }))
 vi.mock('../../repositories/adminRepositories', () => ({
   mathematicsRepository: repository,
@@ -12,6 +12,7 @@ vi.mock('../../repositories/adminRepositories', () => ({
 }))
 beforeEach(() => {
   vi.clearAllMocks()
+  repository.listAll.mockResolvedValue([])
   repository.create.mockImplementation(async (input) => ({ ...input, id: 'saved' }))
   repository.getById.mockImplementation(async () => repository.create.mock.results[0].value)
 })
@@ -57,7 +58,7 @@ it.each([
     }
     fireEvent.change(screen.getByLabelText(new RegExp(type)), { target: { value } })
     if (path === 'mathematics')
-      fireEvent.change(screen.getByLabelText(/수학 분야/), { target: { value: 'Algebra' } })
+      fireEvent.click(screen.getByRole('checkbox', { name: '대수학', exact: true }))
     fireEvent.change(screen.getByLabelText(body), {
       target: { value: '기초부터 함께 공부합니다.' },
     })

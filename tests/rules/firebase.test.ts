@@ -493,3 +493,55 @@ describe('managed Storage authorization', () => {
     await assertFails(deleteObject(file))
   })
 })
+
+describe('multiple custom mathematics fields', () => {
+  it('keeps legacy records editable and round-trips custom fields through draft, publish, filter and unpublish', async () => {
+    const repository = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')
+    const original = (await repository.getById(mathematicsFixtures[0].id))!
+    const legacy = await repository.update(original.id, { ...original, title: 'Legacy edit' })
+    expect(legacy.field).toBe(original.field)
+    expect(legacy.fields).toBeUndefined()
+    const fields = ['대수기하', 'Topology', '복소해석학']
+    const draft = await repository.create({
+      ...mathematicsFixtures[0], slug: 'multiple-custom-fields', field: fields[0], fields,
+      tags: ['independent-keyword'],
+    })
+    const publicRepository = createFirebaseRepositories(db()).mathematics
+    expect(await publicRepository.getPublishedBySlug(draft.slug)).toBeNull()
+    await repository.publish(draft.id)
+    const published = (await publicRepository.getPublishedBySlug(draft.slug))!
+    expect(published.fields).toEqual(fields)
+    for (const field of fields) {
+      expect((await publicRepository.listPublished({ field })).items.some((item) => item.id === draft.id)).toBe(true)
+    }
+    const changed = await repository.update(published.id, {
+      ...published, field: 'Topology', fields: ['Topology', '복소해석학'],
+    })
+    expect(changed.slug).toBe(draft.slug)
+    expect(changed.tags).toEqual(['independent-keyword'])
+    expect(changed.fields).toEqual(['Topology', '복소해석학'])
+    await expect(repository.update(draft.id, { ...published, title: 'stale' })).rejects.toThrow('다른 관리자')
+    await repository.unpublish(draft.id)
+    expect(await publicRepository.getPublishedBySlug(draft.slug)).toBeNull()
+  })
+
+  it('validates custom-field arrays in rules independently of the UI and preserves authorization', async () => {
+    const reference = doc(db('editor'), 'mathematics', mathematicsFixtures[0].id)
+    const fields = Array.from({ length: 16 }, (_, index) => '분야 ' + index)
+    await assertSucceeds(updateDoc(reference, { field: fields[0], fields, updatedAt: serverTimestamp() }))
+    for (const invalid of [
+      [], ['분야 0', '분야 0'], ['분야 0', ''], ['분야 0', '   '],
+      ['분야 0', 1], ['분야 0', 'x'.repeat(101)], 'not-an-array',
+      ['분야 0', ...Array.from({ length: 16 }, (_, index) => 'extra-' + index)],
+      [...fields.slice(0, 15), 1],
+    ]) {
+      await assertFails(updateDoc(reference, { fields: invalid, updatedAt: serverTimestamp() }))
+    }
+    await assertFails(updateDoc(reference, { field: '분야 0', fields: ['different'], updatedAt: serverTimestamp() }))
+    for (const store of [db(), db('outsider'), db('editor', { ...verified, email_verified: false })]) {
+      await assertFails(updateDoc(doc(store, 'mathematics', mathematicsFixtures[0].id), {
+        field: '분야 0', fields: ['분야 0', 'Topology'], updatedAt: serverTimestamp(),
+      }))
+    }
+  })
+})

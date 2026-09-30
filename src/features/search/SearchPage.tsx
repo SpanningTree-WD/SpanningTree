@@ -1,3 +1,4 @@
+import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
 import {
@@ -77,7 +78,7 @@ export function SearchPage() {
                 </h2>
                 <div className="content-meta">
                   {record.type}
-                  {'field' in record ? ` · ${record.field}` : ''}
+                  {'field' in record ? ` · ${formatMathematicsFields(record)}` : ''}
                   {'authors' in record && record.authors.length
                     ? ` · ${record.authors.join(', ')}`
                     : ''}

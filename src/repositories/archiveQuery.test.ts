@@ -76,3 +76,23 @@ describe('public archive queries', () => {
     expect(result.total).toBe(2)
   })
 })
+
+it('matches every selected field and its Korean label, while retaining legacy fields and excluding drafts', () => {
+  const multiple = record('multiple', {
+    field: '대수기하', fields: ['대수기하', 'Topology', '복소해석학'],
+  })
+  const records = [
+    multiple,
+    record('legacy', { field: 'Geometry' }),
+    record('hidden', { status: 'draft', field: 'Secret', fields: ['Secret', 'Private Topic'] }),
+  ]
+  for (const field of multiple.fields!) {
+    expect(queryArchive(records, { field }).items.map((item) => item.id)).toEqual(['multiple'])
+  }
+  expect(queryArchive(records, { search: '위상수학 복소해석학' }).items.map((item) => item.id)).toEqual(['multiple'])
+  expect(queryArchive(records, { field: 'Geometry' }).items.map((item) => item.id)).toEqual(['legacy'])
+  expect(queryArchive(records, { search: '없음' }).facets.fields).toEqual(
+    expect.arrayContaining(['대수기하', 'Topology', '복소해석학', 'Geometry'])
+  )
+  expect(queryArchive(records).facets.fields).not.toContain('Private Topic')
+})

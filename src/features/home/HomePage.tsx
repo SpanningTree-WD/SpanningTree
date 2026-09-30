@@ -1,3 +1,4 @@
+import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
@@ -84,7 +85,7 @@ export function HomePage() {
                     <Link to={`/mathematics/${item.slug}`}>
                       <strong>{item.title}</strong>
                       <small>
-                        {item.type} · {item.field} · {item.year}
+                        {item.type} · {formatMathematicsFields(item)} · {item.year}
                       </small>
                     </Link>
                   </article>
