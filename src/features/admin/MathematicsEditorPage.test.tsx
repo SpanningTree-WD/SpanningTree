@@ -28,7 +28,7 @@ function show(record?: Mathematics) {
     { path: '/admin/mathematics/new', element: <MathematicsEditorPage /> },
   ], { initialEntries: [record ? '/admin/mathematics/' + record.id + '/edit' : '/admin/mathematics/new'] })} />)
 }
-const choose = (name: string) => fireEvent.click(screen.getByRole('checkbox', { name, exact: true }))
+const choose = (name: string) => fireEvent.click(screen.getByRole('checkbox', { name }))
 function add(name: string) {
   fireEvent.change(screen.getByLabelText('새 분야 이름'), { target: { value: name } })
   fireEvent.click(screen.getByRole('button', { name: '분야 추가' }))
@@ -52,7 +52,7 @@ it('saves several fields on a new article and keeps the first as the legacy fiel
 
 it('loads legacy fields and preserves the URL, content and unrelated tags when adding fields', async () => {
   show(legacy)
-  expect(await screen.findByRole('checkbox', { name: '기하학', exact: true })).toBeChecked()
+  expect(await screen.findByRole('checkbox', { name: '기하학' })).toBeChecked()
   add('대수기하')
   choose('위상수학')
   add('복소해석학')
@@ -63,15 +63,15 @@ it('loads legacy fields and preserves the URL, content and unrelated tags when a
     slug: legacy.slug, content: legacy.content, tags: legacy.tags,
     field: '대수기하', fields: ['대수기하', 'Topology', '복소해석학'],
   }))
-  expect(screen.getByRole('checkbox', { name: '대수기하', exact: true })).toBeChecked()
-  expect(screen.getByRole('checkbox', { name: '위상수학', exact: true })).toBeChecked()
-  expect(screen.getByRole('checkbox', { name: '복소해석학', exact: true })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '대수기하' })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '위상수학' })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '복소해석학' })).toBeChecked()
 })
 
 it('loads every saved field and changes the primary field when it is removed', async () => {
   const record = { ...legacy, field: '대수기하', fields: ['대수기하', 'Topology', '복소해석학'] }
   show(record)
-  expect(await screen.findByRole('checkbox', { name: '복소해석학', exact: true })).toBeChecked()
+  expect(await screen.findByRole('checkbox', { name: '복소해석학' })).toBeChecked()
   choose('대수기하')
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   await screen.findByText('저장했습니다.')
@@ -97,7 +97,7 @@ it('keeps selected fields and existing classifications after a failed save', asy
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('서버 저장 실패')
   expect(screen.getByRole('checkbox', { name: 'Legacy Field' })).toBeChecked()
-  expect(screen.getByRole('checkbox', { name: '위상수학', exact: true })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '위상수학' })).toBeChecked()
   expect(screen.queryByText('저장했습니다.')).not.toBeInTheDocument()
 })
 
@@ -106,7 +106,7 @@ it('offers custom fields from other saved articles without predefining them in c
   show(legacy)
   await screen.findByDisplayValue(legacy.title)
   choose('위상수학')
-  expect(await screen.findByRole('checkbox', { name: '조화해석', exact: true })).not.toBeChecked()
+  expect(await screen.findByRole('checkbox', { name: '조화해석' })).not.toBeChecked()
   choose('조화해석')
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   await screen.findByText('저장했습니다.')
@@ -125,10 +125,10 @@ it('rejects empty and duplicate names, recognizes preset labels, and adds with E
   const input = screen.getByLabelText('새 분야 이름')
   fireEvent.change(input, { target: { value: '  자유 분야  ' } })
   fireEvent.keyDown(input, { key: 'Enter' })
-  expect(screen.getByRole('checkbox', { name: '자유 분야', exact: true })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '자유 분야' })).toBeChecked()
   expect(repository.update).not.toHaveBeenCalled()
   add('자유 분야')
-  expect(screen.getAllByRole('checkbox', { name: '자유 분야', exact: true })).toHaveLength(1)
+  expect(screen.getAllByRole('checkbox', { name: '자유 분야' })).toHaveLength(1)
 })
 
 it('still permits adding custom fields if loading saved suggestions fails', async () => {
@@ -136,6 +136,6 @@ it('still permits adding custom fields if loading saved suggestions fails', asyn
   show(legacy)
   await screen.findByText(/저장된 분야 목록을 불러오지 못했습니다/)
   add('새 분야')
-  expect(screen.getByRole('checkbox', { name: '새 분야', exact: true })).toBeChecked()
-  expect(screen.getByRole('checkbox', { name: '기하학', exact: true })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '새 분야' })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: '기하학' })).toBeChecked()
 })

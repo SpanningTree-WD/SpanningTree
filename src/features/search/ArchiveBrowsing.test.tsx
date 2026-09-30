@@ -128,7 +128,7 @@ it('shows all article fields and finds the article from a secondary field or Kor
   await screen.findByText('1개 결과')
   expect(titles()).toEqual(['Sylow’s Theorems'])
   expect(screen.getByRole('article')).toHaveTextContent('대수기하 · 위상수학 · 복소해석학')
-  fireEvent.click(screen.getByRole('button', { name: 'Topology', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Topology' }))
   expect(titles()).toEqual(['Sylow’s Theorems', 'An Introduction to Fundamental Groups'])
   await act(() => router.navigate('/search?q=' + encodeURIComponent('복소해석학')))
   await screen.findByText('1개 결과')

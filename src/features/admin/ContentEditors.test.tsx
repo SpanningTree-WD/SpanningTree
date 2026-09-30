@@ -58,7 +58,7 @@ it.each([
     }
     fireEvent.change(screen.getByLabelText(new RegExp(type)), { target: { value } })
     if (path === 'mathematics')
-      fireEvent.click(screen.getByRole('checkbox', { name: '대수학', exact: true }))
+      fireEvent.click(screen.getByRole('checkbox', { name: '대수학' }))
     fireEvent.change(screen.getByLabelText(body), {
       target: { value: '기초부터 함께 공부합니다.' },
     })
