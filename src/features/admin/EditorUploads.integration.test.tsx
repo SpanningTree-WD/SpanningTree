@@ -158,7 +158,7 @@ it.each(['activities', 'mathematics', 'publications'])(
     expect(within(panel).getByText(pdf.name)).toBeVisible()
     expect(within(preview).getByText(pdf.name)).toBeVisible()
     expect(within(panel).getAllByText('이 글에 첨부 예정 · 저장 필요')).toHaveLength(2)
-    fireEvent.click(screen.getByRole('button', { name: '작성', exact: true }))
+    fireEvent.click(screen.getByRole('button', { name: '작성' }))
     expect(screen.getByLabelText(/제목/)).toHaveValue('새 첨부 글')
     expect(screen.getByText(image.name)).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: '미리보기' }))
