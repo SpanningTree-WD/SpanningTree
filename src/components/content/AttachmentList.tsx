@@ -1,9 +1,22 @@
 import type { Attachment } from '../../models/common'
 import { isUploadUrl } from '../../services/uploads/uploadTypes'
 
-export function AttachmentList({ files }: { files: Attachment[] }) {
+export interface PendingAttachment {
+  id: string
+  fileName: string
+  sizeLabel: string
+  stateText: string
+}
+
+export function AttachmentList({
+  files,
+  pendingFiles = [],
+}: {
+  files: Attachment[]
+  pendingFiles?: PendingAttachment[]
+}) {
   const available = files.filter((file) => isUploadUrl(file.url))
-  if (!available.length) return null
+  if (!available.length && !pendingFiles.length) return null
   return (
     <section className="attachments">
       <h2>첨부 파일</h2>
@@ -24,6 +37,15 @@ export function AttachmentList({ files }: { files: Attachment[] }) {
           >
             PDF 다운로드
           </a>
+        </div>
+      ))}
+      {pendingFiles.map((file) => (
+        <div className="attachment attachment-pending" key={file.id}>
+          <span>
+            {file.fileName}
+            <small>{file.sizeLabel}</small>
+          </span>
+          <span role="status">{file.stateText}</span>
         </div>
       ))}
     </section>

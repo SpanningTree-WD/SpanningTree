@@ -13,6 +13,8 @@ import {
 import { publicationTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
+import { ArticlePreview } from './ArticlePreview'
+import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 
 const empty: Publication = {
   id: '',
@@ -40,6 +42,11 @@ function validateExtra(form: Publication): Errors {
 export function PublicationEditorPage() {
   const {
     form,
+    preview,
+    previewing,
+    setPreviewing,
+    attachments,
+    cancel,
     set,
     errors,
     saving,
@@ -74,6 +81,8 @@ export function PublicationEditorPage() {
       section="출판물"
       path="/admin/publications"
       status={form.status}
+      onBack={cancel}
+      saving={saving}
     >
       {operationError && (
         <p className="field-error" role="alert">
@@ -81,7 +90,20 @@ export function PublicationEditorPage() {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      <div className="editor-view-toggle" aria-label="작성 화면 전환">
+        <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>작성</button>
+        <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>미리보기</button>
+      </div>
+      {previewing && <ArticlePreview collection="publications" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
+        pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
+          id: item.id, fileName: item.file.name,
+          sizeLabel: fileSizeLabel(item.file.size),
+          stateText: item.state === 'failed' ? '첨부 실패 · 아래에서 재시도'
+            : item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
+              : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기' : '첨부 처리 중',
+        }))} />}
       <fieldset className="admin-editor-fields" disabled={saving}>
+        <div hidden={previewing}>
         <Field
           label="제목"
           name="title"
@@ -117,14 +139,14 @@ export function PublicationEditorPage() {
           value={form.description}
           onChange={(v) => set('description', v)}
         />
+        </div>
         <UploadPanel
-          collection="publications"
-          recordId={form.id}
+          attachments={attachments}
+          onRetry={() => void save()}
           disabled={saving}
           image={form.coverImage}
-          files={form.pdf ? [form.pdf] : []}
+          files={!attachments.items.some((item) => item.file.type === 'application/pdf') && form.pdf ? [form.pdf] : []}
           onImage={(url) => set('coverImage', { ...form.coverImage, url })}
-          onPdf={(file) => set('pdf', file)}
           onRemovePdf={() => set('pdf', undefined)}
         />
         <EditorActions
@@ -133,6 +155,7 @@ export function PublicationEditorPage() {
           onSave={() => void save()}
           onPublish={() => void publish()}
           onUnpublish={() => void unpublish()}
+          onCancel={cancel}
         />
       </fieldset>
     </EditorFrame>

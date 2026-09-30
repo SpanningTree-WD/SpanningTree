@@ -1,5 +1,4 @@
-import { ContentImage } from '../../components/content/ContentImage'
-import { AttachmentList } from '../../components/content/AttachmentList'
+import { ActivityDetail } from '../../components/content/ContentDetail'
 import { useParams } from 'react-router-dom'
 import { RelatedContent } from '../../components/content/RelatedContent'
 import { ContentState, MissingContent } from '../../components/ui/ContentState'
@@ -39,30 +38,8 @@ export function ActivityDetailPage() {
     )
   if (!data) return <MissingContent />
   return (
-    <article className="page-container detail-page">
-      <header className="content-header">
-        <p className="eyebrow">Activity · {data.record.type}</p>
-        <h1>{data.record.title}</h1>
-        <div className="detail-meta">
-          <time>{data.record.date.replaceAll('-', '.')}</time> · {data.record.type}
-        </div>
-        <p className="detail-summary">{data.record.summary}</p>
-      </header>
-      <ContentImage className="detail-hero photo" media={data.record.coverImage} />
-      <div className="reading-body">
-        <p>{data.record.description}</p>
-      </div>
-      <section className="gallery">
-        <h2>Gallery</h2>
-        {data.record.gallery.map((media) => (
-          <figure key={media.alt}>
-            <ContentImage className="photo" media={media} />
-            <figcaption>{media.caption}</figcaption>
-          </figure>
-        ))}
-      </section>
-      <AttachmentList files={data.record.attachments ?? []} />
+    <ActivityDetail record={data.record}>
       <RelatedContent content={data.related} />
-    </article>
+    </ActivityDetail>
   )
 }

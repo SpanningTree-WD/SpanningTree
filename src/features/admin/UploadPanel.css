@@ -1,0 +1,10 @@
+.admin-upload-panel h2 { font-family: inherit; font-size: 18px; margin: 0 0 12px; }
+.article-attachment { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--color-line); padding: 14px 0; overflow-wrap: anywhere; }
+.article-attachment > div:first-child { flex: 1; min-width: 0; }
+.article-attachment p { margin: 4px 0; }
+.article-attachment progress { width: min(320px, 100%); margin-right: 12px; accent-color: var(--color-green); }
+.article-attachment small, .article-attachment > span { color: var(--color-muted); font-size: 13px; }
+.article-attachment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.editor-view-toggle { display: flex; gap: 8px; margin-bottom: 24px; }
+.editor-view-toggle button[aria-pressed="true"] { border-color: var(--color-green); color: var(--color-green); background: var(--color-paper); }
+.editor-page:has(.editor-article-preview) { max-width: var(--container-width); }
