@@ -1,5 +1,4 @@
-import { ContentImage } from '../../components/content/ContentImage'
-import { AttachmentList } from '../../components/content/AttachmentList'
+import { PublicationDetail } from '../../components/content/ContentDetail'
 import { useParams } from 'react-router-dom'
 import { RelatedContent } from '../../components/content/RelatedContent'
 import { ContentState, MissingContent } from '../../components/ui/ContentState'
@@ -38,36 +37,9 @@ export function PublicationDetailPage() {
       </div>
     )
   if (!data) return <MissingContent />
-  const r = data.record
   return (
-    <article className="page-container detail-page">
-      <header className="content-header">
-        <p className="eyebrow">Publication · {r.type}</p>
-        <h1>{r.title}</h1>
-        <div className="detail-meta">
-          {r.type} · {r.year}
-        </div>
-        <p className="detail-summary">{r.summary}</p>
-      </header>
-      <div className="publication-detail-grid">
-        <ContentImage className="cover detail-cover" media={r.coverImage} title={r.title} />
-        <div>
-          <h2>About this publication</h2>
-          <p>{r.description}</p>
-          <dl className="metadata-list">
-            <div>
-              <dt>Editors</dt>
-              <dd>{r.editors.join(', ') || '—'}</dd>
-            </div>
-            <div>
-              <dt>Contributors</dt>
-              <dd>{r.authors.join(', ') || 'Spanning Tree members'}</dd>
-            </div>
-          </dl>
-          <AttachmentList files={r.pdf ? [r.pdf] : []} />
-        </div>
-      </div>
+    <PublicationDetail record={data.record}>
       <RelatedContent content={data.related} />
-    </article>
+    </PublicationDetail>
   )
 }

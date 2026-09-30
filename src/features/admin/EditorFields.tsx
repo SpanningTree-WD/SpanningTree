@@ -159,17 +159,26 @@ export function EditorFrame({
   path,
   status,
   children,
+  onBack,
+  saving,
 }: {
   title: string
   section: string
   path: string
   status: 'draft' | 'published'
   children: ReactNode
+  onBack?: () => void
+  saving?: boolean
 }) {
   return (
     <div className="admin-page editor-page">
       <header className="admin-page-head">
-        <Link className="back-link" to={path}>
+        <Link className="back-link" to={path} aria-disabled={saving} onClick={(event) => {
+          if (onBack || saving) {
+            event.preventDefault()
+            if (!saving) onBack?.()
+          }
+        }}>
           ← {section} 목록
         </Link>
         <div className="editor-title">
@@ -190,15 +199,18 @@ export function EditorActions({
   onSave,
   onPublish,
   onUnpublish,
+  onCancel,
 }: {
   status: 'draft' | 'published'
   saving: boolean
   onSave: () => void
   onPublish: () => void
   onUnpublish: () => void
+  onCancel?: () => void
 }) {
   return (
     <div className="editor-actions">
+      {onCancel && <button type="button" onClick={onCancel} disabled={saving}>작성 취소</button>}
       <button type="button" onClick={onSave} disabled={saving}>
         {saving ? '처리 중…' : status === 'draft' ? '임시 저장' : '변경사항 저장'}
       </button>

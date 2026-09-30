@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import type { Attachment, MediaReference } from '../../models/common'
 import type { AdminRepository } from '../../repositories/contracts'
+import type { UploadCollection } from '../../services/uploads/uploadTypes'
 import { adminErrorMessage } from './adminErrors'
 import type { Errors } from './EditorFields'
 import { prepareEditorRecord } from './editorMetadata'
+import { useArticleAttachments } from './useArticleAttachments'
 
 interface EditableRecord {
   id: string
@@ -13,10 +16,18 @@ interface EditableRecord {
   summary: string
   content?: string
   description?: string
-  coverImage: { alt: string; variant: string; caption?: string }
+  coverImage: MediaReference
+  attachments?: Attachment[]
+  pdf?: Attachment
   status: 'draft' | 'published'
   createdAt: string
   updatedAt: string
+}
+
+interface EditorSession {
+  key: string
+  active: boolean
+  operation?: AbortController
 }
 
 export function useAdminEditor<T extends EditableRecord>(
@@ -26,6 +37,7 @@ export function useAdminEditor<T extends EditableRecord>(
   validateExtra: (form: T) => Errors
 ) {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [form, setForm] = useState(empty)
   const [errors, setErrors] = useState<Errors>({})
@@ -33,62 +45,102 @@ export function useAdminEditor<T extends EditableRecord>(
   const [notice, setNotice] = useState('')
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
-  const [loadedId, setLoadedId] = useState<string>()
+  const [previewing, setPreviewing] = useState(false)
+  const [loadedSession, setLoadedSession] = useState<string>()
   const [loadError, setLoadError] = useState('')
   const [retry, setRetry] = useState(0)
-  const inFlight = useRef(false)
+  const session = useRef<EditorSession | null>(null)
   const previous = useRef(empty)
+  const sessionKey = `${path}/${id ?? 'new'}:${location.key}:${retry}`
+  const markDirty = useCallback(() => {
+    setDirty(true)
+    setNotice('')
+  }, [])
+  const attachments = useArticleAttachments(
+    path.split('/').pop() as UploadCollection,
+    sessionKey,
+    markDirty
+  )
 
-  useEffect(() => {
-    let active = true
+  useLayoutEffect(() => {
+    const current: EditorSession = { key: sessionKey, active: true }
+    session.current = current
     setLoadError('')
+    setLoadedSession(undefined)
     setErrors({})
     setOperationError('')
     setNotice('')
+    setSaving(false)
     setDirty(false)
+    setPreviewing(false)
+
     if (!id) {
       const initial = { ...empty, slug: `${path.split('/').pop()}-${crypto.randomUUID()}` }
       setForm(initial)
       previous.current = initial
-      setLoadedId('new')
-      return
+      setLoadedSession(sessionKey)
+    } else {
+      repository
+        .getById(id)
+        .then((record) => {
+          if (!current.active) return
+          if (!record) {
+            setLoadError('자료가 존재하지 않습니다.')
+            return
+          }
+          setForm(record)
+          previous.current = record
+          setLoadedSession(sessionKey)
+        })
+        .catch((error) => {
+          if (current.active) setLoadError(adminErrorMessage(error))
+        })
     }
-    repository
-      .getById(id)
-      .then((record) => {
-        if (!active) return
-        if (!record) {
-          setLoadError('자료가 존재하지 않습니다.')
-          return
-        }
-        setForm(record)
-        previous.current = record
-        setLoadedId(id)
-      })
-      .catch((error) => {
-        if (active) setLoadError(adminErrorMessage(error))
-      })
+
     return () => {
-      active = false
+      current.active = false
+      current.operation?.abort()
+      if (session.current === current) session.current = null
     }
-  }, [id, repository, empty, path, retry])
+  }, [id, repository, empty, path, sessionKey])
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty) event.preventDefault()
+      if (dirty || attachments.hasPending) event.preventDefault()
     }
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
-  }, [dirty])
+  }, [dirty, attachments.hasPending])
 
   function set<K extends keyof T>(key: K, value: T[K]) {
     setForm((current) => ({ ...current, [key]: value }))
-    setDirty(true)
-    setNotice('')
+    markDirty()
+  }
+
+  function cancel() {
+    const current = session.current
+    if (!current?.active || current.key !== sessionKey) return
+    if (
+      (dirty || attachments.hasPending || saving) &&
+      !window.confirm('저장하지 않은 변경사항과 첨부 파일 선택을 취소하시겠습니까?')
+    )
+      return
+    current.active = false
+    current.operation?.abort()
+    attachments.clear()
+    navigate(path)
   }
 
   async function perform(action: 'save' | 'publish' | 'unpublish') {
-    if (inFlight.current || loadedId !== (id ?? 'new') || loadError) return
+    const current = session.current
+    if (
+      !current?.active ||
+      current.key !== sessionKey ||
+      current.operation ||
+      loadedSession !== sessionKey ||
+      loadError
+    )
+      return
     const next: Errors = {
       ...validateExtra(form),
       ...(!form.title.trim() ? { title: '제목을 입력해 주세요.' } : {}),
@@ -96,6 +148,7 @@ export function useAdminEditor<T extends EditableRecord>(
     }
     if (action !== 'unpublish' && Object.keys(next).length) {
       setErrors(next)
+      setPreviewing(false)
       return
     }
     setErrors({})
@@ -108,7 +161,14 @@ export function useAdminEditor<T extends EditableRecord>(
       )
     )
       return
-    inFlight.current = true
+
+    const operation = new AbortController()
+    current.operation = operation
+    const isCurrent = () =>
+      current.active && session.current === current && !operation.signal.aborted
+    const checkpoint = () => {
+      if (!isCurrent()) throw new DOMException('작성이 취소되었습니다.', 'AbortError')
+    }
     setSaving(true)
     setOperationError('')
     setNotice('')
@@ -116,14 +176,38 @@ export function useAdminEditor<T extends EditableRecord>(
       let record: T
       if (action === 'unpublish') {
         record = await repository.unpublish(form.id)
+        checkpoint()
+        attachments.clear()
       } else {
         const input = prepareEditorRecord(form, previous.current)
-        record = form.id ? await repository.update(form.id, input) : await repository.create(input)
+        if (attachments.hasPending) {
+          let base = input
+          if (!base.id) {
+            // Uploads require an existing draft. Retain its ID even if a later upload fails.
+            base = await repository.create(input)
+            checkpoint()
+            setForm(base)
+            previous.current = base
+          }
+          const attached = await attachments.prepare(base, operation.signal)
+          checkpoint()
+          record = await repository.update(base.id, attached)
+          checkpoint()
+          attachments.clear()
+        } else {
+          record = form.id
+            ? await repository.update(form.id, input)
+            : await repository.create(input)
+          checkpoint()
+        }
         // Retain a successful save even if the following publish request fails.
         setForm(record)
         previous.current = record
         setDirty(false)
-        if (action === 'publish') record = await repository.publish(record.id)
+        if (action === 'publish') {
+          record = await repository.publish(record.id)
+          checkpoint()
+        }
       }
       setForm(record)
       previous.current = record
@@ -135,15 +219,13 @@ export function useAdminEditor<T extends EditableRecord>(
             ? '비공개로 전환했습니다.'
             : '저장했습니다.'
       )
-      if (!id) {
-        setLoadedId(record.id)
-        navigate(path + '/' + record.id + '/edit', { replace: true })
-      }
+      if (!id) navigate(path + '/' + record.id + '/edit', { replace: true })
     } catch (error) {
-      setOperationError(adminErrorMessage(error))
+      // A late response from another article must not change this editor.
+      if (isCurrent()) setOperationError(adminErrorMessage(error))
     } finally {
-      inFlight.current = false
-      setSaving(false)
+      if (current.operation === operation) current.operation = undefined
+      if (isCurrent()) setSaving(false)
     }
   }
 
@@ -152,10 +234,15 @@ export function useAdminEditor<T extends EditableRecord>(
     set,
     errors,
     saving,
-    loading: loadedId !== (id ?? 'new'),
+    loading: loadedSession !== sessionKey,
     loadError,
     operationError,
     notice,
+    attachments,
+    preview: prepareEditorRecord(form, previous.current),
+    previewing,
+    setPreviewing,
+    cancel,
     retryLoad: () => setRetry((value) => value + 1),
     save: () => perform('save'),
     publish: () => perform('publish'),

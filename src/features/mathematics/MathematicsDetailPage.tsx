@@ -1,9 +1,6 @@
-import { formatMathematicsFields } from '../../models/mathematicsFields'
-import { ContentImage } from '../../components/content/ContentImage'
-import { AttachmentList } from '../../components/content/AttachmentList'
+import { MathematicsDetail } from '../../components/content/ContentDetail'
 import { useParams } from 'react-router-dom'
 import { RelatedContent } from '../../components/content/RelatedContent'
-import { MarkdownRenderer } from '../../components/content/MarkdownRenderer'
 import { ContentState, MissingContent } from '../../components/ui/ContentState'
 import { mathematicsRepository, resolveRelated } from '../../repositories/publicRepositories'
 import { useRepository } from '../shared/useRepository'
@@ -41,23 +38,9 @@ export function MathematicsDetailPage() {
       </div>
     )
   if (!data) return <MissingContent />
-  const r = data.record
   return (
-    <article className="page-container detail-page">
-      <header className="content-header">
-        <p className="eyebrow">Mathematics · {formatMathematicsFields(r)}</p>
-        <h1>{r.title}</h1>
-        <div className="detail-meta">
-          {r.authors.join(', ')} · {r.type} · {formatMathematicsFields(r)} · {r.year}
-        </div>
-        <p className="detail-summary">{r.summary}</p>
-      </header>
-      {r.coverImage.url && <ContentImage className="detail-hero" media={r.coverImage} />}
-      <div className="reading-body">
-        <MarkdownRenderer content={r.content} />
-        <AttachmentList files={r.attachments} />
-      </div>
+    <MathematicsDetail record={data.record}>
       <RelatedContent content={data.related} />
-    </article>
+    </MathematicsDetail>
   )
 }

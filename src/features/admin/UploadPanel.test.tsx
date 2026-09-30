@@ -1,154 +1,115 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import type { Attachment } from '../../models/common'
+import type { ArticleAttachments, SelectedAttachment } from './useArticleAttachments'
 import { UploadPanel } from './UploadPanel'
-import type { UploadRequest } from '../../services/uploads/uploadTypes'
-const service = vi.hoisted(() => ({
-  watchUpload: vi.fn(),
-  queueGitHubUpload: vi.fn(),
-  cancelUpload: vi.fn(),
-}))
-const trigger = vi.hoisted(() => ({
-  hasUploadTrigger: vi.fn(),
-  triggerUpload: vi.fn(),
-}))
-vi.mock('../../services/uploads/triggerUpload', () => trigger)
-vi.mock('../../services/uploads/GitHubUploadService', () => service)
-let notify: (request: UploadRequest | null) => void
-const request: UploadRequest = {
-  uploadId: 'test',
-  ownerId: 'editor',
-  collection: 'activities',
-  recordId: 'saved',
-  fileName: '포럼.pdf',
-  mediaType: 'application/pdf',
-  size: 1000,
-  sha256: 'a'.repeat(64),
-  chunkCount: 1,
-  state: 'queued',
-  publicConsent: true,
-}
-const props = {
-  collection: 'activities' as const,
-  recordId: 'saved',
-  disabled: false,
-  image: { alt: '', variant: 'a' },
-  files: [],
-  onImage: vi.fn(),
-  onPdf: vi.fn(),
-  onRemovePdf: vi.fn(),
-}
-beforeEach(() => {
-  vi.clearAllMocks()
-  service.watchUpload.mockImplementation((callback, _error, connection) => {
-    notify = callback
-    connection?.('live')
-    return () => {}
-  })
-  service.queueGitHubUpload.mockResolvedValue(undefined)
-  trigger.hasUploadTrigger.mockReturnValue(false)
-  trigger.triggerUpload.mockResolvedValue('requested')
-})
+
 afterEach(cleanup)
-function show(recordId = 'saved') {
-  render(
-    <MemoryRouter>
-      <UploadPanel {...props} recordId={recordId} />
-    </MemoryRouter>
-  )
-  fireEvent.click(screen.getByText('이미지·PDF 첨부 (선택)'))
+
+const imageUrl = '/uploads/' + 'a'.repeat(64) + '.png'
+const pdf: Attachment = {
+  label: '기존 자료',
+  fileName: 'shared-notes.pdf',
+  mediaType: 'application/pdf',
+  sizeLabel: '1 KB',
+  url: '/uploads/' + 'b'.repeat(64) + '.pdf',
 }
-it('requires a saved record and clearly explains public storage', () => {
-  show('')
-  expect(screen.getByText(/먼저 임시 저장/)).toBeVisible()
-  expect(screen.getByText(/글을 비공개로 해도 파일은 공개/)).toBeVisible()
-  expect(screen.queryByLabelText('PDF · 20MB 이하')).not.toBeInTheDocument()
+function attachmentState(patch: Partial<ArticleAttachments> = {}): ArticleAttachments {
+  return {
+    items: [], error: '', stage: vi.fn(), remove: vi.fn(), clear: vi.fn(),
+    prepare: async (record) => record,
+    hasPending: false, imagePreviewUrl: undefined, ...patch,
+  }
+}
+function selected(patch: Partial<SelectedAttachment> = {}): SelectedAttachment {
+  return {
+    id: 'selection-A',
+    file: new File(['%PDF-1.4'], 'selected.pdf', { type: 'application/pdf' }),
+    state: 'selected',
+    ...patch,
+  }
+}
+function props(attachments = attachmentState()) {
+  return {
+    disabled: false,
+    image: { alt: '대표 이미지', variant: 'a' },
+    files: [] as Attachment[],
+    attachments,
+    onImage: vi.fn(),
+    onRemovePdf: vi.fn(),
+    onRetry: vi.fn(),
+  }
+}
+
+it('accepts selections immediately without requiring a saved article', () => {
+  const input = props()
+  render(<UploadPanel {...input} />)
+  expect(screen.getByRole('region', { name: '이 글의 첨부 파일' })).toBeInTheDocument()
+  expect(screen.getByText(/저장을 누르면 이 글에 함께 저장/)).toBeInTheDocument()
+  expect(screen.queryByText(/GitHub/)).not.toBeInTheDocument()
+  const file = new File(['picture'], 'photo.png', { type: 'image/png' })
+  fireEvent.change(screen.getByLabelText('대표 이미지 · 8MB 이하'), { target: { files: [file] } })
+  expect(input.attachments.stage).toHaveBeenCalledWith(file)
+  expect(input.onImage).not.toHaveBeenCalled()
+  expect(input.onRemovePdf).not.toHaveBeenCalled()
 })
-it('queues a selected file, blocks overlapping uploads and only attaches after deployment', async () => {
-  show()
-  const file = new File(['%PDF-1.4'], '포럼.pdf', { type: 'application/pdf' })
-  await act(async () =>
-    fireEvent.change(screen.getByLabelText('PDF · 20MB 이하'), {
-      target: { files: [file] },
-    })
-  )
-  expect(service.queueGitHubUpload).toHaveBeenCalledWith(
-    file,
-    'activities',
-    'saved',
-    expect.any(Function)
-  )
-  act(() => notify(request))
+
+it('shows selected filenames and their unsaved attachment status with a local remove action', () => {
+  const item = selected()
+  const input = props(attachmentState({ items: [item], hasPending: true }))
+  render(<UploadPanel {...input} />)
+  expect(screen.getByText(item.file.name)).toBeInTheDocument()
+  expect(screen.getByRole('status')).toHaveTextContent('이 글에 첨부 예정 · 저장 필요')
+  fireEvent.click(screen.getByRole('button', { name: 'selected.pdf 첨부 취소' }))
+  expect(input.attachments.remove).toHaveBeenCalledWith(item.id)
+  expect(input.onRemovePdf).not.toHaveBeenCalled()
+})
+
+it('shows transfer progress and then indeterminate processing without inventing a percent', () => {
+  const input = props(attachmentState({
+    items: [selected({ state: 'uploading', percent: 27 })], hasPending: true,
+  }))
+  const rendered = render(<UploadPanel {...input} />)
+  expect(screen.getByRole('status')).toHaveTextContent('파일 전송 중')
+  expect(screen.getByRole('progressbar', { name: 'selected.pdf 업로드 진행률' })).toHaveAttribute('value', '27')
+  rendered.rerender(<UploadPanel {...input} attachments={attachmentState({
+    items: [selected({ state: 'processing' })], hasPending: true,
+  })} />)
+  expect(screen.getByRole('status')).toHaveTextContent('파일 준비 중')
+  expect(screen.getByRole('progressbar')).not.toHaveAttribute('value')
+})
+
+it('keeps the failed file visible and retries through the article save action', () => {
+  const input = props(attachmentState({
+    items: [selected({ state: 'failed', error: '연결이 끊어졌습니다.' })], hasPending: true,
+  }))
+  render(<UploadPanel {...input} />)
+  expect(screen.getByRole('status')).toHaveTextContent('첨부 실패')
+  expect(screen.getByRole('alert')).toHaveTextContent('연결이 끊어졌습니다.')
+  fireEvent.click(screen.getByRole('button', { name: '첨부 재시도 및 저장' }))
+  expect(input.onRetry).toHaveBeenCalledOnce()
+  expect(input.attachments.stage).not.toHaveBeenCalled()
+})
+
+it('detaches only the provided article reference and leaves stored file deletion to no UI action', () => {
+  const input = { ...props(), image: { alt: '대표 이미지', variant: 'a', url: imageUrl }, files: [pdf] }
+  render(<UploadPanel {...input} />)
+  expect(screen.getAllByText('이 글에 첨부됨')).toHaveLength(2)
+  expect(screen.getByRole('link', { name: /shared-notes.pdf/ })).toHaveAttribute('href', pdf.url)
+  fireEvent.click(screen.getByRole('button', { name: 'PDF 첨부 해제' }))
+  expect(input.onRemovePdf).toHaveBeenCalledWith(pdf.url)
+  fireEvent.click(screen.getByRole('button', { name: '이미지 첨부 해제' }))
+  expect(input.onImage).toHaveBeenCalledWith(undefined)
+  expect(input.attachments.remove).not.toHaveBeenCalled()
+})
+
+it('disables selection, removal and retry while the article is saving', () => {
+  const input = props(attachmentState({
+    items: [selected({ state: 'failed', error: '일시적인 오류' })], hasPending: true,
+  }))
+  render(<UploadPanel {...input} disabled />)
+  expect(screen.getByLabelText('대표 이미지 · 8MB 이하')).toBeDisabled()
   expect(screen.getByLabelText('PDF · 20MB 이하')).toBeDisabled()
-  expect(screen.queryByRole('button', { name: '글에 첨부' })).not.toBeInTheDocument()
-  act(() =>
-    notify({
-      ...request,
-      state: 'committed',
-      url: `/uploads/${request.sha256}.pdf`,
-    })
-  )
-  expect(screen.queryByRole('button', { name: '글에 첨부' })).not.toBeInTheDocument()
-  act(() =>
-    notify({
-      ...request,
-      state: 'complete',
-      url: `/uploads/${request.sha256}.pdf`,
-    })
-  )
-  fireEvent.click(screen.getByRole('button', { name: '글에 첨부' }))
-  expect(props.onPdf).toHaveBeenCalledWith(
-    expect.objectContaining({
-      fileName: '포럼.pdf',
-      url: `/uploads/${request.sha256}.pdf`,
-    })
-  )
-})
-it('keeps another record’s upload attached to its original target', () => {
-  show()
-  act(() =>
-    notify({
-      ...request,
-      recordId: 'another',
-      state: 'complete',
-      url: `/uploads/${request.sha256}.pdf`,
-    })
-  )
-  expect(screen.queryByRole('button', { name: '글에 첨부' })).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: '해당 글로 이동' })).toHaveAttribute(
-    'href',
-    '/admin/activities/another/edit'
-  )
-})
-it('explains immediate dispatch and allows retrying a queued file without re-uploading', async () => {
-  trigger.hasUploadTrigger.mockReturnValue(true)
-  show()
-  act(() => notify(request))
-  expect(screen.getByText(/파일 전송 후 바로 처리 시작/)).toBeVisible()
-  await act(async () => fireEvent.click(screen.getByRole('button', { name: '지금 처리 요청' })))
-  expect(trigger.triggerUpload).toHaveBeenCalledWith(request.uploadId)
-  expect(service.queueGitHubUpload).not.toHaveBeenCalled()
-  expect(screen.getByText(/처리 시작을 요청했습니다/)).toBeVisible()
-})
-it('replaces an old completion with the new file progress before the new server request arrives', async () => {
-  show()
-  act(() => notify({ ...request, state: 'complete' }))
-  let finish: (value: { trigger: string }) => void = () => {}
-  service.queueGitHubUpload.mockReturnValueOnce(
-    new Promise((resolve) => {
-      finish = resolve
-    })
-  )
-  const file = new File(['%PDF-1.4'], '다음 파일.pdf', {
-    type: 'application/pdf',
-  })
-  fireEvent.change(screen.getByLabelText('PDF · 20MB 이하'), {
-    target: { files: [file] },
-  })
-  expect(screen.getByText('다음 파일.pdf')).toBeVisible()
-  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
-  expect(screen.queryByText('완료 100%')).not.toBeInTheDocument()
-  act(() => notify({ ...request, uploadId: 'next', fileName: file.name }))
-  await act(async () => finish({ trigger: 'scheduled' }))
-  expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow')
+  expect(screen.getByRole('button', { name: '첨부 재시도 및 저장' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'selected.pdf 첨부 취소' })).toBeDisabled()
 })

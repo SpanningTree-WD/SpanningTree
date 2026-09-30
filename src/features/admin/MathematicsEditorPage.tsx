@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { MarkdownRenderer } from '../../components/content/MarkdownRenderer'
 import type { Mathematics } from '../../models/mathematics'
 import { mathematicsRepository } from '../../repositories/adminRepositories'
 import {
@@ -16,6 +15,8 @@ import { getMathematicsFields } from '../../models/mathematicsFields'
 import { MathematicsFieldPicker } from './MathematicsFieldPicker'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
+import { ArticlePreview } from './ArticlePreview'
+import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 
 const empty: Mathematics = {
   id: '',
@@ -49,6 +50,11 @@ function validateExtra(form: Mathematics): Errors {
 export function MathematicsEditorPage() {
   const {
     form,
+    preview,
+    previewing,
+    setPreviewing,
+    attachments,
+    cancel,
     set,
     errors,
     saving,
@@ -83,6 +89,8 @@ export function MathematicsEditorPage() {
       section="수학 자료"
       path="/admin/mathematics"
       status={form.status}
+      onBack={cancel}
+      saving={saving}
     >
       {operationError && (
         <p className="field-error" role="alert">
@@ -90,7 +98,20 @@ export function MathematicsEditorPage() {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      <div className="editor-view-toggle" aria-label="작성 화면 전환">
+        <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>작성</button>
+        <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>미리보기</button>
+      </div>
+      {previewing && <ArticlePreview collection="mathematics" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
+        pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
+          id: item.id, fileName: item.file.name,
+          sizeLabel: fileSizeLabel(item.file.size),
+          stateText: item.state === 'failed' ? '첨부 실패 · 아래에서 재시도'
+            : item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
+              : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기' : '첨부 처리 중',
+        }))} />}
       <fieldset className="admin-editor-fields" disabled={saving}>
+        <div hidden={previewing}>
         <Field
           label="제목"
           name="title"
@@ -129,7 +150,7 @@ export function MathematicsEditorPage() {
             set('field', fields[0] ?? '')
           }}
         />
-        <section className="markdown-editor">
+        <section className="article-body-editor">
           <div>
             <TextAreaField
               label="본문"
@@ -142,14 +163,11 @@ export function MathematicsEditorPage() {
               마크다운으로 작성할 수 있습니다. 수식은 \(…\), 독립된 수식은 $$…$$로 감싸 주세요.
             </p>
           </div>
-          <div className="markdown-preview">
-            <span className="field-label">미리보기</span>
-            <MarkdownRenderer content={form.content} />
-          </div>
         </section>
+        </div>
         <UploadPanel
-          collection="mathematics"
-          recordId={form.id}
+          attachments={attachments}
+          onRetry={() => void save()}
           disabled={saving}
           image={form.coverImage}
           files={form.attachments}
@@ -160,9 +178,6 @@ export function MathematicsEditorPage() {
               form.attachments.filter((file) => file.url !== url)
             )
           }
-          onPdf={(file) =>
-            set('attachments', [...form.attachments.filter((item) => item.url !== file.url), file])
-          }
         />
         <EditorActions
           status={form.status}
@@ -170,6 +185,7 @@ export function MathematicsEditorPage() {
           onSave={() => void save()}
           onPublish={() => void publish()}
           onUnpublish={() => void unpublish()}
+          onCancel={cancel}
         />
       </fieldset>
     </EditorFrame>

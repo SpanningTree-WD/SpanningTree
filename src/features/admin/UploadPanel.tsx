@@ -1,276 +1,99 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import type { Attachment, MediaReference } from '../../models/common'
-import {
-  cancelUpload,
-  queueGitHubUpload,
-  watchUpload,
-} from '../../services/uploads/GitHubUploadService'
-import {
-  fileSizeLabel,
-  isUploadActive,
-  isUploadUrl,
-  type UploadCollection,
-  type UploadConnection,
-  type UploadRequest,
-} from '../../services/uploads/uploadTypes'
-import { adminErrorMessage } from './adminErrors'
-import { hasUploadTrigger, triggerUpload } from '../../services/uploads/triggerUpload'
-import { UploadProgress, type PendingUpload } from './UploadProgress'
+import { fileSizeLabel, isUploadUrl } from '../../services/uploads/uploadTypes'
+import type { ArticleAttachments } from './useArticleAttachments'
+import './UploadPanel.css'
+
 export function UploadPanel({
-  collection,
-  recordId,
-  disabled,
-  image,
-  files,
-  onImage,
-  onPdf,
-  onRemovePdf,
+  disabled, image, files, attachments, onImage, onRemovePdf, onRetry,
 }: {
-  collection: UploadCollection
-  recordId: string
   disabled: boolean
   image: MediaReference
   files: Attachment[]
+  attachments: ArticleAttachments
   onImage: (url: string | undefined) => void
-  onPdf: (file: Attachment) => void
   onRemovePdf: (url: string) => void
+  onRetry: () => void
 }) {
-  const [storedRequest, setRequest] = useState<UploadRequest | null>(null)
-  const [pending, setPending] = useState<PendingUpload | null>(null)
-  const [connection, setConnection] = useState<UploadConnection>('connecting')
-  const panel = useRef<HTMLDetailsElement>(null)
-  const [error, setError] = useState('')
-  const [progress, setProgress] = useState<number | null>(null)
-  const [triggerNotice, setTriggerNotice] = useState('')
-  const [scheduledFallback, setScheduledFallback] = useState(false)
-  const [triggering, setTriggering] = useState(false)
-  useEffect(() => {
-    try {
-      return watchUpload(
-        setRequest,
-        (failure) => setError(adminErrorMessage(failure)),
-        setConnection
-      )
-    } catch (failure) {
-      setConnection('error')
-      setError(adminErrorMessage(failure))
-    }
-  }, [])
-  // Show the new file immediately, even before its Firestore request is created.
-  const request =
-    pending && storedRequest?.uploadId === pending.previousUploadId ? null : storedRequest
-  const active = request && isUploadActive(request.state)
-  useEffect(() => {
-    if ((active || pending) && panel.current) panel.current.open = true
-  }, [active, pending, request?.uploadId])
-  const own = request?.collection === collection && request.recordId === recordId
-  const attached =
-    request?.url && (image.url === request.url || files.some((file) => file.url === request.url))
-  async function upload(file?: File) {
-    if (!file) return
-    setError('')
-    setTriggerNotice('')
-    setScheduledFallback(false)
-    setProgress(0)
-    setPending({
-      fileName: file.name,
-      size: file.size,
-      startedAtMs: Date.now(),
-      previousUploadId: storedRequest?.uploadId,
-    })
-    try {
-      const result = await queueGitHubUpload(file, collection, recordId, setProgress)
-      setScheduledFallback(result?.trigger === 'scheduled')
-      if (hasUploadTrigger())
-        setTriggerNotice(
-          result?.trigger === 'scheduled'
-            ? '파일 전송은 끝났습니다. 즉시 실행에 연결하지 못해 5분 간격의 예약 작업을 기다립니다.'
-            : '처리 시작을 요청했습니다. GitHub 실행과 사이트 배포가 끝날 때까지 기다려 주세요.'
-        )
-    } catch (failure) {
-      setError(adminErrorMessage(failure))
-    } finally {
-      setProgress(null)
-      setPending(null)
-    }
-  }
-  async function startNow() {
-    if (!request || triggering) return
-    setTriggering(true)
-    setError('')
-    try {
-      const result = await triggerUpload(request.uploadId)
-      setScheduledFallback(result === 'scheduled')
-      setTriggerNotice(
-        '처리 시작을 요청했습니다. GitHub 실행과 사이트 배포가 끝날 때까지 기다려 주세요.'
-      )
-    } catch (failure) {
-      setScheduledFallback(true)
-      setError(adminErrorMessage(failure))
-    } finally {
-      setTriggering(false)
-    }
-  }
-  function attach() {
-    if (!request?.url || !isUploadUrl(request.url)) return
-    if (request.mediaType === 'application/pdf')
-      onPdf({
-        label: request.fileName,
-        fileName: request.fileName,
-        mediaType: 'application/pdf',
-        sizeLabel: fileSizeLabel(request.size),
-        url: request.url,
-      })
-    else onImage(request.url)
-  }
+  const selectedImage = attachments.items.some((item) => item.file.type !== 'application/pdf')
   return (
-    <details className="admin-upload-panel" ref={panel}>
-      <summary>
-        이미지·PDF 첨부 (선택)
-        {(active || pending) && <span className="upload-summary-state">업로드 진행 중</span>}
-      </summary>
-      <p>파일은 GitHub에 공개 저장됩니다. 글을 비공개로 해도 파일은 공개됩니다.</p>
-      {!recordId ? (
-        <p>글을 먼저 임시 저장하면 파일을 올릴 수 있습니다.</p>
-      ) : (
-        <>
-          <div className="admin-form-grid">
-            <label className="admin-field">
-              <span>대표 이미지 · 8MB 이하</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={disabled || Boolean(active) || progress !== null}
-                onChange={(event) => {
-                  void upload(event.target.files?.[0])
-                  event.target.value = ''
-                }}
-              />
-            </label>
-            <label className="admin-field">
-              <span>PDF · 20MB 이하</span>
-              <input
-                type="file"
-                accept="application/pdf"
-                disabled={disabled || Boolean(active) || progress !== null}
-                onChange={(event) => {
-                  void upload(event.target.files?.[0])
-                  event.target.value = ''
-                }}
-              />
-            </label>
-          </div>
-          <p className="field-help">
-            {hasUploadTrigger()
-              ? '파일 전송 후 바로 처리 시작을 요청합니다. GitHub 실행과 사이트 배포에는 시간이 걸릴 수 있습니다.'
-              : '한 번에 한 파일씩 처리합니다. 서버는 5분 간격으로 확인하며 GitHub 사정에 따라 더 늦어질 수 있습니다.'}
-          </p>
-        </>
-      )}
-      {error && (
-        <p className="field-error" role="alert">
-          {error}
-        </p>
-      )}
-      {(request || pending) && (
-        <div className="upload-status">
-          <UploadProgress
-            request={request}
-            pending={pending}
-            percent={progress}
-            connection={connection}
-            immediate={hasUploadTrigger() && !scheduledFallback}
-          />
-          {request?.error && (
-            <p className="field-error" role="alert">
-              {request.error}
+    <section className="admin-upload-panel" aria-label="이 글의 첨부 파일">
+      <h2>이 글의 사진·파일</h2>
+      <p className="field-help">
+        파일을 선택하면 미리보기에 반영됩니다. 저장을 누르면 이 글에 함께 저장됩니다.
+        첨부 파일은 링크를 아는 누구나 열 수 있습니다.
+      </p>
+      <div className="admin-form-grid">
+        <label className="admin-field">
+          <span>대표 이미지 · 8MB 이하</span>
+          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) attachments.stage(file)
+              event.target.value = ''
+            }} />
+        </label>
+        <label className="admin-field">
+          <span>PDF · 20MB 이하</span>
+          <input type="file" accept="application/pdf" disabled={disabled}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) attachments.stage(file)
+              event.target.value = ''
+            }} />
+        </label>
+      </div>
+      {attachments.error && <p role="alert" className="field-error">{attachments.error}</p>}
+      {attachments.items.map((item) => (
+        <div className="article-attachment" key={item.id}>
+          <div>
+            <strong>{item.file.name}</strong> · {fileSizeLabel(item.file.size)}
+            <p role="status">
+              {item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
+                : item.state === 'uploading' ? '파일 전송 중'
+                  : item.state === 'processing' ? '파일 준비 중 · 완료되면 글에 자동 저장됩니다.'
+                    : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기'
+                      : '첨부 실패 · 파일을 다시 선택하지 않고 재시도할 수 있습니다.'}
             </p>
-          )}
-          {request && (
-            <>
-              {triggerNotice && isUploadActive(request.state) && <p>{triggerNotice}</p>}
-              {!own && (
-                <p>
-                  다른 글에 올린 파일입니다.{' '}
-                  <Link to={`/admin/${request.collection}/${request.recordId}/edit`}>
-                    해당 글로 이동
-                  </Link>
-                </p>
-              )}
-              {own && request.state === 'complete' && !attached && (
-                <button type="button" disabled={disabled} onClick={attach}>
-                  글에 첨부
-                </button>
-              )}
-              {own && attached && (
-                <p>첨부된 파일입니다. 변경한 내용은 아래 저장 버튼으로 반영해 주세요.</p>
-              )}
-              {hasUploadTrigger() &&
-                own &&
-                ['queued', 'committed'].includes(request.state) &&
-                progress === null && (
-                  <button
-                    type="button"
-                    disabled={disabled || triggering}
-                    onClick={() => void startNow()}
-                  >
-                    {triggering ? '실행 요청 중…' : '지금 처리 요청'}
-                  </button>
-                )}
-              {['uploading', 'queued'].includes(request.state) && progress === null && (
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() =>
-                    void cancelUpload().catch((failure) => setError(adminErrorMessage(failure)))
-                  }
-                >
-                  대기 취소
-                </button>
-              )}
-            </>
-          )}
+            {['uploading', 'processing'].includes(item.state) && (
+              <>
+                <progress aria-label={item.file.name + ' 업로드 진행률'} max={100}
+                  value={item.state === 'uploading' ? item.percent ?? 0 : undefined} />
+                <small>
+                  {item.state === 'uploading' && item.percent !== undefined
+                    ? item.percent + '% 전송됨'
+                    : '처리에 몇 분 걸릴 수 있습니다. 이 화면을 열어 두세요.'}
+                </small>
+              </>
+            )}
+            {item.error && <p className="field-error" role="alert">{item.error}</p>}
+          </div>
+          <div className="article-attachment-actions">
+            {item.state === 'failed' && (
+              <button type="button" disabled={disabled} onClick={onRetry}>첨부 재시도 및 저장</button>
+            )}
+            <button type="button" disabled={disabled} onClick={() => attachments.remove(item.id)}>
+              {item.file.name} 첨부 취소
+            </button>
+          </div>
+        </div>
+      ))}
+      {isUploadUrl(image.url) && !selectedImage && (
+        <div className="article-attachment">
+          <a href={image.url} target="_blank" rel="noopener noreferrer">현재 대표 이미지 ↗</a>
+          <span>이 글에 첨부됨</span>
+          <button type="button" disabled={disabled} onClick={() => onImage(undefined)}>이미지 첨부 해제</button>
         </div>
       )}
-      {isUploadUrl(image.url) && (
-        <p className="selected-upload">
-          <a href={image.url} target="_blank" rel="noopener noreferrer">
-            선택한 이미지 보기 ↗
-          </a>
-          <button type="button" disabled={disabled} onClick={() => onImage(undefined)}>
-            이미지 첨부 해제
-          </button>
-        </p>
-      )}
-      {files
-        .filter((file) => isUploadUrl(file.url))
-        .map((file) => (
-          <p className="selected-upload" key={file.url}>
-            <a href={file.url} target="_blank" rel="noopener noreferrer">
-              {file.fileName} ↗
-            </a>
-            <button type="button" disabled={disabled} onClick={() => onRemovePdf(file.url!)}>
-              PDF 첨부 해제
-            </button>
-          </p>
-        ))}
-      {(image.url || files.some((file) => file.url)) && (
-        <p className="field-help upload-help">
-          첨부를 해제해도 GitHub에 저장된 파일은 삭제되지 않습니다.
-        </p>
-      )}
-      <p className="field-help upload-help">
-        오래 대기하면 운영자가{' '}
-        <a
-          href="https://github.com/SpanningTree-WD/SpanningTree/actions/workflows/github-uploads.yml"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          업로드 작업
-        </a>
-        의 실행 상태를 확인할 수 있습니다. 배포가 끝난 뒤 ‘글에 첨부’를 누르고 저장해 주세요.
-      </p>
-    </details>
+      {files.filter((file) => isUploadUrl(file.url)).map((file) => (
+        <div className="article-attachment" key={file.url}>
+          <a href={file.url} target="_blank" rel="noopener noreferrer">{file.fileName} ↗</a>
+          <span>이 글에 첨부됨</span>
+          <button type="button" disabled={disabled} onClick={() => onRemovePdf(file.url!)}>PDF 첨부 해제</button>
+        </div>
+      ))}
+      {!attachments.items.length && !image.url && !files.some((file) => file.url) &&
+        <p className="field-help">이 글에 선택한 첨부 파일이 없습니다.</p>}
+      <p className="field-help">첨부 해제도 저장 후 반영됩니다. 다른 글의 파일에는 영향을 주지 않습니다.</p>
+    </section>
   )
 }

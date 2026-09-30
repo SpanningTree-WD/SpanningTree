@@ -12,6 +12,8 @@ import {
 import { activityTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { UploadPanel } from './UploadPanel'
+import { ArticlePreview } from './ArticlePreview'
+import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 
 const empty: Activity = {
   id: '',
@@ -38,6 +40,11 @@ function validateExtra(form: Activity): Errors {
 export function ActivityEditorPage() {
   const {
     form,
+    preview,
+    previewing,
+    setPreviewing,
+    attachments,
+    cancel,
     set,
     errors,
     saving,
@@ -72,6 +79,8 @@ export function ActivityEditorPage() {
       section="활동"
       path="/admin/activities"
       status={form.status}
+      onBack={cancel}
+      saving={saving}
     >
       {operationError && (
         <p className="field-error" role="alert">
@@ -79,7 +88,20 @@ export function ActivityEditorPage() {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      <div className="editor-view-toggle" aria-label="작성 화면 전환">
+        <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>작성</button>
+        <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>미리보기</button>
+      </div>
+      {previewing && <ArticlePreview collection="activities" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
+        pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
+          id: item.id, fileName: item.file.name,
+          sizeLabel: fileSizeLabel(item.file.size),
+          stateText: item.state === 'failed' ? '첨부 실패 · 아래에서 재시도'
+            : item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
+              : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기' : '첨부 처리 중',
+        }))} />}
       <fieldset className="admin-editor-fields" disabled={saving}>
+        <div hidden={previewing}>
         <Field
           label="제목"
           name="title"
@@ -114,9 +136,10 @@ export function ActivityEditorPage() {
           value={form.description}
           onChange={(v) => set('description', v)}
         />
+        </div>
         <UploadPanel
-          collection="activities"
-          recordId={form.id}
+          attachments={attachments}
+          onRetry={() => void save()}
           disabled={saving}
           image={form.coverImage}
           files={form.attachments ?? []}
@@ -127,12 +150,6 @@ export function ActivityEditorPage() {
               (form.attachments ?? []).filter((file) => file.url !== url)
             )
           }
-          onPdf={(file) =>
-            set('attachments', [
-              ...(form.attachments ?? []).filter((item) => item.url !== file.url),
-              file,
-            ])
-          }
         />
         <EditorActions
           status={form.status}
@@ -140,6 +157,7 @@ export function ActivityEditorPage() {
           onSave={() => void save()}
           onPublish={() => void publish()}
           onUnpublish={() => void unpublish()}
+          onCancel={cancel}
         />
       </fieldset>
     </EditorFrame>
