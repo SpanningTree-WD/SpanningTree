@@ -1,3 +1,4 @@
+import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { ContentImage } from '../../components/content/ContentImage'
 import { AttachmentList } from '../../components/content/AttachmentList'
 import { useParams } from 'react-router-dom'
@@ -44,10 +45,10 @@ export function MathematicsDetailPage() {
   return (
     <article className="page-container detail-page">
       <header className="content-header">
-        <p className="eyebrow">Mathematics · {r.field}</p>
+        <p className="eyebrow">Mathematics · {formatMathematicsFields(r)}</p>
         <h1>{r.title}</h1>
         <div className="detail-meta">
-          {r.authors.join(', ')} · {r.type} · {r.field} · {r.year}
+          {r.authors.join(', ')} · {r.type} · {formatMathematicsFields(r)} · {r.year}
         </div>
         <p className="detail-summary">{r.summary}</p>
       </header>

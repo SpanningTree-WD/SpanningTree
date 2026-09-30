@@ -113,6 +113,34 @@ writing. It creates missing reservations in retryable batches and never rewrites
 content. Rerunning is safe. Complete it before exposing admin creation, or an old
 unreserved slug could be claimed by a new record.
 
+## Multiple mathematics fields rollout
+
+The optional `mathematics.fields` array supports 1–16 distinct, nonblank field
+names of at most 100 characters. It includes custom names and keeps its first
+entry in the existing `field` string. Legacy records without the array remain
+valid; no seed or data migration is needed. Existing authentication and draft
+read/write boundaries remain unchanged.
+
+Deploy the reviewed additive Firestore rules **before** merging/deploying the
+new editor, because Hosting workflows do not deploy rules:
+
+```sh
+npx firebase-tools@14.14.0 deploy --only firestore:rules --project spanningtree-math
+```
+
+Use the reviewed branch checkout when deploying the rules. PR Hosting previews
+share the production Firebase project: test save behavior in the demo emulators,
+not by creating live records in a preview. Before a production rules deployment,
+compare the currently deployed rules with the repository version so unrelated
+operator changes are preserved.
+
+Older browser tabs can still read the retained primary `field`. Once a record
+has multiple fields, refresh an older editor before changing its primary field;
+rules reject mismatched `field`/`fields` values instead of silently losing
+selections. If reverting the frontend after multiple-field records exist, retain
+the additive rules so those records remain editable. Do not roll back the rules
+to the old schema or delete the new arrays.
+
 ## Local verification
 
 Use Node 20.19+ and Java 21+ (on PATH or JAVA_HOME) for the Firebase emulators:

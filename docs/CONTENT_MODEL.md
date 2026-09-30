@@ -33,7 +33,8 @@ status:
 - summary
 - content
 - authors
-- field
+- field: 첫 번째 분야의 기존 문자열 값(호환용)
+- fields?: 여러 분야/사용자 정의 태그의 문자열 목록
 - type
 - year
 - tags
@@ -54,6 +55,12 @@ Possible types:
 - Problem Set
 - Poster
 - Slides
+
+기존 `field`만 있는 수학 글은 그대로 읽고 편집합니다. 새로 선택한 분야는
+`fields`에 저장하며 첫 값을 `field`에도 유지합니다. 사용자 정의 이름은 별도 컬렉션
+없이 글에 저장하고 다른 관리자 편집 화면에서 재사용합니다. 목록·홈·상세·검색은
+모든 분야를 표시하며 어느 분야로 필터링해도 해당 글을 찾을 수 있습니다.
+기존 `tags` 키워드, 글 ID·slug·관련 자료·첨부 파일은 변경하지 않습니다.
 
 ## Publication
 

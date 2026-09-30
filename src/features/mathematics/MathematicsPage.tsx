@@ -1,3 +1,4 @@
+import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
@@ -19,7 +20,7 @@ export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
           <Link to={`/mathematics/${item.slug}`}>{item.title}</Link>
         </h2>
         <div className="content-meta">
-          {item.type} · {item.field} · {item.year}
+          {item.type} · {formatMathematicsFields(item)} · {item.year}
         </div>
         <p>{item.summary}</p>
         <Link className="article-link" to={`/mathematics/${item.slug}`}>

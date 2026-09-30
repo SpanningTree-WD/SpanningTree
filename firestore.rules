@@ -39,10 +39,32 @@ service cloud.firestore {
         && data.relatedMathematics is list && data.relatedPublications is list && data.featured is bool
         && (!('attachments' in data) || (data.attachments is list && data.attachments.size() <= 100));
     }
+    // Optional for legacy records; new editors also retain the first field.
+    function validMathematicsFields(value, primary) {
+      return value is list && value.size() >= 1 && value.size() <= 16
+        && value.toSet().size() == value.size() && value[0] == primary
+        && (value.size() <= 0 || (text(value[0], 100) && value[0].matches('.*[^\\s].*')))
+        && (value.size() <= 1 || (text(value[1], 100) && value[1].matches('.*[^\\s].*')))
+        && (value.size() <= 2 || (text(value[2], 100) && value[2].matches('.*[^\\s].*')))
+        && (value.size() <= 3 || (text(value[3], 100) && value[3].matches('.*[^\\s].*')))
+        && (value.size() <= 4 || (text(value[4], 100) && value[4].matches('.*[^\\s].*')))
+        && (value.size() <= 5 || (text(value[5], 100) && value[5].matches('.*[^\\s].*')))
+        && (value.size() <= 6 || (text(value[6], 100) && value[6].matches('.*[^\\s].*')))
+        && (value.size() <= 7 || (text(value[7], 100) && value[7].matches('.*[^\\s].*')))
+        && (value.size() <= 8 || (text(value[8], 100) && value[8].matches('.*[^\\s].*')))
+        && (value.size() <= 9 || (text(value[9], 100) && value[9].matches('.*[^\\s].*')))
+        && (value.size() <= 10 || (text(value[10], 100) && value[10].matches('.*[^\\s].*')))
+        && (value.size() <= 11 || (text(value[11], 100) && value[11].matches('.*[^\\s].*')))
+        && (value.size() <= 12 || (text(value[12], 100) && value[12].matches('.*[^\\s].*')))
+        && (value.size() <= 13 || (text(value[13], 100) && value[13].matches('.*[^\\s].*')))
+        && (value.size() <= 14 || (text(value[14], 100) && value[14].matches('.*[^\\s].*')))
+        && (value.size() <= 15 || (text(value[15], 100) && value[15].matches('.*[^\\s].*')));
+    }
     function mathematics(data) {
       return data.keys().hasAll(['content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics'])
-        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics', 'publishedAt'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics', 'publishedAt', 'fields'])
         && text(data.content, 800000) && data.authors is list && text(data.field, 100) && data.field.size() > 0
+        && (!('fields' in data) || validMathematicsFields(data.fields, data.field))
         && data.year is int && data.year >= 1900 && data.year <= 9999
         && data.tags is list && data.attachments is list && data.attachments.size() <= 100
         && data.relatedActivities is list && data.relatedPublications is list && data.relatedMathematics is list

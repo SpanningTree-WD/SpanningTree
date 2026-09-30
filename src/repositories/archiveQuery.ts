@@ -1,4 +1,5 @@
 import type { ArchivePage, ArchiveQuery, SortOrder } from '../models/common'
+import { getMathematicsFields } from '../models/mathematicsFields'
 import {
   activityTypes,
   mathematicsFields,
@@ -16,6 +17,7 @@ export interface ArchiveRecord {
   date?: string
   year?: number
   field?: string
+  fields?: string[]
   description?: string
   content?: string
   authors?: string[]
@@ -63,8 +65,7 @@ export function matchesArchiveSearch(record: ArchiveRecord, search = '') {
       record.content,
       record.type,
       labels.get(record.type),
-      record.field,
-      labels.get(record.field ?? ''),
+      ...getMathematicsFields(record).flatMap((field) => [field, labels.get(field)]),
       record.date,
       record.year,
       ...(record.authors ?? []),
@@ -90,14 +91,14 @@ export function queryArchive<T extends ArchiveRecord>(
       (a, b) => Number(b) - Number(a)
     ),
     types: unique(published.map((record) => record.type)),
-    fields: unique(published.flatMap((record) => (record.field ? [record.field] : []))),
+    fields: unique(published.flatMap((record) => [...getMathematicsFields(record)])),
   }
   const items = published
     .filter(
       (record) =>
         (query.year === undefined || yearOf(record) === query.year) &&
         (!query.type || record.type === query.type) &&
-        (!query.field || record.field === query.field) &&
+        (!query.field || getMathematicsFields(record).includes(query.field)) &&
         (!query.featured || record.featured) &&
         matchesArchiveSearch(record, query.search)
     )
