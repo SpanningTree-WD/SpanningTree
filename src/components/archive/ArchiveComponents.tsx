@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useId, useState, type ReactNode } from 'react'
 import type { SortOrder } from '../../models/common'
 import { parseSort } from '../../repositories/archiveQuery'
@@ -20,11 +21,13 @@ export function FilterSidebar({
   onChange: (parameter: string, value?: string) => void
   onReset: () => void
 }) {
+  const t = useT()
+
   const [open, setOpen] = useState(false)
   const id = useId()
   const selected = groups.filter((group) => group.selected)
   return (
-    <aside className={`filters${open ? ' is-open' : ''}`} aria-label="자료 필터">
+    <aside className={`filters${open ? ' is-open' : ''}`} aria-label={t("자료 필터")}>
       <button
         className="filter-toggle"
         type="button"
@@ -33,7 +36,7 @@ export function FilterSidebar({
         onClick={() => setOpen(!open)}
       >
         <span>
-          필터 {open ? '닫기' : '열기'}
+          {t(open ? '필터 닫기' : '필터 열기')}
           {selected.length ? ` (${selected.length})` : ''}
         </span>
         <span aria-hidden="true">{open ? '−' : '+'}</span>
@@ -44,20 +47,17 @@ export function FilterSidebar({
             {selected
               .map(
                 (group) =>
-                  group.options.find((option) => option.value === group.selected)?.label ??
-                  group.selected
+                  t(group.options.find((option) => option.value === group.selected)?.label ?? group.selected ?? '')
               )
               .join(' · ')}
           </span>
-          <button type="button" onClick={onReset}>
-            필터 초기화
-          </button>
+          <button type="button" onClick={onReset}>{t("필터 초기화")}</button>
         </div>
       )}
       <div className="filter-groups" id={id}>
         {groups.map((group) => (
           <div className="filter-group" key={group.parameter}>
-            <h3>{group.title}</h3>
+            <h3>{t(group.title)}</h3>
             {group.options.map((option) => (
               <button
                 className={`filter-item${option.value === group.selected ? ' active' : ''}`}
@@ -66,7 +66,7 @@ export function FilterSidebar({
                 aria-pressed={option.value === group.selected}
                 onClick={() => onChange(group.parameter, option.value)}
               >
-                <span>{option.label}</span>
+                <span>{t(option.label)}</span>
                 {option.count !== undefined && <span>{option.count}</span>}
               </button>
             ))}
@@ -86,17 +86,17 @@ export function ResultsToolbar({
   sort: SortOrder
   onSort: (sort: SortOrder) => void
 }) {
+  const t = useT()
+
   return (
     <div className="results-head">
       <span role="status" aria-live="polite">
-        {count}개 결과
+        {t('{count}개 결과', { count })}
       </span>
-      <label className="archive-sort">
-        정렬
-        <select value={sort} onChange={(event) => onSort(parseSort(event.target.value))}>
-          <option value="latest">최신순</option>
-          <option value="oldest">오래된순</option>
-          <option value="title">제목순</option>
+      <label className="archive-sort">{t("정렬")}<select value={sort} onChange={(event) => onSort(parseSort(event.target.value))}>
+          <option value="latest">{t("최신순")}</option>
+          <option value="oldest">{t("오래된순")}</option>
+          <option value="title">{t("제목순")}</option>
         </select>
       </label>
     </div>
@@ -137,10 +137,12 @@ export function ArchiveLayout({
 }
 
 export function PageHeading({ title, children }: { title: string; children: ReactNode }) {
+  const t = useT()
+
   return (
     <div className="page-head">
-      <h1>{title}</h1>
-      <p>{children}</p>
+      <h1>{t(title)}</h1>
+      <p>{typeof children === 'string' ? t(children) : children}</p>
     </div>
   )
 }

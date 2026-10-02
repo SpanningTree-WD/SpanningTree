@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
@@ -29,6 +30,8 @@ export function ActivityArchiveRow({ item }: { item: Activity }) {
 }
 
 export function ActivitiesPage() {
+  const t = useT()
+
   usePageMetadata()
   const { data, error, year, type, search, sort, change, resetFilters } =
     useArchiveResults(activityRepository)
@@ -38,13 +41,11 @@ export function ActivitiesPage() {
   ]
   return (
     <div className="page-container">
-      <PageHeading title="Activities">
-        Spanning Tree의 다양한 활동과 프로젝트를 확인하세요.
-      </PageHeading>
+      <PageHeading title={t("Activities")}>{t("Spanning Tree의 다양한 활동과 프로젝트를 확인하세요.")}</PageHeading>
       {error ? (
-        <ContentState title="Archive unavailable">활동 기록을 불러오지 못했습니다.</ContentState>
+        <ContentState title={t("Archive unavailable")}>{t("활동 기록을 불러오지 못했습니다.")}</ContentState>
       ) : !data ? (
-        <ContentState title="Loading archive">활동 기록을 불러오는 중입니다.</ContentState>
+        <ContentState title={t("Loading archive")}>{t("활동 기록을 불러오는 중입니다.")}</ContentState>
       ) : (
         <ArchiveLayout
           filters={filters}
@@ -59,9 +60,7 @@ export function ActivitiesPage() {
           {data.items.length ? (
             data.items.map((item) => <ActivityArchiveRow item={item} key={item.id} />)
           ) : (
-            <ContentState title="No activities found">
-              선택한 조건에 맞는 공개 활동이 없습니다.
-            </ContentState>
+            <ContentState title="No activities found">{t("선택한 조건에 맞는 공개 활동이 없습니다.")}</ContentState>
           )}
         </ArchiveLayout>
       )}

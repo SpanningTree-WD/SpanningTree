@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
@@ -20,6 +21,8 @@ const kinds = [
 
 
 export function SearchPage() {
+  const t = useT()
+
   usePageMetadata({ noindex: true })
   const { search, kind, sort, change, resetFilters } = useArchiveControls()
   const { data, error } = useRepository(listSearchRecords, [])
@@ -44,17 +47,11 @@ export function SearchPage() {
   ]
   return (
     <div className="page-container">
-      <PageHeading title="자료 검색">
-        활동·수학 자료·출판물의 제목, 본문, 작성자를 검색합니다. 여러 단어는 공백으로 구분해 주세요.
-      </PageHeading>
+      <PageHeading title={t("자료 검색")}>{t("활동·수학 자료·출판물의 제목, 본문, 작성자를 검색합니다. 여러 단어는 공백으로 구분해 주세요.")}</PageHeading>
       {error ? (
-        <ContentState title="검색 자료를 불러오지 못했습니다">
-          연결을 확인하고 새로고침해 주세요.
-        </ContentState>
+        <ContentState title={t("검색 자료를 불러오지 못했습니다")}>{t("연결을 확인하고 새로고침해 주세요.")}</ContentState>
       ) : !data ? (
-        <ContentState title="자료를 불러오는 중입니다">
-          공개된 기록을 확인하고 있습니다.
-        </ContentState>
+        <ContentState title={t("자료를 불러오는 중입니다")}>{t("공개된 기록을 확인하고 있습니다.")}</ContentState>
       ) : (
         <ArchiveLayout
           filters={filters}
@@ -70,7 +67,7 @@ export function SearchPage() {
             results.map(({ kind: itemKind, record }) => (
               <article className="search-result" key={`${itemKind}:${record.id}`}>
                 <p className="eyebrow">
-                  {kinds.find(([value]) => value === itemKind)?.[1]} ·{' '}
+                  {t(kinds.find(([value]) => value === itemKind)?.[1] ?? '')} ·{' '}
                   {'date' in record ? record.date.replaceAll('-', '.') : record.year}
                 </p>
                 <h2>
@@ -87,9 +84,7 @@ export function SearchPage() {
               </article>
             ))
           ) : (
-            <ContentState title="검색 결과가 없습니다">
-              검색어를 바꾸거나 자료 종류 필터를 해제해 주세요.
-            </ContentState>
+            <ContentState title={t("검색 결과가 없습니다")}>{t("검색어를 바꾸거나 자료 종류 필터를 해제해 주세요.")}</ContentState>
           )}
         </ArchiveLayout>
       )}

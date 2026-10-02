@@ -1,8 +1,11 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { Link } from 'react-router-dom'
 
 type PlaceholderPageProps = { title: string; description: string; isHome?: boolean }
 
 export function PlaceholderPage({ title, description, isHome = false }: PlaceholderPageProps) {
+  const t = useT()
+
   if (isHome) {
     return (
       <section className="placeholder-page placeholder-page--home">
@@ -10,7 +13,7 @@ export function PlaceholderPage({ title, description, isHome = false }: Placehol
           <p className="eyebrow">SPANNING TREE</p>
           <h1>{title}</h1>
           <p>{description}</p>
-          <Link className="button-link" to="/about">About Spanning Tree <span aria-hidden="true">→</span></Link>
+          <Link className="button-link" to="/about">{t("About Spanning Tree")}<span aria-hidden="true">→</span></Link>
         </div>
       </section>
     )

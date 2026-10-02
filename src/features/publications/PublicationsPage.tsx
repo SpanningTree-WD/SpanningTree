@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
 import { Link } from 'react-router-dom'
@@ -32,6 +33,8 @@ export function PublicationArchiveRow({ item }: { item: Publication }) {
 }
 
 export function PublicationsPage() {
+  const t = useT()
+
   usePageMetadata()
   const { data, error, type, year, search, sort, change, resetFilters } =
     useArchiveResults(publicationRepository)
@@ -41,13 +44,11 @@ export function PublicationsPage() {
   ]
   return (
     <div className="page-container">
-      <PageHeading title="Publications">
-        Spanning Tree가 만들어 낸 책, Notes, Proceedings, Report를 소개합니다.
-      </PageHeading>
+      <PageHeading title={t("Publications")}>{t("Spanning Tree가 만들어 낸 책, Notes, Proceedings, Report를 소개합니다.")}</PageHeading>
       {error ? (
-        <ContentState title="Archive unavailable">출판 기록을 불러오지 못했습니다.</ContentState>
+        <ContentState title={t("Archive unavailable")}>{t("출판 기록을 불러오지 못했습니다.")}</ContentState>
       ) : !data ? (
-        <ContentState title="Loading archive">출판 기록을 불러오는 중입니다.</ContentState>
+        <ContentState title={t("Loading archive")}>{t("출판 기록을 불러오는 중입니다.")}</ContentState>
       ) : (
         <ArchiveLayout
           filters={filters}
@@ -62,9 +63,7 @@ export function PublicationsPage() {
           {data.items.length ? (
             data.items.map((item) => <PublicationArchiveRow item={item} key={item.id} />)
           ) : (
-            <ContentState title="No publications found">
-              선택한 조건에 맞는 공개 출판물이 없습니다.
-            </ContentState>
+            <ContentState title="No publications found">{t("선택한 조건에 맞는 공개 출판물이 없습니다.")}</ContentState>
           )}
         </ArchiveLayout>
       )}

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { Link } from 'react-router-dom'
 import { club } from '../../content/club'
@@ -16,54 +17,55 @@ const archives = [
 
 
 export function AboutPage() {
+  const t = useT()
+
   usePageMetadata()
   return (
     <div className="page-container">
       <section className="about-hero">
         <div>
-          <h1>About Spanning Tree</h1>
+          <h1>{t("About Spanning Tree")}</h1>
           <p>
-            {club.koreanName}({club.name})는 {club.affiliation}입니다. 대학수학을 공부하며
-            강연·포럼·교류 활동을 진행합니다.
+            {t('스패닝트리는 서울과학고등학교 수학 동아리입니다. 대학수학을 공부하며 강연·포럼·교류 활동을 진행합니다.')}
           </p>
         </div>
         <div
           className="about-photo"
           role="img"
-          aria-label="나무가 있는 풍경을 표현한 추상 이미지"
+          aria-label={t("나무가 있는 풍경을 표현한 추상 이미지")}
         />
       </section>
       <div className="about-grid">
         <section className="about-panel">
-          <h2>What We Do</h2>
+          <h2>{t("What We Do")}</h2>
           <div className="feature-grid">
             {features.map(([icon, title, copy]) => (
-              <article className="feature" key={title}>
+              <article className="feature" key={t(title)}>
                 <div className="feature-icon" aria-hidden="true">
                   {icon}
                 </div>
                 <strong>{title}</strong>
-                <p>{copy}</p>
+                <p>{t(copy)}</p>
               </article>
             ))}
           </div>
         </section>
         <section className="about-panel">
-          <h2>Archive</h2>
+          <h2>{t("Archive")}</h2>
           <div className="timeline">
             {archives.map(([to, label, copy]) => (
               <div className="timeline-row" key={to}>
                 <strong>
-                  <Link to={to}>{label}</Link>
+                  <Link to={to}>{t(label)}</Link>
                 </strong>
-                <span>{copy}</span>
+                <span>{t(copy)}</span>
               </div>
             ))}
           </div>
         </section>
         <section className="about-panel">
-          <h2>Contact</h2>
-          <p className="contact-copy">활동·교류 등 동아리 관련 문의는 아래 이메일로 보내 주세요.</p>
+          <h2>{t("Contact")}</h2>
+          <p className="contact-copy">{t("활동·교류 등 동아리 관련 문의는 아래 이메일로 보내 주세요.")}</p>
           <a className="contact-link" href={`mailto:${club.email}`}>
             {club.email}
           </a>

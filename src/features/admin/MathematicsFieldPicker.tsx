@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useId, useState } from 'react'
 import { mathematicsFields, type Choice } from '../../models/contentOptions'
 import {
@@ -14,6 +15,8 @@ export function MathematicsFieldPicker({
   error?: string
   onChange: (fields: string[]) => void
 }) {
+  const t = useT()
+
   const id = useId()
   const suggestions = useMathematicsFieldSuggestions()
   const [created, setCreated] = useState<string[]>([...value])
@@ -57,8 +60,8 @@ export function MathematicsFieldPicker({
       aria-invalid={Boolean(error)}
       aria-describedby={id + '-help' + (error ? ' ' + id + '-error' : '')}
     >
-      <legend>수학 분야 <span>필수 · 여러 개 선택 가능</span></legend>
-      <p id={id + '-help'}>분야를 선택하거나 원하는 이름을 추가하세요. 글을 저장하면 반영됩니다.</p>
+      <legend>{t('수학 분야')} <span>{t("필수 · 여러 개 선택 가능")}</span></legend>
+      <p id={id + '-help'}>{t("분야를 선택하거나 원하는 이름을 추가하세요. 글을 저장하면 반영됩니다.")}</p>
       <div className="mathematics-field-options">
         {options.map(([key, label]) => (
           <label className="mathematics-field-option" key={key}>
@@ -70,12 +73,12 @@ export function MathematicsFieldPicker({
                 onChange(event.target.checked ? [...value, key] : value.filter((field) => field !== key))
               }
             />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </label>
         ))}
       </div>
       <div className="mathematics-field-add">
-        <label htmlFor={id + '-name'}>새 분야 이름</label>
+        <label htmlFor={id + '-name'}>{t("새 분야 이름")}</label>
         <div>
           <input
             id={id + '-name'}
@@ -92,17 +95,17 @@ export function MathematicsFieldPicker({
               }
             }}
           />
-          <button type="button" onClick={addField}>분야 추가</button>
+          <button type="button" onClick={addField}>{t("분야 추가")}</button>
         </div>
       </div>
-      {inputError && <p className="field-error" id={id + '-input-error'}>{inputError}</p>}
+      {inputError && <p className="field-error" id={id + '-input-error'}>{t(inputError)}</p>}
       {suggestions.error && (
         <p className="mathematics-field-note">
-          저장된 분야 목록을 불러오지 못했습니다. 직접 입력해서 추가할 수 있습니다.{' '}
-          <button type="button" onClick={suggestions.retry}>다시 불러오기</button>
+          {t('저장된 분야 목록을 불러오지 못했습니다. 직접 입력해서 추가할 수 있습니다.')}{' '}
+          <button type="button" onClick={suggestions.retry}>{t("다시 불러오기")}</button>
         </p>
       )}
-      {error && <p className="field-error" id={id + '-error'}>{error}</p>}
+      {error && <p className="field-error" id={id + '-error'}>{t(error)}</p>}
     </fieldset>
   )
 }

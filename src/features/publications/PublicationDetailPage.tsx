@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { PublicationDetail } from '../../components/content/ContentDetail'
 import { useParams } from 'react-router-dom'
 import { RelatedContent } from '../../components/content/RelatedContent'
@@ -6,6 +7,8 @@ import { publicationRepository, resolveRelated } from '../../repositories/public
 import { useRepository } from '../shared/useRepository'
 import { usePageMetadata } from '../shared/usePageMetadata'
 export function PublicationDetailPage() {
+  const t = useT()
+
   const { slug = '' } = useParams()
   const { data, error } = useRepository(async () => {
     const record = await publicationRepository.getPublishedBySlug(slug)
@@ -27,13 +30,13 @@ export function PublicationDetailPage() {
   if (error)
     return (
       <div className="page-container">
-        <ContentState title="Record unavailable">출판 기록을 불러오지 못했습니다.</ContentState>
+        <ContentState title="Record unavailable">{t("출판 기록을 불러오지 못했습니다.")}</ContentState>
       </div>
     )
   if (data === undefined)
     return (
       <div className="page-container">
-        <ContentState title="Loading record">출판 기록을 불러오는 중입니다.</ContentState>
+        <ContentState title="Loading record">{t("출판 기록을 불러오는 중입니다.")}</ContentState>
       </div>
     )
   if (!data) return <MissingContent />

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { ContentImage } from '../../components/content/ContentImage'
@@ -10,6 +11,8 @@ import { mathematicsFields, mathematicsTypes } from '../../models/contentOptions
 import { archiveFilter } from '../shared/archiveFilters'
 import { useArchiveResults } from '../shared/useArchiveResults'
 export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
+  const t = useT()
+
   return (
     <article className="archive-row math-row">
       <Link to={`/mathematics/${item.slug}`}>
@@ -23,15 +26,15 @@ export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
           {item.type} · {formatMathematicsFields(item)} · {item.year}
         </div>
         <p>{item.summary}</p>
-        <Link className="article-link" to={`/mathematics/${item.slug}`}>
-          Read More →
-        </Link>
+        <Link className="article-link" to={`/mathematics/${item.slug}`}>{t("Read More →")}</Link>
       </div>
     </article>
   )
 }
 
 export function MathematicsPage() {
+  const t = useT()
+
   usePageMetadata()
   const { data, error, field, type, year, search, sort, change, resetFilters } =
     useArchiveResults(mathematicsRepository)
@@ -42,13 +45,11 @@ export function MathematicsPage() {
   ]
   return (
     <div className="page-container">
-      <PageHeading title="Mathematics">
-        수학의 다양한 분야를 탐구한 lecture note, article, problem set을 살펴보세요.
-      </PageHeading>
+      <PageHeading title={t("Mathematics")}>{t("수학의 다양한 분야를 탐구한 lecture note, article, problem set을 살펴보세요.")}</PageHeading>
       {error ? (
-        <ContentState title="Archive unavailable">수학 기록을 불러오지 못했습니다.</ContentState>
+        <ContentState title={t("Archive unavailable")}>{t("수학 기록을 불러오지 못했습니다.")}</ContentState>
       ) : !data ? (
-        <ContentState title="Loading archive">수학 기록을 불러오는 중입니다.</ContentState>
+        <ContentState title={t("Loading archive")}>{t("수학 기록을 불러오는 중입니다.")}</ContentState>
       ) : (
         <ArchiveLayout
           filters={filters}
@@ -63,9 +64,7 @@ export function MathematicsPage() {
           {data.items.length ? (
             data.items.map((item) => <MathematicsArchiveRow item={item} key={item.id} />)
           ) : (
-            <ContentState title="No mathematics found">
-              선택한 조건에 맞는 공개 자료가 없습니다.
-            </ContentState>
+            <ContentState title="No mathematics found">{t("선택한 조건에 맞는 공개 자료가 없습니다.")}</ContentState>
           )}
         </ArchiveLayout>
       )}

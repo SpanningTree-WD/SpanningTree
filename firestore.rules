@@ -146,6 +146,50 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+
+    // Personal language choices live only in the visitor's browser.
+    // Homepage drafts are private; only explicit publication writes siteSettings.
+    function bilingual(value, maximum) {
+      return value is map && value.keys().hasAll(['ko', 'en'])
+        && value.keys().hasOnly(['ko', 'en'])
+        && text(value.ko, maximum) && text(value.en, maximum)
+        && (!value.ko.matches('\\s*') || !value.en.matches('\\s*'));
+    }
+    function homepageSettings(value) {
+      return value is map && value.keys().hasAll(['schemaVersion', 'hero'])
+        && value.keys().hasOnly(['schemaVersion', 'hero']) && value.schemaVersion == 1
+        && value.hero is map && value.hero.keys().hasAll(['title', 'description', 'font'])
+        && value.hero.keys().hasOnly(['title', 'description', 'font'])
+        && bilingual(value.hero.title, 160) && bilingual(value.hero.description, 3000)
+        && value.hero.font in ['original', 'sans', 'serif'];
+    }
+    function homepageDocument(data) {
+      return data.keys().hasAll(['settings', 'revision', 'updatedAt'])
+        && data.keys().hasOnly(['settings', 'revision', 'updatedAt'])
+        && homepageSettings(data.settings) && data.revision is int && data.revision >= 1
+        && data.updatedAt == request.time;
+    }
+    function matchesHomepageDraft() {
+      let draft = getAfter(/databases/$(database)/documents/siteDrafts/homepage).data;
+      return draft.settings == request.resource.data.settings && draft.updatedAt == request.time;
+    }
+    match /siteDrafts/{id} {
+      allow get: if id == 'homepage' && isAdmin();
+      allow create: if id == 'homepage' && isAdmin() && homepageDocument(request.resource.data)
+        && request.resource.data.revision == 1;
+      allow update: if id == 'homepage' && isAdmin() && homepageDocument(request.resource.data)
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow list, delete: if false;
+    }
+    match /siteSettings/{id} {
+      allow get: if id == 'homepage';
+      allow create: if id == 'homepage' && isAdmin() && homepageDocument(request.resource.data)
+        && request.resource.data.revision == 1 && matchesHomepageDraft();
+      allow update: if id == 'homepage' && isAdmin() && homepageDocument(request.resource.data)
+        && request.resource.data.revision == resource.data.revision + 1 && matchesHomepageDraft();
+      allow list, delete: if false;
+    }
+
     // Membership is provisioned with the Console/Admin SDK, never by browser clients.
     match /admins/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
