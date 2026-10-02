@@ -13,3 +13,16 @@
 .homepage-hero .hero-grid { min-width: 0; }
 .admin-sidebar > .language-switch { margin-bottom: 14px; }
 .admin-gate-panel > .language-switch { margin-bottom: 20px; }
+
+/* Keep the navigation in normal flow when language controls share the header. */
+@media (max-width: 1100px) {
+  .site-header .primary-nav { position: static; height: auto; padding: 0; overflow: visible; border: 0; background: transparent; }
+  .site-header .primary-nav a { padding: 12px 2px; }
+  .shell > main { padding-top: 0; }
+}
+@media (max-width: 560px) {
+  .site-header .brand { font-size: clamp(16px, 5vw, 21px); }
+  .site-header .search-icon { width: 32px; flex-shrink: 0; }
+}
+.admin-sidebar .language-switch button { color: #cfdbd2; }
+.admin-sidebar .language-switch button[aria-pressed="true"] { color: #fff; border-color: #82978a; }
