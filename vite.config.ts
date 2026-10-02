@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
       },
     }],
     test: {
+      // Preview tests need real raw CSS, not Vitest's default empty CSS stub.
+      css: true,
       include: ['src/**/*.test.{ts,tsx}', 'scripts/uploads/**/*.test.ts', 'scripts/seo/**/*.test.ts', 'workers/**/*.test.ts'],
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
