@@ -7,7 +7,7 @@ import { mathematicsFixtures } from '../content/fixtures/mathematics'
 afterEach(() => { cleanup(); localStorage.clear() })
 it('switches common controls while leaving even dictionary-matching article text unchanged', () => {
   const record = { ...mathematicsFixtures[0], title: '자료 검색', summary: '한국어 소개', content: '게시글 본문은 원문 그대로 표시합니다.',
-    attachments: [{ label: '자료 검색', fileName: '원문.pdf', mediaType: 'application/pdf', sizeLabel: '1 KB', url: '/uploads/' + 'a'.repeat(64) + '.pdf' }] }
+    attachments: [{ label: '자료 검색', fileName: '원문.pdf', mediaType: 'application/pdf' as const, sizeLabel: '1 KB', url: '/uploads/' + 'a'.repeat(64) + '.pdf' }] }
   render(<LanguageProvider initial="ko"><LanguageSwitch /><MathematicsDetail record={record} /></LanguageProvider>)
   fireEvent.click(screen.getByRole('button', { name: 'English' }))
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('자료 검색')
