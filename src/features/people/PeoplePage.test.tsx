@@ -27,7 +27,7 @@ it('shows the corrected cohorts and three leaders, without connection lines, and
   ).toHaveLength(7)
   expect(container.querySelectorAll('.is-leader')).toHaveLength(3)
   for (const name of ['이현준', '이승준', '심성진'])
-    expect(screen.getByText(name)).toHaveClass('is-leader')
+    expect(screen.getByRole('link', { name }).closest('.people-person')).toHaveClass('is-leader')
   expect(container.querySelector('svg')).not.toBeInTheDocument()
   act(() => publish([{ ...initialMembers[0], name: '새부원', generation: 39, isLeader: false }]))
   expect(screen.queryByRole('region', { name: '36기' })).not.toBeInTheDocument()

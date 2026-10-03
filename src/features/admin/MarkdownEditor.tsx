@@ -133,7 +133,7 @@ export function MarkdownEditor(props: Props) {
           },
           dragover(event) { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); return true } return false },
         }),
-        EditorView.theme({ '&': { border: '1px solid var(--line)', backgroundColor: 'var(--paper)' }, '.cm-content': { minHeight: '360px', padding: '16px', fontFamily: 'inherit', lineHeight: '1.8' }, '.cm-scroller': { overflowX: 'auto', fontFamily: 'inherit' }, '&.cm-focused': { outline: '2px solid var(--green)' } }),
+        EditorView.theme({ '&': { border: '1px solid var(--color-line)', backgroundColor: 'var(--color-background)' }, '.cm-content': { minHeight: '360px', padding: '16px', fontFamily: 'inherit', lineHeight: '1.8' }, '.cm-scroller': { overflowX: 'auto', fontFamily: 'inherit' }, '&.cm-focused': { outline: '2px solid var(--color-green)' } }),
       ] }),
     })
     view.current = editor

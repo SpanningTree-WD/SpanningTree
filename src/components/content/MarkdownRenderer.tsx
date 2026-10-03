@@ -13,7 +13,7 @@ export interface RenderOptions {
   t?: (text: string) => string
 }
 export const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
-export const safeContentUris = /^(?:(?:https?|mailto|tel|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+export const safeContentUris = /^(?:(?:https?|mailto|tel|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i
 export function assetMarkup(asset: AssetView | undefined, t: (text: string) => string = text => text) {
   if (!asset) return '<aside class="asset-error" role="status">' + escapeHtml(t('첨부 파일을 찾을 수 없습니다.')) + '</aside>'
   const image = asset.mediaType.startsWith('image/')

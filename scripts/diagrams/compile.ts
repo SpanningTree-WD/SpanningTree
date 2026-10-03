@@ -12,6 +12,11 @@ export function validateDiagram(language: string, source: string) {
   if (!['tikz', 'asymptote'].includes(language) || typeof source !== 'string' || !source.trim() || source.length > 20000)
     throw new Error('도형 언어와 소스 길이(20,000자 이하)를 확인해 주세요.')
 }
+async function removeTemporaryDirectory(directory: string) {
+  const resolved = resolve(directory)
+  if (!resolved.startsWith(resolve(tmpdir()) + (process.platform === 'win32' ? '\\' : '/')) || !resolved.includes('spanning-diagram-')) throw new Error('Unsafe cleanup path')
+  await rm(resolved, { recursive: true, force: true })
+}
 export async function compileDiagram(language: string, source: string): Promise<Buffer> {
   validateDiagram(language, source)
   const directory = await mkdtemp(join(tmpdir(), 'spanning-diagram-'))
@@ -43,8 +48,6 @@ export async function compileDiagram(language: string, source: string): Promise<
   } finally {
     // Kill the named container even if the client timed out; source/temp files are task-local.
     spawnSync('docker', ['rm', '--force', name], { timeout: 5000, stdio: 'ignore' })
-    const resolved = resolve(directory)
-    if (!resolved.startsWith(resolve(tmpdir()) + (process.platform === 'win32' ? '\\' : '/')) || !resolved.includes('spanning-diagram-')) throw new Error('Unsafe cleanup path')
-    await rm(resolved, { recursive: true, force: true })
+    await removeTemporaryDirectory(directory)
   }
 }

@@ -101,6 +101,7 @@ export function useBodyUploads(scope: UploadScope, sessionKey: string, onReady: 
   }
   function retry(id: string) { patch(id, { state: 'queued', error: undefined }); void drain() }
   function clear() {
+    version.current++; running.current = false
     state.current.forEach(item => { item.controller?.abort(); if (item.previewUrl) URL.revokeObjectURL(item.previewUrl) })
     replace([]); setError('')
   }

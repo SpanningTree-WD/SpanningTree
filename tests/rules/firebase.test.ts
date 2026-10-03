@@ -33,6 +33,89 @@ import type { Publication } from '../../src/models/publication'
 import { createMemberRepository } from '../../src/repositories/firebase/memberRepository'
 import type { Member } from '../../src/models/people'
 
+describe('article authoring relationships and private requests', () => {
+  it('adds and removes many-to-many links from either editor with one canonical field', async () => {
+    const activities = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
+    const mathematics = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')
+    const activity = (await activities.getById('activity-forum-2025'))!
+    expect(activity.relatedMathematics).toContain('math-sylow')
+    const changed = await activities.update(activity.id, { ...activity, relatedMathematics: ['math-burnside', 'math-sylow'] })
+    const math = (await mathematics.getById('math-burnside'))!
+    expect(math.relatedActivities).toContain(activity.id)
+    expect(math.relationshipVersion).toBe(2)
+    expect((await getDoc(doc(db('editor'), 'activities', activity.id))).data()?.relatedMathematics).toEqual([])
+    await mathematics.update(math.id, { ...math, relatedActivities: [activity.id, 'activity-topology-2025'] })
+    expect((await activities.getById('activity-topology-2025'))?.relatedMathematics).toContain(math.id)
+    await activities.update(changed.id, { ...(await activities.getById(changed.id))!, relatedMathematics: ['math-sylow'] })
+    const latest = (await mathematics.getById(math.id))!
+    expect(latest.relatedActivities).toEqual(['activity-topology-2025'])
+    await mathematics.update(latest.id, { ...latest, relatedActivities: [] })
+    expect((await activities.getById('activity-topology-2025'))?.relatedMathematics).not.toContain(math.id)
+    // Reload through a new client/repository; no second mutable edge copy exists.
+    const reconnected = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
+    expect((await reconnected.getById(activity.id))?.relatedMathematics).toEqual(['math-sylow'])
+  })
+  it('preserves one-sided legacy links and refuses to overwrite a concurrently changed connection', async () => {
+    await env.withSecurityRulesDisabled(async context => {
+      await context.firestore().doc('mathematics/math-sylow').update({ relatedActivities: [] })
+    })
+    const activities = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
+    const math = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')
+    const stale = (await activities.getById('activity-forum-2025'))!
+    expect((await math.getById('math-sylow'))?.relatedActivities).toContain(stale.id)
+    const other = (await math.getById('math-burnside'))!
+    await math.update(other.id, { ...other, relatedActivities: [stale.id] })
+    await expect(activities.update(stale.id, { ...stale, relatedMathematics: [] })).rejects.toThrow('관련 글을 변경')
+    const fresh = (await activities.getById(stale.id))!
+    await activities.update(fresh.id, { ...fresh, relatedMathematics: [] })
+    expect((await math.getById('math-sylow'))?.relatedActivities).not.toContain(stale.id)
+    expect((await math.getById('math-burnside'))?.relatedActivities).not.toContain(stale.id)
+  })
+  it('persists stable author, participant, asset and citation IDs without exposing draft content', async () => {
+    const activities = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
+    const math = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')
+    const first = (await math.getById('math-draft'))!
+    const asset = { id: 'figure', fileName: 'graph.png', mediaType: 'image/png', size: 100, url: '/uploads/' + 'a'.repeat(64) + '.png' } as const
+    const saved = await math.update(first.id, { ...first, authorIds: ['person-A', 'person-B'], assets: [asset], references: [{ id: 'r-a', text: 'Book A' }, { id: 'r-b', title: 'Book B' }], content: 'See [@r-b].\n\n{{asset:figure}}', relatedActivities: ['activity-draft', 'activity-forum-2025'] })
+    const edited = await math.update(saved.id, { ...saved, references: [...saved.references!].reverse() })
+    expect(edited.content).toBe(saved.content)
+    expect(edited.authors).toEqual(first.authors)
+    expect(edited.authorIds).toEqual(['person-A', 'person-B'])
+    const a = (await activities.getById('activity-draft'))!
+    await activities.update(a.id, { ...a, participantIds: ['person-A'], participants: ['Legacy name'] })
+    expect((await activities.getById(a.id))?.participants).toEqual(['Legacy name'])
+    const publicRepos = createFirebaseRepositories(db())
+    expect(await publicRepos.mathematics.getPublishedByIds([edited.id])).toEqual([])
+    expect(await publicRepos.activities.getPublishedByIds([a.id])).toEqual([])
+    await math.publish(edited.id)
+    expect((await publicRepos.mathematics.getPublishedByIds([edited.id]))[0].authorIds).toEqual(['person-A', 'person-B'])
+    for (const store of [db(), db('outsider'), db('editor', { ...verified, email_verified: false })]) {
+      await assertFails(updateDoc(doc(store, 'mathematics', edited.id), { authorIds: ['intruder'], updatedAt: serverTimestamp() }))
+      await assertFails(updateDoc(doc(store, 'activities', a.id), { participantIds: ['intruder'], updatedAt: serverTimestamp() }))
+    }
+  })
+  it('allows a private unsaved article upload scope but rejects expired or foreign scopes and forged diagram results', async () => {
+    const store = db('editor'), id = '11111111-1111-4111-8111-111111111111'
+    const session = { collection: 'activities', recordId: id, expiresAt: new Date(Date.now() + 3600000), updatedAt: serverTimestamp() }
+    const sessionRef = doc(store, 'uploadSessions/editor/records/' + id)
+    await assertSucceeds(setDoc(sessionRef, session))
+    expect((await getDoc(doc(store, 'activities', id))).exists()).toBe(false)
+    for (const visitor of [db(), db('outsider')]) {
+      await assertFails(getDoc(doc(visitor, 'uploadSessions/editor/records/' + id)))
+      await assertFails(setDoc(doc(visitor, 'uploadSessions/editor/records/' + id), session))
+    }
+    await assertFails(setDoc(sessionRef, { ...session, expiresAt: new Date(Date.now() - 10000) }))
+    const diagram = { collection: 'activities', recordId: id, ownerId: 'editor', requestId: id, language: 'tikz', source: '\\begin{tikzpicture}\\draw (0,0)--(1,1);\\end{tikzpicture}', sourceHash: 'a'.repeat(64), engine: 'sandbox-v1', state: 'queued', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+    await assertSucceeds(setDoc(doc(store, 'diagramRequests/editor'), diagram))
+    await assertFails(updateDoc(doc(store, 'diagramRequests/editor'), { state: 'complete', url: '/uploads/' + 'a'.repeat(64) + '.png', updatedAt: serverTimestamp() }))
+    await assertFails(getDoc(doc(db(), 'diagramRequests/editor')))
+    await assertFails(getDoc(doc(db(), 'diagramCache/' + 'a'.repeat(64))))
+    const upload = { collection: 'activities', recordId: id, ownerId: 'editor', uploadId: id, fileName: 'image.png', mediaType: 'image/png', size: 100, sha256: 'b'.repeat(64), chunkCount: 1, publicConsent: true, state: 'uploading', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+    await assertSucceeds(setDoc(doc(store, 'uploadRequests/editor'), upload))
+    await assertSucceeds(deleteDoc(sessionRef))
+  })
+})
+
 let env: RulesTestEnvironment
 const verified = { email_verified: true, email: 'editor@example.com' }
 const db = (uid?: string, claims = verified) =>

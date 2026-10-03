@@ -9,6 +9,7 @@ import type { Errors } from './EditorFields'
 import { prepareEditorRecord } from './editorMetadata'
 import { useArticleAttachments } from './useArticleAttachments'
 import { useBodyUploads } from './useBodyUploads'
+import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 import { validateAuthoring, withLegacyAssets, type ArticleAsset, type AuthoringFields, type ReferenceEntry } from '../../models/authoring'
 
 interface EditableRecord extends AuthoringFields {
@@ -34,7 +35,11 @@ function applyAssets<T extends EditableRecord>(record: T, assets: ArticleAsset[]
     const previous = old.find(asset => asset.url === url)
     return previous ? assets.find(asset => asset.id === previous.id)?.url : url
   }
-  const replaceFile = (file: Attachment) => ({ ...file, url: replacementUrl(file.url) })
+  const replaceFile = (file: Attachment) => {
+    const previous = old.find(asset => asset.url === file.url)
+    const replacement = assets.find(asset => asset.id === previous?.id)
+    return { ...file, url: replacementUrl(file.url), ...(replacement ? { fileName: replacement.fileName, sizeLabel: replacement.size ? fileSizeLabel(replacement.size) : file.sizeLabel } : {}) }
+  }
   return { ...record, assets,
     coverImage: { ...record.coverImage, url: replacementUrl(record.coverImage.url) },
     ...(record.attachments ? { attachments: record.attachments.filter(file => !file.url || !!replacementUrl(file.url)).map(replaceFile) } : {}),

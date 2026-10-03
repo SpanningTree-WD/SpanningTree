@@ -6,7 +6,7 @@ import type { Publication } from '../../models/publication'
 import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { AttachmentList, type PendingAttachment } from './AttachmentList'
 import { ContentImage } from './ContentImage'
-import { MarkdownRenderer, ReferenceList, assetMarkup } from './MarkdownRenderer'
+import { MarkdownRenderer, ReferenceList, assetMarkup, safeContentUris } from './MarkdownRenderer'
 import type { AssetView } from '../../models/authoring'
 import { PersonLinks } from './PersonLinks'
 import DOMPurify from 'dompurify'
@@ -23,7 +23,7 @@ function ArticleAssetList({ assets = [], excluded = [] }: { assets?: AssetView[]
   const t = useT()
   const visible = assets.filter(asset => !asset.url || !excluded.includes(asset.url))
   if (!visible.length) return null
-  return <section className="article-asset-list"><h2>{t('첨부 파일')}</h2>{visible.map(asset => <div key={asset.id} className="markdown-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(assetMarkup(asset, t), { ADD_URI_SAFE_ATTR: ['src'] }) }} />)}</section>
+  return <section className="article-asset-list"><h2>{t('첨부 파일')}</h2>{visible.map(asset => <div key={asset.id}><div className="markdown-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(assetMarkup(asset, t), { ALLOWED_URI_REGEXP: safeContentUris }) }} />{asset.mediaType.startsWith('image/') && (asset.url ? <a href={asset.url} target="_blank" rel="noopener noreferrer">{asset.fileName}</a> : <span>{asset.fileName}</span>)}</div>)}</section>
 }
 
 // Public pages and editor previews share markup and sizing. Preview object URLs

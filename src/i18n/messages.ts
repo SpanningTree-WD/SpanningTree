@@ -1,7 +1,9 @@
 import type { Language } from './locale'
+import { authoringMessages } from './authoringMessages'
 
 // Only interface copy belongs here. User-authored content is rendered verbatim.
 export const messages: Record<string, Record<Language, string>> = {
+  ...authoringMessages,
   "Main": {
     "ko": "홈",
     "en": "Main"
