@@ -4,7 +4,7 @@ This change uses MathJax 4.1.3 for shared preview/public rendering. It preserves
 
 ## Automated checks
 
-- Unit/integration suite: 197 tests covering the existing site plus image clipboard paste, typing and selection during upload, plain-text paste/undo, attachment queues across article sessions, upload retry, cancellation, draft creation/reopening, references, People and shared MathJax output.
+- Unit/integration suite: 203 tests covering the existing site plus image clipboard paste, typing and selection during upload, plain-text paste/undo, attachment queues across article sessions, upload retry, cancellation, draft creation/reopening, references, People and shared MathJax output, including mathematical font variants used by existing articles.
 - Firestore emulators: 28 tests, including administrator enforcement, private draft/upload sessions, protected worker completion, canonical Activity–Mathematics add/remove/persistence, legacy relation conversion/conflict detection and published-only resolution. These tests use the real repository implementation and rules without production writes.
 - Real Linux Docker verification: successful TikZ and Asymptote compilation, invalid source, blocked arbitrary file access/system commands, bounded infinite-loop termination and stable cache keys. Worker tests additionally verify cache reuse, revoked administrators, forged ownership/hashes, expired sessions and isolated compilation failures.
 - TypeScript, production build and lint pass. Lint has nine warnings (React hook dependency and Fast Refresh export checks), no errors. MathJax and authoring are loaded with detail/editor routes instead of the homepage's initial JavaScript. The article-rendering bundle remains large because SVG fonts are bundled locally.
@@ -20,6 +20,7 @@ The browser uses the actual app, editor and renderer with isolated local reposit
 - Registered author and participant appear on the person's separate detail page in authored content and participated activities.
 - Korean and English, at 375, 768 and 1280 pixel viewports: homepage, Mathematics list/detail, Activity list/detail, People list/detail, admin dashboard, Mathematics editor and homepage editor. All 60 route/size/language combinations fit the page width.
 - Additional mobile preview with a long title, multiple author names, image/PDF filenames, a 45-term equation and a long code line: text wraps, while equation/code scroll within their own regions. The English admin navigation's minimum grid width was fixed after this check exposed horizontal overflow.
+- Read-only review of the existing public Riemann–Hurwitz article caught a font-selection error that requested asynchronous font data. The renderer now selects the bundled MathJax-TeX class through `fontData`; all 190 expressions read from that article pass a separate compatibility check. Font-variant regression cases cover blackboard bold, script/fraktur, matrices, arrows and geometry formulas.
 
 Browser zoom keyboard input was unavailable in the verification tool. Actual Safari, Firefox, touch-device drag/drop, and OS screenshot-copy differences have not been exercised; clipboard/file/drop handling also has automated coverage.
 

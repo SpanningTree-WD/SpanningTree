@@ -4,6 +4,20 @@ import { MarkdownRenderer, renderMarkdown, ReferenceList } from './MarkdownRende
 afterEach(cleanup)
 
 describe('MarkdownRenderer with MathJax', () => {
+  it.each([
+    '\\{(x,y)\\in\\mathbb R^2:F(x,y)=0\\}',
+    'x,y\\in\\mathbb C,\\quad\\mathbb C^2\\cong\\mathbb R^4',
+    '\\mathcal O_X \\otimes \\mathscr F',
+    '\\mathfrak g \\subseteq \\mathfrak{sl}_2(\\mathbb C)',
+    '\\chi(X)=2-2g(X),\\qquad\\sum_{p\\in X}(e_p-1)',
+    '\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}\\xrightarrow{f}\\mathbb P^1',
+  ])('renders mathematical font variants without asynchronous font retries: %s', expression => {
+    const html = renderMarkdown('$$' + expression + '$$')
+    expect(html).toContain('<svg')
+    expect(html).not.toContain('mathjax-error')
+    expect(html).not.toContain('data-mml-node="merror"')
+    expect(html).not.toContain('MathJax retry')
+  })
   it('renders Markdown and locally generated MathJax SVG', () => {
     const html = renderMarkdown('# Theorem\n\n- one\n- two\n\n\\(G\\)\n\n$$n_p \\equiv 1 \\pmod p$$\n\n<script>alert(1)</script>')
     expect(html).toContain('<h1>Theorem</h1>')

@@ -25,7 +25,7 @@ export function renderMath(expression: string, display: boolean) {
       packages: ['base', 'ams', 'newcommand', 'noundefined', 'mathtools', 'boldsymbol'],
       maxBuffer: 20000, maxMacros: 1000,
     })
-    const output = new SVG({ font: new MathJaxTexFont(), fontCache: 'none' })
+    const output = new SVG({ fontData: MathJaxTexFont, fontCache: 'none' })
     const document = mathjax.document('', { InputJax: input, OutputJax: output })
     const node = document.convert(expression, { display, em: 16, ex: 8, containerWidth: 760 })
     const svg = adaptor.innerHTML(node)
