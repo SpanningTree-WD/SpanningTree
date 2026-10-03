@@ -31,16 +31,9 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-      - name: Deploy verified Firestore rules
-        shell: bash
-        run: |
-          credential_file="$RUNNER_TEMP/spanningtree-rules-deploy.json"
-          umask 077
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$credential_file"
-          trap 'rm -f "$credential_file"' EXIT
-          GOOGLE_APPLICATION_CREDENTIALS="$credential_file" npx --yes firebase-tools@14.14.0 deploy --only firestore:rules --project spanningtree-math --non-interactive
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+      # This service account has Hosting access, not Firebase Rules administration.
+      # Publish changed firestore.rules with an authorized administrator before
+      # releasing frontend features that depend on them (see ARTICLE_AUTHORING.md).
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

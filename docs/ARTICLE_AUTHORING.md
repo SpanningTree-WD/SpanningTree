@@ -12,6 +12,10 @@ The canonical Activity–Mathematics relationship is `mathematics.relatedActivit
 
 An optional bulk migration is available in `scripts/migrate-authoring-relations.ts`. It is **not needed before using the new reader**. Use a maintenance window if applying it so open editor sessions can be reloaded. With the existing authorized Admin SDK credential and `GOOGLE_CLOUD_PROJECT=spanningtree-math`, run `npx tsx scripts/migrate-authoring-relations.ts` first. This writes a local timestamp-preserving JSON backup and reports the proposed count without database writes. Inspect that backup and output, set `CONFIRM_AUTHORING_MIGRATION=spanningtree-math`, and rerun with `--apply` only when ready. The migration is idempotent and retains legacy fields, names, files and body content. Backups contain content and must stay outside the repository. Restore only reviewed affected fields with fresh conflict checks; do not overwrite concurrent edits with an entire old export.
 
+## Production release order
+
+The existing GitHub deployment service account can deploy Hosting but cannot validate or publish Firebase Rules (the Rules API returns 403). Keep its permissions unchanged. Before releasing changes that require new rules, an authorized project administrator must publish the tested repository `firestore.rules` through the Firebase console and verify the active version. Then release the main-branch worker and frontend. The Hosting workflow still runs all application and emulator checks; it does not deploy rules. Do not treat a successful Hosting deployment as proof that rules were updated.
+
 ## Upload lifecycle
 
 The existing Firestore chunk queue → GitHub immutable file → Firebase Hosting pipeline is retained. A new unsaved article reserves a UUID and creates a private `uploadSessions/{uid}/records/{recordId}` record expiring in 24 hours. This permits immediate uploads without creating a placeholder article. Saving creates the article at the reserved ID; reopening reads the saved asset metadata. A queued or failed attachment blocks saving/publishing with a retry/remove explanation.
