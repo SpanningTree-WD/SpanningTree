@@ -7,14 +7,13 @@ import {
   EditorFrame,
   Field,
   SelectField,
-  TextAreaField,
   type Errors,
 } from './EditorFields'
 import { activityTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
-import { UploadPanel } from './UploadPanel'
+import { ArticleComposer } from './ArticleComposer'
+import { PeoplePicker, RelatedPicker } from './ConnectionPickers'
 import { ArticlePreview } from './ArticlePreview'
-import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 
 const empty: Activity = {
   id: '',
@@ -46,7 +45,9 @@ export function ActivityEditorPage() {
     preview,
     previewing,
     setPreviewing,
-    attachments,
+    bodyUploads,
+    uploadScope,
+    setAssets,
     cancel,
     set,
     errors,
@@ -93,14 +94,7 @@ export function ActivityEditorPage() {
         <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>{t("작성")}</button>
         <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>{t("미리보기")}</button>
       </div>
-      {previewing && <ArticlePreview collection="activities" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
-        pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
-          id: item.id, fileName: item.file.name,
-          sizeLabel: fileSizeLabel(item.file.size),
-          stateText: item.state === 'failed' ? '첨부 실패 · 아래에서 재시도'
-            : item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
-              : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기' : '첨부 처리 중',
-        }))} />}
+      {previewing && <ArticlePreview collection="activities" record={preview} assetViews={bodyUploads.views(form.assets)} />}
       <fieldset className="admin-editor-fields" disabled={saving}>
         <div hidden={previewing}>
         <Field
@@ -131,27 +125,14 @@ export function ActivityEditorPage() {
             onChange={(v) => set('type', v)}
           />
         </div>
-        <TextAreaField
-          label="활동 내용"
-          name="description"
-          value={form.description}
-          onChange={(v) => set('description', v)}
-        />
+        <ArticleComposer value={form.description} label="활동 내용"
+          assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
+          onChange={value => set('description', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
+          onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
+           />
+        <PeoplePicker label="참여자" value={form.participantIds ?? []} onChange={value => set('participantIds', value)} />
+        <RelatedPicker collection="mathematics" label="관련 수학 자료" value={form.relatedMathematics} onChange={value => set('relatedMathematics', value)} />
         </div>
-        <UploadPanel
-          attachments={attachments}
-          onRetry={() => void save()}
-          disabled={saving}
-          image={form.coverImage}
-          files={form.attachments ?? []}
-          onImage={(url) => set('coverImage', { ...form.coverImage, url })}
-          onRemovePdf={(url) =>
-            set(
-              'attachments',
-              (form.attachments ?? []).filter((file) => file.url !== url)
-            )
-          }
-        />
         <EditorActions
           status={form.status}
           saving={saving}

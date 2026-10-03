@@ -1,0 +1,19 @@
+name: Diagram sandbox verification
+on:
+  pull_request:
+    paths:
+      - 'scripts/diagrams/**'
+      - '.github/workflows/diagram-sandbox-check.yml'
+permissions:
+  contents: read
+jobs:
+  sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci --no-audit --no-fund
+      - run: docker build -t spanning-tree-diagrams:sandbox-v1 scripts/diagrams
+      - run: npx tsx scripts/diagrams/sandbox-check.ts

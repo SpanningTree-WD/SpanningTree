@@ -2,6 +2,7 @@ export interface MemberInput {
   name: string
   generation: number
   isLeader: boolean
+  bio?: string
 }
 
 export interface Member extends MemberInput {
@@ -16,7 +17,8 @@ export function validateMember(input: MemberInput): MemberInput {
   if (!Number.isInteger(input.generation) || input.generation < 1 || input.generation > 999)
     throw new Error('기수는 1~999 사이의 정수로 입력해 주세요.')
   if (typeof input.isLeader !== 'boolean') throw new Error('학년 장 여부를 확인해 주세요.')
-  return { name, generation: input.generation, isLeader: input.isLeader }
+  if (input.bio !== undefined && (typeof input.bio !== 'string' || input.bio.length > 20000)) throw new Error('소개는 20,000자 이내로 입력해 주세요.')
+  return { name, generation: input.generation, isLeader: input.isLeader, ...(input.bio !== undefined ? { bio: input.bio.trim() } : {}) }
 }
 
 export function groupMembers(members: readonly Member[]) {

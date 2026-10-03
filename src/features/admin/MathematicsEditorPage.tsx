@@ -8,16 +8,15 @@ import {
   Field,
   NamesField,
   SelectField,
-  TextAreaField,
   type Errors,
 } from './EditorFields'
 import { mathematicsTypes } from '../../models/contentOptions'
 import { getMathematicsFields } from '../../models/mathematicsFields'
 import { MathematicsFieldPicker } from './MathematicsFieldPicker'
 import { useAdminEditor } from './useAdminEditor'
-import { UploadPanel } from './UploadPanel'
+import { ArticleComposer } from './ArticleComposer'
+import { PeoplePicker, RelatedPicker } from './ConnectionPickers'
 import { ArticlePreview } from './ArticlePreview'
-import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 
 const empty: Mathematics = {
   id: '',
@@ -56,7 +55,9 @@ export function MathematicsEditorPage() {
     preview,
     previewing,
     setPreviewing,
-    attachments,
+    bodyUploads,
+    uploadScope,
+    setAssets,
     cancel,
     set,
     errors,
@@ -103,14 +104,7 @@ export function MathematicsEditorPage() {
         <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>{t("작성")}</button>
         <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>{t("미리보기")}</button>
       </div>
-      {previewing && <ArticlePreview collection="mathematics" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
-        pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
-          id: item.id, fileName: item.file.name,
-          sizeLabel: fileSizeLabel(item.file.size),
-          stateText: item.state === 'failed' ? '첨부 실패 · 아래에서 재시도'
-            : item.state === 'selected' ? '이 글에 첨부 예정 · 저장 필요'
-              : item.state === 'ready' ? '파일 준비 완료 · 글 저장 대기' : '첨부 처리 중',
-        }))} />}
+      {previewing && <ArticlePreview collection="mathematics" record={preview} assetViews={bodyUploads.views(form.assets)} />}
       <fieldset className="admin-editor-fields" disabled={saving}>
         <div hidden={previewing}>
         <Field
@@ -151,33 +145,14 @@ export function MathematicsEditorPage() {
             set('field', fields[0] ?? '')
           }}
         />
-        <section className="article-body-editor">
-          <div>
-            <TextAreaField
-              label="본문"
-              name="content"
-              rows={16}
-              value={form.content}
-              onChange={(v) => set('content', v)}
-            />
-            <p className="field-help">{t("마크다운으로 작성할 수 있습니다. 수식은 \\(…\\), 독립된 수식은 $$…$$로 감싸 주세요.")}</p>
-          </div>
-        </section>
+        <ArticleComposer value={form.content} label="본문"
+          assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
+          onChange={value => set('content', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
+          onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
+          references={form.references ?? []} onReferences={value => set('references', value)} />
+        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
+        <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />
         </div>
-        <UploadPanel
-          attachments={attachments}
-          onRetry={() => void save()}
-          disabled={saving}
-          image={form.coverImage}
-          files={form.attachments}
-          onImage={(url) => set('coverImage', { ...form.coverImage, url })}
-          onRemovePdf={(url) =>
-            set(
-              'attachments',
-              form.attachments.filter((file) => file.url !== url)
-            )
-          }
-        />
         <EditorActions
           status={form.status}
           saving={saving}

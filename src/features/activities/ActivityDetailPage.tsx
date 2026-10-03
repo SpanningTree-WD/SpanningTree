@@ -3,7 +3,7 @@ import { ActivityDetail } from '../../components/content/ContentDetail'
 import { useParams } from 'react-router-dom'
 import { RelatedContent } from '../../components/content/RelatedContent'
 import { ContentState, MissingContent } from '../../components/ui/ContentState'
-import { activityRepository, resolveRelated } from '../../repositories/publicRepositories'
+import { activityRepository, resolveRelated, relatedMathematicsIds } from '../../repositories/publicRepositories'
 import { useRepository } from '../shared/useRepository'
 import { usePageMetadata } from '../shared/usePageMetadata'
 export function ActivityDetailPage() {
@@ -16,7 +16,7 @@ export function ActivityDetailPage() {
       ? {
           record,
           related: await resolveRelated({
-            mathematics: record.relatedMathematics,
+            mathematics: await relatedMathematicsIds(record),
             publications: record.relatedPublications,
           }),
         }

@@ -8,10 +8,15 @@ import {
   type DocumentData,
   type DocumentSnapshot,
   type Firestore,
+  type Transaction,
 } from 'firebase/firestore'
 import type { AdminRepository } from '../contracts'
 import { normalize } from './repositories'
 import { MAX_MATHEMATICS_FIELDS } from '../../models/mathematicsFields'
+import { validateAuthoring } from '../../models/authoring'
+import type { Activity } from '../../models/activity'
+import type { Mathematics } from '../../models/mathematics'
+import { effectiveActivityIds, linkedMathematics } from '../../models/contentRelations'
 
 interface RecordBase {
   id: string
@@ -32,7 +37,7 @@ function mapRecord<T>(snapshot: DocumentSnapshot): T {
 function editableInput(input: object) {
   return Object.fromEntries(
     Object.entries(input).filter(
-      ([key]) => !['id', 'status', 'createdAt', 'updatedAt', 'publishedAt'].includes(key)
+      ([key]) => !['id', 'status', 'createdAt', 'updatedAt', 'publishedAt', 'relationBaseline'].includes(key)
     )
   )
 }
@@ -51,6 +56,7 @@ function withoutUndefined(value: unknown): unknown {
 }
 
 function validate(record: DocumentData, name: CollectionName) {
+  validateAuthoring(record)
   if (typeof record.title !== 'string' || !record.title.trim())
     throw new Error('제목을 입력해 주세요.')
   if (
@@ -91,14 +97,68 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
   const records = collection(db, name)
   const slugRef = (slug: string) => doc(db, 'contentSlugs', name + ':' + slug)
 
+  async function graph() {
+    const [activities, mathematics] = await Promise.all([
+      getDocsFromServer(collection(db, 'activities')), getDocsFromServer(collection(db, 'mathematics')),
+    ])
+    return { activities: activities.docs.map(snapshot => mapRecord<Activity>(snapshot)), mathematics: mathematics.docs.map(snapshot => mapRecord<Mathematics>(snapshot)) }
+  }
+  async function hydrate(record: T): Promise<T> {
+    if (name === 'publications') return record
+    const data = await graph()
+    if (name === 'activities') {
+      const related = linkedMathematics(record as unknown as Activity, data.mathematics)
+      return { ...record, relatedMathematics: related, relationBaseline: related }
+    }
+    return { ...record, relatedActivities: effectiveActivityIds(record as unknown as Mathematics, data.activities) }
+  }
+  async function relationWrites(transaction: Transaction, next: DocumentData, input: DocumentData, data: Awaited<ReturnType<typeof graph>> | undefined) {
+    const writes: (() => void)[] = []
+    if (!data) return writes
+    if (name === 'mathematics') {
+      const ids = input.relatedActivities ?? effectiveActivityIds(next as Mathematics, data.activities)
+      if (!Array.isArray(ids) || ids.length > 100 || ids.some(id => typeof id !== 'string')) throw new Error('관련 활동을 확인해 주세요.')
+      const chosen = await Promise.all(ids.map(id => transaction.get(doc(db, 'activities', id))))
+      if (chosen.some(snapshot => !snapshot.exists())) throw new Error('연결하려는 글이 삭제되었습니다. 목록을 다시 확인해 주세요.')
+      next.relatedActivities = [...new Set(ids)]
+      next.relationshipVersion = 2
+    }
+    if (name === 'activities' && Array.isArray(input.relatedMathematics)) {
+      const desired = [...new Set(input.relatedMathematics as string[])]
+      if (desired.length > 100) throw new Error('관련 글은 최대 100개까지 선택해 주세요.')
+      const candidates = [...new Set([...desired, ...linkedMathematics(next as Activity, data.mathematics), ...(input.relationBaseline ?? [])])]
+      const snapshots = await Promise.all(candidates.map(id => transaction.get(doc(db, 'mathematics', id))))
+      const current = snapshots.filter(snapshot => snapshot.exists()).map(snapshot => mapRecord<Mathematics>(snapshot))
+      const original = data.activities.find(activity => activity.id === next.id) ?? { ...(next as Activity), relatedMathematics: [] }
+      const latest = linkedMathematics(original, current).sort()
+      if (input.relationBaseline && JSON.stringify([...input.relationBaseline].sort()) !== JSON.stringify(latest))
+        throw new Error('다른 관리자가 관련 글을 변경했습니다. 입력 내용을 보관한 뒤 다시 불러와 주세요.')
+      for (const id of desired) if (!current.some(math => math.id === id)) throw new Error('연결하려는 글이 삭제되었습니다. 목록을 다시 확인해 주세요.')
+      for (const snapshot of snapshots) {
+        if (!snapshot.exists()) continue
+        const math = mapRecord<Mathematics>(snapshot)
+        const previous = effectiveActivityIds(math, data.activities)
+        const ids = [...new Set([...previous.filter(id => id !== next.id), ...(desired.includes(math.id) ? [next.id] : [])])]
+        if (JSON.stringify([...previous].sort()) !== JSON.stringify([...ids].sort()) || (math.relationshipVersion !== 2 && desired.includes(math.id))) {
+          writes.push(() => transaction.update(snapshot.ref, { relatedActivities: ids, relationshipVersion: 2, updatedAt: serverTimestamp() }))
+        }
+      }
+      // New relationships are stored only on Mathematics. This legacy field is read-only during migration.
+      next.relatedMathematics = []
+    }
+    return writes
+  }
+
+
   async function load(id: string) {
     const snapshot = await getDocFromServer(doc(records, id))
     if (!snapshot.exists()) throw new Error('자료가 존재하지 않습니다.')
-    return mapRecord<T>(snapshot)
+    return hydrate(mapRecord<T>(snapshot))
   }
 
   async function modify(id: string, input: Partial<T> = {}, status?: 'draft' | 'published') {
     const reference = doc(records, id)
+    const relations = name === 'mathematics' || (name === 'activities' && 'relatedMathematics' in input) ? await graph() : undefined
     await runTransaction(db, async (transaction) => {
       const snapshot = await transaction.get(reference)
       if (!snapshot.exists()) throw new Error('자료가 존재하지 않습니다.')
@@ -117,6 +177,7 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
       if (status) next.status = status
       if (name === 'mathematics' && status === 'published' && !current.publishedAt)
         next.publishedAt = serverTimestamp()
+      const relatedWrites = await relationWrites(transaction, next, input, relations)
       validate(next, name)
       const target = slugRef(next.slug)
       const claim = await transaction.get(target)
@@ -128,6 +189,7 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
       }
       transaction.set(target, { collection: name, slug: next.slug, recordId: id })
       transaction.set(reference, next)
+      relatedWrites.forEach(write => write())
     })
     return load(id)
   }
@@ -141,10 +203,11 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
     },
     async getById(id) {
       const snapshot = await getDocFromServer(doc(records, id))
-      return snapshot.exists() ? mapRecord<T>(snapshot) : null
+      return snapshot.exists() ? hydrate(mapRecord<T>(snapshot)) : null
     },
-    async create(input) {
-      const reference = doc(records)
+    async create(input, reservedId) {
+      const reference = reservedId && /^[a-f0-9-]{36}$/.test(reservedId) ? doc(records, reservedId) : doc(records)
+      const relations = name === 'publications' ? undefined : await graph()
       const record = withoutUndefined({
         ...editableInput(input),
         id: reference.id,
@@ -154,11 +217,14 @@ export function createFirebaseAdminRepository<T extends RecordBase>(
       }) as DocumentData
       validate(record, name)
       await runTransaction(db, async (transaction) => {
+        if ((await transaction.get(reference)).exists()) throw new Error('이미 존재하는 글입니다. 다시 불러와 주세요.')
         const target = slugRef(record.slug)
         if ((await transaction.get(target)).exists())
           throw new Error('이미 사용 중인 자료 주소입니다. 사이트 운영자에게 문의해 주세요.')
+        const relatedWrites = await relationWrites(transaction, record, input, relations)
         transaction.set(target, { collection: name, slug: record.slug, recordId: reference.id })
         transaction.set(reference, record)
+        relatedWrites.forEach(write => write())
       })
       return load(reference.id)
     },

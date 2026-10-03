@@ -1,4 +1,5 @@
 import { useT } from '../../i18n/LanguageProvider'
+import { Link } from 'react-router-dom'
 import { usePageMetadata } from '../shared/usePageMetadata'
 import { useEffect, useState } from 'react'
 import { PageHeading } from '../../components/archive/ArchiveComponents'
@@ -48,7 +49,7 @@ export function PeoplePage() {
                     key={member.id}
                     className={`people-person${member.isLeader ? ' is-leader' : ''}`}
                   >
-                    {member.name}
+                    <Link to={'/people/' + encodeURIComponent(member.id)}>{member.name}</Link>
                     {member.isLeader && <span className="visually-hidden">{t("(학년 장)")}</span>}
                   </li>
                 ))}

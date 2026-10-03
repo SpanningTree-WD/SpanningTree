@@ -3,6 +3,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { ActivityEditorPage } from './ActivityEditorPage'
 import { activityFixtures } from '../../content/fixtures/activities'
+import { setEditorText } from '../../test/editor'
+import { withLegacyAssets } from '../../models/authoring'
+vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
 
 const repository = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -126,9 +129,7 @@ it('creates a Korean activity without manual URL or metadata entry', async () =>
   fireEvent.change(screen.getByLabelText(/제목/), { target: { value: '첫 수학 포럼' } })
   fireEvent.change(screen.getByLabelText(/활동 날짜/), { target: { value: '2026-09-29' } })
   fireEvent.change(screen.getByLabelText(/활동 유형/), { target: { value: 'Forum' } })
-  fireEvent.change(screen.getByLabelText('활동 내용'), {
-    target: { value: '함께 수학을 공부했습니다.' },
-  })
+  setEditorText(screen.getByRole('textbox', { name: '활동 내용' }), '함께 수학을 공부했습니다.')
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   await waitFor(() => expect(repository.create).toHaveBeenCalledOnce())
   expect(repository.create.mock.calls[0][0]).toMatchObject({
@@ -148,7 +149,7 @@ it('preserves existing URLs, summaries and hidden metadata when editing the titl
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   await screen.findByText('저장했습니다.')
   expect(repository.update).toHaveBeenCalledWith(record.id, {
-    ...record,
+    ...withLegacyAssets(record),
     title: '바뀐 제목',
   })
 })

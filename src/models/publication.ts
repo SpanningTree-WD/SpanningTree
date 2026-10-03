@@ -1,6 +1,7 @@
 import type { ArchiveQuery, Attachment, ContentStatus, MediaReference } from './common'
+import type { AuthoringFields } from './authoring'
 
-export interface Publication {
+export interface Publication extends AuthoringFields {
   id: string; slug: string; title: string; summary: string; description: string
   year: number; type: string; coverImage: MediaReference; pdf?: Attachment
   authors: string[]; editors: string[]; relatedActivities: string[]

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { MathematicsEditorPage } from './MathematicsEditorPage'
 import { PublicationEditorPage } from './PublicationEditorPage'
+import { setEditorText } from '../../test/editor'
+vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
 
 const repository = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn(), listAll: vi.fn() }))
 vi.mock('../../services/uploads/GitHubUploadService', () => ({ watchUpload: () => () => {} }))
@@ -59,9 +61,7 @@ it.each([
     fireEvent.change(screen.getByLabelText(new RegExp(type)), { target: { value } })
     if (path === 'mathematics')
       fireEvent.click(screen.getByRole('checkbox', { name: '대수학' }))
-    fireEvent.change(screen.getByLabelText(body), {
-      target: { value: '기초부터 함께 공부합니다.' },
-    })
+    setEditorText(screen.getByRole('textbox', { name: body }), '기초부터 함께 공부합니다.')
     fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
     await waitFor(() => expect(repository.create).toHaveBeenCalledOnce())
     expect(repository.create.mock.calls[0][0]).toMatchObject({

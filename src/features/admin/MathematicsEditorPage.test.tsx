@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { mathematicsFixtures } from '../../content/fixtures/mathematics'
 import type { Mathematics } from '../../models/mathematics'
 import { MathematicsEditorPage } from './MathematicsEditorPage'
+vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
 
 const repository = vi.hoisted(() => ({
   getById: vi.fn(), update: vi.fn(), create: vi.fn(), listAll: vi.fn(),

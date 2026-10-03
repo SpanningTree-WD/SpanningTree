@@ -1,58 +1,89 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { MarkdownRenderer, renderMarkdown } from './MarkdownRenderer'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { MarkdownRenderer, renderMarkdown, ReferenceList } from './MarkdownRenderer'
+afterEach(cleanup)
 
-describe('MarkdownRenderer', () => {
-  it('renders common Markdown and KaTeX while removing stored HTML hazards', () => {
+describe('MarkdownRenderer with MathJax', () => {
+  it.each([
+    '\\{(x,y)\\in\\mathbb R^2:F(x,y)=0\\}',
+    'x,y\\in\\mathbb C,\\quad\\mathbb C^2\\cong\\mathbb R^4',
+    '\\mathcal O_X \\otimes \\mathscr F',
+    '\\mathfrak g \\subseteq \\mathfrak{sl}_2(\\mathbb C)',
+    '\\chi(X)=2-2g(X),\\qquad\\sum_{p\\in X}(e_p-1)',
+    '\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}\\xrightarrow{f}\\mathbb P^1',
+  ])('renders mathematical font variants without asynchronous font retries: %s', expression => {
+    const html = renderMarkdown('$$' + expression + '$$')
+    expect(html).toContain('<svg')
+    expect(html).not.toContain('mathjax-error')
+    expect(html).not.toContain('data-mml-node="merror"')
+    expect(html).not.toContain('MathJax retry')
+  })
+  it('renders Markdown and locally generated MathJax SVG', () => {
     const html = renderMarkdown('# Theorem\n\n- one\n- two\n\n\\(G\\)\n\n$$n_p \\equiv 1 \\pmod p$$\n\n<script>alert(1)</script>')
     expect(html).toContain('<h1>Theorem</h1>')
-    expect(html).toContain('katex')
+    expect(html).toContain('mathjax-equation')
+    expect(html).not.toContain('katex')
     expect(html).not.toContain('<script>')
-    render(<MarkdownRenderer content={'[Read](https://example.com)\n\n```ts\nconst n = 1\n```'} />)
+    render(<MarkdownRenderer content={'[Read](https://example.com)\n\n\x60\x60\x60ts\nconst n = 1\n\x60\x60\x60'} />)
     expect(screen.getByRole('link', { name: 'Read' })).toBeInTheDocument()
     expect(screen.getByText('const n = 1')).toBeInTheDocument()
   })
-
   it.each([
-    { content: String.raw`\(\sqrt{2}\)`, roots: 1, mathml: 'msqrt', display: false },
-    { content: String.raw`$$\sqrt{x^2 + 1}$$`, roots: 1, mathml: 'msqrt', display: true },
-    { content: String.raw`$$\sqrt{\frac{1 + \sqrt{x}}{2}}$$`, roots: 2, mathml: 'msqrt', display: true },
-    { content: String.raw`\(\sqrt[3]{x}\)`, roots: 1, mathml: 'mroot', display: false },
-  ])('preserves visible and accessible radicals in $content', ({ content, roots, mathml, display }) => {
+    { content: '\\(\\sqrt{2}\\)', roots: 1, type: 'msqrt', display: false },
+    { content: '$$\\sqrt{x^2 + 1}$$', roots: 1, type: 'msqrt', display: true },
+    { content: '$$\\sqrt{\\frac{1 + \\sqrt{x}}{2}}$$', roots: 2, type: 'msqrt', display: true },
+    { content: '\\(\\sqrt[3]{x}\\)', roots: 1, type: 'mroot', display: false },
+  ])('preserves radicals in $content', ({ content, roots, type, display }) => {
     const { container } = render(<MarkdownRenderer content={content} />)
-    const radicalImages = container.querySelectorAll('.katex-html .sqrt svg')
-
-    expect(radicalImages).toHaveLength(roots)
-    for (const svg of radicalImages) {
-      expect(svg).toHaveAttribute('viewBox')
-      expect(svg).toHaveAttribute('preserveAspectRatio', 'xMinYMin slice')
-      expect(svg.querySelector('path')?.getAttribute('d')).toBeTruthy()
-    }
-    expect(container.querySelector(`.katex-mathml math ${mathml}`)).not.toBeNull()
-    expect(Boolean(container.querySelector('.katex-display'))).toBe(display)
-    expect(container.querySelector('.katex-error')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-mml-node="' + type + '"]')).toHaveLength(roots)
+    expect(container.querySelector('svg')).toHaveAttribute('viewBox')
+    expect(container.querySelector('svg path')?.getAttribute('d')).toBeTruthy()
+    expect(screen.getByRole('math')).toHaveAttribute('aria-label')
+    expect(Boolean(container.querySelector('.mathjax-display'))).toBe(display)
+    expect(container.querySelector('.mathjax-error')).toBeNull()
   })
-
-  it('still removes unsafe HTML, SVG, and MathML alongside radicals', () => {
-    const { container } = render(<MarkdownRenderer content={String.raw`
-\(\sqrt{2}\)
-
-<script>alert(1)</script>
-<img src="x" onerror="alert(1)">
-<a href="javascript:alert(1)">unsafe link</a>
-<svg onload="alert(1)"><script>alert(1)</script><a xlink:href="javascript:alert(1)"><text>unsafe SVG</text></a><foreignObject><iframe src="https://example.com"></iframe></foreignObject></svg>
-<math><mi href="javascript:alert(1)" onclick="alert(1)">x</mi></math>
-`} />)
-
-    expect(container.querySelector('.sqrt svg path')).toBeInTheDocument()
-    expect(container.querySelector('script, iframe, foreignObject')).not.toBeInTheDocument()
-    for (const element of container.querySelectorAll('*')) {
-      for (const attribute of element.attributes) {
-        expect(attribute.name).not.toMatch(/^on/i)
-        if (['href', 'xlink:href', 'src'].includes(attribute.name)) {
-          expect(attribute.value).not.toMatch(/^javascript:/i)
-        }
-      }
+  it('does not interpret code or escaped dollars as mathematics', () => {
+    const html = renderMarkdown('\x60$x$\x60\n\n\x60\x60\x60tex\n$$x$$\n\x60\x60\x60\n\n\\$5 and $x+1$')
+    expect(html.match(/class="mathjax-equation/g)).toHaveLength(1)
+    expect(html).toContain('<code>$x$</code>')
+    expect(html).toContain('$$x$$')
+    expect(html).toContain('$5')
+  })
+  it('keeps an invalid expression local and does not reuse macros between expressions', () => {
+    const { container } = render(<MarkdownRenderer content={'$\\newcommand{\\privateMacro}{x}\\privateMacro$\n\n$\\privateMacro$\n\n$\\frac{$\n\nStill readable\n\n$x^2$'} />)
+    expect(screen.getByText('Still readable')).toBeInTheDocument()
+    expect(container.querySelectorAll('.mathjax-equation').length).toBeGreaterThanOrEqual(3)
+    expect(container.querySelectorAll('[data-mjx-error]').length).toBeLessThanOrEqual(1)
+  })
+  it('removes unsafe HTML, SVG and MathML alongside equations', () => {
+    const { container } = render(<MarkdownRenderer content={'\\(\\sqrt{2}\\)\n\n<script>alert(1)</script>\n<img src="x" onerror="alert(1)">\n<a href="javascript:alert(1)">unsafe link</a>\n<svg onload="alert(1)"><script>alert(1)</script><a xlink:href="javascript:alert(1)"><text>unsafe SVG</text></a><foreignObject><iframe src="https://example.com"></iframe></foreignObject></svg>\n<math><mi href="javascript:alert(1)" onclick="alert(1)">x</mi></math>'} />)
+    expect(container.querySelector('.mathjax-equation svg path')).toBeInTheDocument()
+    expect(container.querySelector('script, iframe, foreignObject')).toBeNull()
+    for (const element of container.querySelectorAll('*')) for (const attribute of element.attributes) {
+      expect(attribute.name).not.toMatch(/^on/i)
+      if (['href', 'xlink:href', 'src'].includes(attribute.name)) expect(attribute.value).not.toMatch(/^javascript:/i)
     }
+  })
+  it('renumbers citations by stable IDs without changing the source and links to references', () => {
+    const refs = [{ id: 'alpha', title: 'Alpha' }, { id: 'beta', text: 'Beta' }]
+    const body = 'See [@beta; @alpha].'
+    const { container, rerender } = render(<><MarkdownRenderer content={body} references={refs} /><ReferenceList references={refs} /></>)
+    expect(container.querySelector('.citations')?.textContent).toBe('[2], [1]')
+    rerender(<><MarkdownRenderer content={body} references={[refs[1], refs[0]]} /><ReferenceList references={[refs[1], refs[0]]} /></>)
+    expect(container.querySelector('.citations')?.textContent).toBe('[1], [2]')
+    expect(container.querySelector('.citations a')).toHaveAttribute('href', '#reference-beta')
+    expect(container.querySelector('#reference-beta')?.textContent).toContain('[1]')
+  })
+  it('renders inline attachments consistently and isolates a missing diagram', () => {
+    const url = '/uploads/' + 'a'.repeat(64) + '.png'
+    const html = renderMarkdown('{{asset:photo}}\n\n{{diagram:bad}}\n\nReadable', {
+      assets: [{ id: 'photo', fileName: 'Photo.png', mediaType: 'image/png', size: 1024, url, width: 60, align: 'right', alt: 'A graph', caption: 'Figure 1' }],
+    })
+    expect(html).toContain('width:60%')
+    expect(html).toContain('align-right')
+    expect(html).toContain('alt="A graph"')
+    expect(html).toContain('Figure 1')
+    expect(html).toContain('도형을 렌더링해 주세요.')
+    expect(html).toContain('Readable')
   })
 })

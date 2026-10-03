@@ -29,7 +29,7 @@ const show = () =>
     </MemoryRouter>
   )
 
-it('edits generation and leader status with only the three Korean fields', async () => {
+it('edits generation and leader status while preserving the optional biography', async () => {
   show()
   fireEvent.click(screen.getByRole('button', { name: '36기 송정한 수정' }))
   expect(screen.getByLabelText('이름')).toHaveValue('송정한')
@@ -39,7 +39,7 @@ it('edits generation and leader status with only the three Korean fields', async
   await screen.findByText('저장했습니다. 공개 명단에 반영되었습니다.')
   expect(repository.update).toHaveBeenCalledWith(
     expect.objectContaining({ name: '송정한', generation: 36 }),
-    { name: '송정한', generation: 37, isLeader: true }
+    { name: '송정한', generation: 37, isLeader: true, bio: '' }
   )
 })
 
@@ -54,6 +54,7 @@ it('adds members, shows live changes and waits for confirmation before deleting'
     name: '새부원',
     generation: 39,
     isLeader: false,
+    bio: '',
   })
   const added = { ...initialMembers[0], id: 'new', name: '새부원', generation: 39, isLeader: false }
   act(() => publish([...initialMembers, added]))
