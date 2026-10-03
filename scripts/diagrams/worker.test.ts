@@ -29,6 +29,13 @@ function request(ownerId: string, overrides: Row = {}): Row {
 }
 describe('diagram worker cache and authorization', () => {
   beforeEach(() => { vi.mocked(compileDiagram).mockReset(); vi.mocked(compileDiagram).mockResolvedValue(Buffer.from('verified compiler output')) })
+  it('retains a request arriving after the compiler probe for the next run', async () => {
+    const { db, records } = database({ late: request('late'), stored: request('stored', { state: 'committed', url: '/uploads/result.png', sha256: 'a'.repeat(64), size: 50 }) })
+    const manifest = await processDiagrams(db, vi.fn(), false)
+    expect(manifest.map(item => item.uid)).toEqual(['stored'])
+    expect(records.get('diagramRequests/late')?.state).toBe('queued')
+    expect(compileDiagram).not.toHaveBeenCalled()
+  })
   it('compiles identical sources once across authors and keeps separate request receipts', async () => {
     const { db, records } = database({ first: request('first'), second: request('second') })
     const storeFile = vi.fn().mockResolvedValue(undefined)

@@ -4,7 +4,7 @@ This change uses MathJax 4.1.3 for shared preview/public rendering. It preserves
 
 ## Automated checks
 
-- Unit/integration suite: 196 tests covering the existing site plus image clipboard paste, typing and selection during upload, plain-text paste/undo, attachment queues across article sessions, upload retry, cancellation, draft creation/reopening, references, People and shared MathJax output.
+- Unit/integration suite: 197 tests covering the existing site plus image clipboard paste, typing and selection during upload, plain-text paste/undo, attachment queues across article sessions, upload retry, cancellation, draft creation/reopening, references, People and shared MathJax output.
 - Firestore emulators: 28 tests, including administrator enforcement, private draft/upload sessions, protected worker completion, canonical Activity–Mathematics add/remove/persistence, legacy relation conversion/conflict detection and published-only resolution. These tests use the real repository implementation and rules without production writes.
 - Real Linux Docker verification: successful TikZ and Asymptote compilation, invalid source, blocked arbitrary file access/system commands, bounded infinite-loop termination and stable cache keys. Worker tests additionally verify cache reuse, revoked administrators, forged ownership/hashes, expired sessions and isolated compilation failures.
 - TypeScript, production build and lint pass. Lint has nine warnings (React hook dependency and Fast Refresh export checks), no errors. MathJax and authoring are loaded with detail/editor routes instead of the homepage's initial JavaScript. The article-rendering bundle remains large because SVG fonts are bundled locally.

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { FieldValue, type Firestore } from 'firebase-admin/firestore'
 import { compileDiagram, ENGINE, sourceHash } from './compile'
 export interface DiagramManifest { kind: 'diagram'; uid: string; uploadId: string; url: string; sha256: string; size: number }
-export async function processDiagrams(db: Firestore, storeFile: (path: string, bytes: Buffer) => Promise<void>): Promise<DiagramManifest[]> {
+export async function processDiagrams(db: Firestore, storeFile: (path: string, bytes: Buffer) => Promise<void>, compilerAvailable = true): Promise<DiagramManifest[]> {
   const snapshots = await db.collection('diagramRequests').where('state', 'in', ['queued', 'processing', 'committed']).limit(10).get()
   const manifest: DiagramManifest[] = []
   for (const snapshot of snapshots.docs) {
@@ -27,6 +27,9 @@ export async function processDiagrams(db: Firestore, storeFile: (path: string, b
         manifest.push({ kind: 'diagram', uid: snapshot.id, uploadId: data.requestId, url: data.url, sha256: data.sha256, size: data.size })
         continue
       }
+      // A request can arrive after the workflow's queue probe. Leave it queued
+      // for the next run instead of failing because no compiler image was built.
+      if (!compilerAvailable) continue
       await snapshot.ref.update({ state: 'processing', updatedAt: FieldValue.serverTimestamp() })
       const cacheRef = db.doc('diagramCache/' + data.sourceHash)
       const cached = await cacheRef.get()

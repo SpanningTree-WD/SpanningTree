@@ -36,6 +36,7 @@ jobs:
         id: queue
         run: npx tsx scripts/uploads/worker.ts process
         env:
+          DIAGRAM_COMPILER_AVAILABLE: ${{ steps.diagrams.outputs.compile }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # GITHUB_TOKEN commits do not trigger another push workflow. Deploy explicitly here.

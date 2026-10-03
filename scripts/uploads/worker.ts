@@ -175,7 +175,7 @@ async function processQueue() {
       await finishFailure(snapshot.ref, request, error.message)
     }
   }
-  manifest.push(...await processDiagrams(db, storeFile))
+  manifest.push(...await processDiagrams(db, storeFile, process.env.DIAGRAM_COMPILER_AVAILABLE === 'true'))
   await mkdir('.firebase', { recursive: true })
   await writeFile(manifestPath, JSON.stringify(manifest))
   if (process.env.GITHUB_OUTPUT)
