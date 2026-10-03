@@ -1,5 +1,5 @@
 import { useT } from '../../i18n/LanguageProvider'
-import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { Attachment, MediaReference } from '../../models/common'
 import type { AdminRepository } from '../../repositories/contracts'
@@ -8,8 +8,10 @@ import { adminErrorMessage } from './adminErrors'
 import type { Errors } from './EditorFields'
 import { prepareEditorRecord } from './editorMetadata'
 import { useArticleAttachments } from './useArticleAttachments'
+import { useBodyUploads } from './useBodyUploads'
+import { validateAuthoring, withLegacyAssets, type ArticleAsset, type AuthoringFields, type ReferenceEntry } from '../../models/authoring'
 
-interface EditableRecord {
+interface EditableRecord extends AuthoringFields {
   id: string
   title: string
   slug: string
@@ -23,6 +25,21 @@ interface EditableRecord {
   status: 'draft' | 'published'
   createdAt: string
   updatedAt: string
+  references?: ReferenceEntry[]
+}
+
+function applyAssets<T extends EditableRecord>(record: T, assets: ArticleAsset[]): T {
+  const old = record.assets ?? []
+  const replacementUrl = (url?: string) => {
+    const previous = old.find(asset => asset.url === url)
+    return previous ? assets.find(asset => asset.id === previous.id)?.url : url
+  }
+  const replaceFile = (file: Attachment) => ({ ...file, url: replacementUrl(file.url) })
+  return { ...record, assets,
+    coverImage: { ...record.coverImage, url: replacementUrl(record.coverImage.url) },
+    ...(record.attachments ? { attachments: record.attachments.filter(file => !file.url || !!replacementUrl(file.url)).map(replaceFile) } : {}),
+    ...(record.pdf ? { pdf: replacementUrl(record.pdf.url) ? replaceFile(record.pdf) : undefined } : {}),
+  }
 }
 
 interface EditorSession {
@@ -63,6 +80,12 @@ export function useAdminEditor<T extends EditableRecord>(
     sessionKey,
     markDirty
   )
+  const uploadScope = useMemo(() => ({ collection: path.split('/').pop() as UploadCollection, recordId: id || crypto.randomUUID() }), [path, id, sessionKey])
+  const bodyUploads = useBodyUploads(uploadScope, sessionKey, (asset) => {
+    setForm(current => applyAssets(current, [...(current.assets ?? []).filter(item => item.id !== asset.id), asset]))
+    markDirty()
+  }, markDirty)
+  function setAssets(assets: ArticleAsset[]) { setForm(current => applyAssets(current, assets)); markDirty() }
 
   useLayoutEffect(() => {
     const current: EditorSession = { key: sessionKey, active: true }
@@ -90,8 +113,9 @@ export function useAdminEditor<T extends EditableRecord>(
             setLoadError('자료가 존재하지 않습니다.')
             return
           }
-          setForm(record)
-          previous.current = record
+          const adapted = withLegacyAssets(record)
+          setForm(adapted)
+          previous.current = adapted
           setLoadedSession(sessionKey)
         })
         .catch((error) => {
@@ -108,11 +132,11 @@ export function useAdminEditor<T extends EditableRecord>(
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty || attachments.hasPending) event.preventDefault()
+      if (dirty || attachments.hasPending || bodyUploads.hasPending) event.preventDefault()
     }
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
-  }, [dirty, attachments.hasPending])
+  }, [dirty, attachments.hasPending, bodyUploads.hasPending])
 
   function set<K extends keyof T>(key: K, value: T[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -123,13 +147,14 @@ export function useAdminEditor<T extends EditableRecord>(
     const current = session.current
     if (!current?.active || current.key !== sessionKey) return
     if (
-      (dirty || attachments.hasPending || saving) &&
+      (dirty || attachments.hasPending || bodyUploads.hasPending || saving) &&
       !window.confirm(t('저장하지 않은 변경사항과 첨부 파일 선택을 취소하시겠습니까?'))
     )
       return
     current.active = false
     current.operation?.abort()
     attachments.clear()
+    bodyUploads.clear()
     navigate(path)
   }
 
@@ -143,6 +168,14 @@ export function useAdminEditor<T extends EditableRecord>(
       loadError
     )
       return
+    if (action !== 'unpublish' && bodyUploads.hasPending) {
+      setOperationError('업로드 중이거나 실패한 첨부가 있습니다. 첨부 목록에서 완료를 기다리거나 재시도·삭제해 주세요.')
+      setPreviewing(false)
+      return
+    }
+    if (action !== 'unpublish') {
+      try { validateAuthoring(form) } catch (failure) { setOperationError(adminErrorMessage(failure)); setPreviewing(false); return }
+    }
     const next: Errors = {
       ...validateExtra(form),
       ...(!form.title.trim() ? { title: '제목을 입력해 주세요.' } : {}),
@@ -180,13 +213,14 @@ export function useAdminEditor<T extends EditableRecord>(
         record = await repository.unpublish(form.id)
         checkpoint()
         attachments.clear()
+        bodyUploads.clear()
       } else {
         const input = prepareEditorRecord(form, previous.current)
         if (attachments.hasPending) {
           let base = input
           if (!base.id) {
             // Uploads require an existing draft. Retain its ID even if a later upload fails.
-            base = await repository.create(input)
+            base = await repository.create(input, uploadScope.recordId)
             checkpoint()
             setForm(base)
             previous.current = base
@@ -199,13 +233,14 @@ export function useAdminEditor<T extends EditableRecord>(
         } else {
           record = form.id
             ? await repository.update(form.id, input)
-            : await repository.create(input)
+            : await repository.create(input, uploadScope.recordId)
           checkpoint()
         }
         // Retain a successful save even if the following publish request fails.
         setForm(record)
         previous.current = record
         setDirty(false)
+        bodyUploads.clear()
         if (action === 'publish') {
           record = await repository.publish(record.id)
           checkpoint()
@@ -241,6 +276,9 @@ export function useAdminEditor<T extends EditableRecord>(
     operationError,
     notice,
     attachments,
+    bodyUploads,
+    uploadScope,
+    setAssets,
     preview: prepareEditorRecord(form, previous.current),
     previewing,
     setPreviewing,

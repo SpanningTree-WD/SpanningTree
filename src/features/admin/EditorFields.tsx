@@ -151,9 +151,9 @@ export function NamesField({
   }, [value])
   return (
     <Field
-      label={`${t(label)} (여러 명은 쉼표로 구분)`}
+      label={`${t(label)} (${t('여러 명은 쉼표로 구분')})`}
       name="authors"
-      value={t(text)}
+      value={text}
       onChange={(next) => {
         setText(next)
         onChange(splitNames(next))

@@ -6,7 +6,7 @@ import type { Publication, PublicationListQuery } from '../models/publication'
 export interface AdminRepository<T> {
   listAll(): Promise<T[]>
   getById(id: string): Promise<T | null>
-  create(input: Omit<T, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<T>
+  create(input: Omit<T, 'id' | 'status' | 'createdAt' | 'updatedAt'>, reservedId?: string): Promise<T>
   update(id: string, input: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T>
   publish(id: string): Promise<T>
   unpublish(id: string): Promise<T>

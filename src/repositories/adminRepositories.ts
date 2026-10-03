@@ -13,7 +13,7 @@ function lazyRepository<T extends Activity | Mathematics | Publication>(
   return {
     listAll: () => get().listAll(),
     getById: (id) => get().getById(id),
-    create: (input) => get().create(input),
+    create: (input, reservedId) => get().create(input, reservedId),
     update: (id, input) => get().update(id, input),
     publish: (id) => get().publish(id),
     unpublish: (id) => get().unpublish(id),

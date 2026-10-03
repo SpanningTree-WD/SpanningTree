@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/github-uploads.yml'
       - 'scripts/uploads/**'
+      - 'scripts/diagrams/**'
 permissions:
   contents: write
 concurrency:
@@ -23,6 +24,14 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: npm }
       - run: npm ci --no-audit --no-fund
+      - name: Check diagram queue
+        id: diagrams
+        run: npx tsx scripts/uploads/worker.ts probe-diagrams
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+      - name: Build isolated diagram compiler
+        if: steps.diagrams.outputs.compile == 'true'
+        run: docker build -t spanning-tree-diagrams:sandbox-v1 scripts/diagrams
       - name: Verify and store queued files
         id: queue
         run: npx tsx scripts/uploads/worker.ts process
@@ -56,5 +65,10 @@ jobs:
       - name: Verify deployed bytes and clear temporary chunks
         if: steps.queue.outputs.deploy == 'true'
         run: npx tsx scripts/uploads/worker.ts finalize
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}
+      - name: Remove expired private writing sessions
+        if: always()
+        run: npx tsx scripts/uploads/worker.ts cleanup-sessions
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPANNINGTREE_MATH }}

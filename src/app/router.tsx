@@ -9,6 +9,7 @@ import { MathematicsPage } from '../features/mathematics/MathematicsPage'
 import { MathematicsDetailPage } from '../features/mathematics/MathematicsDetailPage'
 import { NotFoundPage } from '../features/not-found/NotFoundPage'
 import { PeoplePage } from '../features/people/PeoplePage'
+import { PersonDetailPage } from '../features/people/PersonDetailPage'
 import { PublicationsPage } from '../features/publications/PublicationsPage'
 import { PublicationDetailPage } from '../features/publications/PublicationDetailPage'
 import { AdminLayout } from '../features/admin/AdminLayout'
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([{ path:'/admin', element:<AdminLayout
 ]},{ element: <PublicLayout />, children: [
   { path: '/', element: <HomePage /> }, { path: '/about', element: <AboutPage /> },
   { path: '/people', element: <PeoplePage /> }, { path: '/activities', element: <ActivitiesPage /> },
+  { path: '/people/:id', element: <PersonDetailPage /> },
   { path: '/search', element: <SearchPage /> },
   { path: '/activities/:slug', element: <ActivityDetailPage /> },
   { path: '/publications', element: <PublicationsPage /> }, { path: '/publications/:slug', element: <PublicationDetailPage /> },

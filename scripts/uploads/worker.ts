@@ -5,6 +5,7 @@ import { cert, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore, type DocumentReference } from 'firebase-admin/firestore'
 import type { UploadRequest } from '../../src/services/uploads/uploadTypes'
 import { assembleUpload, gitBlobSha, InvalidUpload, validateRequest } from './validation'
+import { processDiagrams } from '../diagrams/worker'
 
 const projectId = 'spanningtree-math'
 const repository = 'SpanningTree-WD/SpanningTree'
@@ -15,7 +16,7 @@ if (!credential || process.env.GITHUB_REPOSITORY !== repository)
   throw new Error('Upload worker configuration is missing.')
 initializeApp({ projectId, credential: cert(JSON.parse(credential)) })
 const db = getFirestore()
-type Manifest = { uid: string; uploadId: string; url: string; sha256: string; size: number }
+type Manifest = { kind?: 'diagram'; uid: string; uploadId: string; url: string; sha256: string; size: number }
 type StoredRequest = UploadRequest & { createdAt: { toMillis(): number } }
 
 async function github(path: string, method = 'GET', body?: unknown) {
@@ -76,11 +77,13 @@ async function finishFailure(ref: DocumentReference, request: UploadRequest, mes
   })
 }
 async function authorized(request: UploadRequest) {
-  const [member, record] = await Promise.all([
+  const [member, record, session] = await Promise.all([
     db.doc(`admins/${request.ownerId}`).get(),
     db.doc(`${request.collection}/${request.recordId}`).get(),
+    db.doc(`uploadSessions/${request.ownerId}/records/${request.recordId}`).get(),
   ])
-  if (member.data()?.enabled !== true || !record.exists)
+  const activeSession = session.data()?.collection === request.collection && session.data()?.expiresAt?.toMillis() > Date.now()
+  if (member.data()?.enabled !== true || (!record.exists && !activeSession))
     throw new InvalidUpload('관리자 권한 또는 글이 더 이상 유효하지 않습니다.')
 }
 async function processQueue() {
@@ -172,6 +175,7 @@ async function processQueue() {
       await finishFailure(snapshot.ref, request, error.message)
     }
   }
+  manifest.push(...await processDiagrams(db, storeFile))
   await mkdir('.firebase', { recursive: true })
   await writeFile(manifestPath, JSON.stringify(manifest))
   if (process.env.GITHUB_OUTPUT)
@@ -179,9 +183,10 @@ async function processQueue() {
   console.log(`Upload queue processed; ${manifest.length} file(s) awaiting deployment.`)
 }
 async function completeIfDeployed(item: Manifest) {
-  const ref = db.doc(`uploadRequests/${item.uid}`)
+  const ref = db.doc(`${item.kind === 'diagram' ? 'diagramRequests' : 'uploadRequests'}/${item.uid}`)
+  const identity = item.kind === 'diagram' ? 'requestId' : 'uploadId'
   const current = await ref.get()
-  if (current.data()?.uploadId !== item.uploadId || current.data()?.state !== 'committed')
+  if (current.data()?.[identity] !== item.uploadId || current.data()?.state !== 'committed')
     return false
   // Check the actual Hosting bytes, not an SPA fallback or only the deploy command's exit code.
   const response = await fetch(`${host}${item.url}`, { signal: AbortSignal.timeout(120_000) })
@@ -194,10 +199,10 @@ async function completeIfDeployed(item: Manifest) {
     hash.update(chunk)
   }
   if (size !== item.size || hash.digest('hex') !== item.sha256) return false
-  await clearChunks(ref)
+  if (item.kind !== 'diagram') await clearChunks(ref)
   await db.runTransaction(async (transaction) => {
     const latest = await transaction.get(ref)
-    if (latest.data()?.uploadId === item.uploadId && latest.data()?.state === 'committed') {
+    if (latest.data()?.[identity] === item.uploadId && latest.data()?.state === 'committed') {
       transaction.update(ref, { state: 'complete', updatedAt: FieldValue.serverTimestamp() })
     }
   })
@@ -213,4 +218,14 @@ async function finalize() {
 }
 if (process.argv[2] === 'process') await processQueue()
 else if (process.argv[2] === 'finalize') await finalize()
+else if (process.argv[2] === 'probe-diagrams') {
+  const pending = await db.collection('diagramRequests').where('state', 'in', ['queued', 'processing']).limit(1).get()
+  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `compile=${!pending.empty}\n`)
+} else if (process.argv[2] === 'cleanup-sessions') {
+  const parents = await db.collection('uploadSessions').listDocuments()
+  for (const parent of parents) {
+    const expired = await parent.collection('records').where('expiresAt', '<', new Date()).limit(100).get()
+    if (!expired.empty) { const batch = db.batch(); expired.docs.forEach(snapshot => batch.delete(snapshot.ref)); await batch.commit() }
+  }
+}
 else throw new Error('Specify process or finalize.')

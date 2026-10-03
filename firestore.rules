@@ -23,17 +23,59 @@ service cloud.firestore {
         && value.mediaType == 'application/pdf' && text(value.sizeLabel, 1000)
         && (!('url' in value) || value.url.matches('/uploads/[a-f0-9]{64}[.]pdf'));
     }
+
+    function authoring(data) {
+      return (!('assets' in data) || (data.assets is list && data.assets.size() <= 100))
+        && (!('diagrams' in data) || (data.diagrams is list && data.diagrams.size() <= 100))
+        && (!('authorIds' in data) || (data.authorIds is list && data.authorIds.size() <= 100 && data.authorIds.toSet().size() == data.authorIds.size()))
+        && (!('participantIds' in data) || (data.participantIds is list && data.participantIds.size() <= 100 && data.participantIds.toSet().size() == data.participantIds.size()))
+        && (!('participants' in data) || (data.participants is list && data.participants.size() <= 100))
+        && (!('references' in data) || (data.references is list && data.references.size() <= 100))
+        && (!('relationshipVersion' in data) || data.relationshipVersion == 2);
+    }
+    function uploadSession(uid, name, id) {
+      let session = get(/databases/$(database)/documents/uploadSessions/$(uid)/records/$(id)).data;
+      return session.collection == name && session.recordId == id && session.expiresAt > request.time;
+    }
+    match /uploadSessions/{uid}/records/{id} {
+      allow get, delete: if uploadOwner(uid);
+      allow list: if false;
+      allow create, update: if uploadOwner(uid)
+        && request.resource.data.keys().hasOnly(['collection', 'recordId', 'expiresAt', 'updatedAt'])
+        && contentCollection(request.resource.data.collection)
+        && request.resource.data.recordId == id && id.matches('[a-zA-Z0-9_-]{1,128}')
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt < request.time + duration.value(2, 'd');
+    }
+    function newDiagram(data, uid) {
+      return data.keys().hasOnly(['collection', 'recordId', 'requestId', 'ownerId', 'language', 'source', 'sourceHash', 'engine', 'state', 'createdAt', 'updatedAt'])
+        && contentCollection(data.collection) && data.recordId.matches('[a-zA-Z0-9_-]{1,128}')
+        && data.requestId.matches('[a-f0-9-]{36}') && data.ownerId == uid
+        && data.language in ['tikz', 'asymptote'] && text(data.source, 20000) && data.source.size() > 0
+        && data.sourceHash.matches('[a-f0-9]{64}') && data.engine == 'sandbox-v1'
+        && data.state == 'queued' && data.createdAt == request.time && data.updatedAt == request.time
+        && (exists(/databases/$(database)/documents/$(data.collection)/$(data.recordId)) || uploadSession(uid, data.collection, data.recordId));
+    }
+    match /diagramRequests/{uid} {
+      allow get: if uploadOwner(uid);
+      allow list, delete: if false;
+      allow create: if uploadOwner(uid) && newDiagram(request.resource.data, uid);
+      allow update: if uploadOwner(uid) && resource.data.state in ['complete', 'failed']
+        && newDiagram(request.resource.data, uid) && request.resource.data.requestId != resource.data.requestId;
+    }
+
     function common(data, id) {
       return data.keys().hasAll(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt'])
         && data.id == id && text(data.title, 500) && data.title.matches('.*[^\\s].*')
         && text(data.slug, 160) && data.slug.matches('[a-z0-9]+(-[a-z0-9]+)*')
         && text(data.summary, 20000) && text(data.type, 100) && data.type.size() > 0
-        && media(data.coverImage) && data.status in ['draft', 'published']
+        && authoring(data) && media(data.coverImage) && data.status in ['draft', 'published']
         && data.updatedAt == request.time;
     }
     function activity(data) {
       return data.keys().hasAll(['description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured'])
-        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured', 'attachments'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'date', 'gallery', 'tags', 'relatedMathematics', 'relatedPublications', 'featured', 'attachments', 'assets', 'diagrams', 'participantIds', 'participants', 'authorIds'])
         && text(data.description, 800000) && data.date is string && data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && data.gallery is list && data.gallery.size() <= 100 && data.tags is list
         && data.relatedMathematics is list && data.relatedPublications is list && data.featured is bool
@@ -62,7 +104,7 @@ service cloud.firestore {
     }
     function mathematics(data) {
       return data.keys().hasAll(['content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics'])
-        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics', 'publishedAt', 'fields'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics', 'publishedAt', 'fields', 'assets', 'diagrams', 'authorIds', 'references', 'relationshipVersion'])
         && text(data.content, 800000) && data.authors is list && text(data.field, 100) && data.field.size() > 0
         && (!('fields' in data) || validMathematicsFields(data.fields, data.field))
         && data.year is int && data.year >= 1900 && data.year <= 9999
@@ -72,15 +114,18 @@ service cloud.firestore {
     }
     function publication(data) {
       return data.keys().hasAll(['description', 'year', 'authors', 'editors', 'relatedActivities', 'relatedMathematics'])
-        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'year', 'authors', 'editors', 'relatedActivities', 'relatedMathematics', 'pdf'])
+        && data.keys().hasOnly(['id', 'slug', 'title', 'summary', 'type', 'coverImage', 'status', 'createdAt', 'updatedAt', 'description', 'year', 'authors', 'editors', 'relatedActivities', 'relatedMathematics', 'pdf', 'assets', 'diagrams', 'authorIds'])
         && text(data.description, 800000) && data.year is int && data.year >= 1900 && data.year <= 9999
         && data.authors is list && data.editors is list && data.relatedActivities is list && data.relatedMathematics is list
         && (!('pdf' in data) || attachment(data.pdf));
     }
+    function validClaim(name, id, data) {
+      let claim = getAfter(/databases/$(database)/documents/contentSlugs/$(name + ':' + data.slug)).data;
+      return claim.recordId == id && claim.collection == name && claim.slug == data.slug;
+    }
     function validContent(name, id) {
       let data = request.resource.data;
-      let claim = getAfter(/databases/$(database)/documents/contentSlugs/$(name + ':' + data.slug)).data;
-      return common(data, id) && claim.recordId == id && claim.collection == name && claim.slug == data.slug
+      return common(data, id) && ((resource != null && data.slug == resource.data.slug) || validClaim(name, id, data))
         && ((name == 'activities' && activity(data)) || (name == 'mathematics' && mathematics(data)) || (name == 'publications' && publication(data)));
     }
 
@@ -91,7 +136,7 @@ service cloud.firestore {
         && data.keys().hasOnly(['uploadId', 'ownerId', 'collection', 'recordId', 'fileName', 'mediaType', 'size', 'sha256', 'chunkCount', 'state', 'publicConsent', 'createdAt', 'updatedAt'])
         && data.uploadId is string && data.uploadId.matches('[a-f0-9-]{36}') && data.ownerId == uid
         && contentCollection(data.collection) && text(data.recordId, 128) && data.recordId.matches('[a-zA-Z0-9_-]+')
-        && exists(/databases/$(database)/documents/$(data.collection)/$(data.recordId))
+        && (exists(/databases/$(database)/documents/$(data.collection)/$(data.recordId)) || uploadSession(uid, data.collection, data.recordId))
         && text(data.fileName, 120) && data.fileName.size() > 0
         && data.mediaType in ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
         && data.size is int && data.size > 0 && data.size <= (data.mediaType == 'application/pdf' ? 20971520 : 8388608)
@@ -131,7 +176,8 @@ service cloud.firestore {
     // Public roster is separate from the private administrator allowlist.
     function validMember(data) {
       return data.keys().hasAll(['name', 'generation', 'isLeader', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['name', 'generation', 'isLeader', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'generation', 'isLeader', 'createdAt', 'updatedAt', 'bio'])
+        && (!('bio' in data) || text(data.bio, 20000))
         && text(data.name, 40) && data.name.matches('.*[^\\s].*')
         && data.generation is int && data.generation >= 1 && data.generation <= 999
         && data.isLeader is bool && data.createdAt is timestamp

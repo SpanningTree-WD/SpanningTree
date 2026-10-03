@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { gitBlobSha } from './validation'
 
 const mocks = vi.hoisted(() => ({ db: {}, write: vi.fn(), read: vi.fn(), output: vi.fn() }))
+vi.mock('../diagrams/worker', () => ({ processDiagrams: async () => [] }))
 vi.mock('firebase-admin/app', () => ({ cert: () => ({}), initializeApp: () => ({}) }))
 vi.mock('firebase-admin/firestore', () => ({
   getFirestore: () => mocks.db,

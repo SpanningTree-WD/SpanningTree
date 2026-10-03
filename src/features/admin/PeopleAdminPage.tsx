@@ -21,12 +21,13 @@ function MemberForm({
   const [name, setName] = useState(member?.name ?? '')
   const [generation, setGeneration] = useState(String(member?.generation ?? ''))
   const [isLeader, setIsLeader] = useState(member?.isLeader ?? false)
+  const [bio, setBio] = useState(member?.bio ?? '')
   const [error, setError] = useState('')
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
     try {
-      await onSave(validateMember({ name, generation: Number(generation), isLeader }))
+      await onSave(validateMember({ name, generation: Number(generation), isLeader, bio }))
     } catch (failure) {
       setError(adminErrorMessage(failure))
     }
@@ -56,6 +57,7 @@ function MemberForm({
             />
           </label>
         </div>
+        <label className="admin-field"><span>{t('소개')}</span><textarea rows={5} maxLength={20000} value={bio} onChange={event => setBio(event.target.value)} /></label>
         <label className="admin-check">
           <input
             type="checkbox"
