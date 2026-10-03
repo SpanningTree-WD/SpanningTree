@@ -128,13 +128,13 @@ export function PublicationEditorPage() {
             onChange={(v) => set('type', v)}
           />
         </div>
-        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
         
         <ArticleComposer value={form.description} label="출판물 소개"
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('description', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
            />
+        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
         </div>
         <EditorActions
           status={form.status}

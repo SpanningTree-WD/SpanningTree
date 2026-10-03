@@ -50,4 +50,4 @@ export function validateUpload(bytes: Uint8Array, mediaType: string) {
 export const isUploadActive = (state: UploadState) => !['complete', 'failed'].includes(state)
 export const isUploadUrl = (url?: string) =>
   Boolean(url && /^\/uploads\/[a-f0-9]{64}\.(jpg|png|webp|pdf)$/.test(url))
-export const fileSizeLabel = (size: number) => `${(size / 1024 / 1024).toFixed(1)} MB`
+export const fileSizeLabel = (size: number) => size < 1024 ? `${size} B` : size < 1024 * 1024 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1024 / 1024).toFixed(1)} MB`

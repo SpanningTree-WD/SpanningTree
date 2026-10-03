@@ -145,13 +145,13 @@ export function MathematicsEditorPage() {
             set('field', fields[0] ?? '')
           }}
         />
-        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
-        <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />
         <ArticleComposer value={form.content} label="본문"
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('content', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
           references={form.references ?? []} onReferences={value => set('references', value)} />
+        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
+        <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />
         </div>
         <EditorActions
           status={form.status}
