@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { Link } from 'react-router-dom'
 import type { Mathematics } from '../../models/mathematics'
 import { mathematicsRepository } from '../../repositories/adminRepositories'
@@ -48,6 +49,8 @@ function validateExtra(form: Mathematics): Errors {
 }
 
 export function MathematicsEditorPage() {
+  const t = useT()
+
   const {
     form,
     preview,
@@ -70,22 +73,20 @@ export function MathematicsEditorPage() {
   if (loadError)
     return (
       <div className="admin-page" role="alert">
-        <p>{loadError}</p>
-        <button onClick={retryLoad}>다시 불러오기</button>
+        <p>{t(loadError)}</p>
+        <button onClick={retryLoad}>{t("다시 불러오기")}</button>
         <p>
-          <Link to="/admin/mathematics">← 수학 자료 목록</Link>
+          <Link to="/admin/mathematics">{t("← 수학 자료 목록")}</Link>
         </p>
       </div>
     )
   if (loading)
     return (
-      <div className="admin-page" role="status">
-        자료를 불러오고 있습니다.
-      </div>
+      <div className="admin-page" role="status">{t("자료를 불러오고 있습니다.")}</div>
     )
   return (
     <EditorFrame
-      title={form.id ? '수학 자료 수정' : '새 수학 자료 작성'}
+      title={form.id ? t('수학 자료 수정') : t('새 수학 자료 작성')}
       section="수학 자료"
       path="/admin/mathematics"
       status={form.status}
@@ -94,13 +95,13 @@ export function MathematicsEditorPage() {
     >
       {operationError && (
         <p className="field-error" role="alert">
-          {operationError}
+          {t(operationError)}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
-      <div className="editor-view-toggle" aria-label="작성 화면 전환">
-        <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>작성</button>
-        <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>미리보기</button>
+      {notice && <p role="status">{t(notice)}</p>}
+      <div className="editor-view-toggle" aria-label={t("작성 화면 전환")}>
+        <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)}>{t("작성")}</button>
+        <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)}>{t("미리보기")}</button>
       </div>
       {previewing && <ArticlePreview collection="mathematics" record={preview} imagePreviewUrl={attachments.imagePreviewUrl}
         pendingFiles={attachments.items.filter((item) => item.file.type === 'application/pdf').map((item) => ({
@@ -159,9 +160,7 @@ export function MathematicsEditorPage() {
               value={form.content}
               onChange={(v) => set('content', v)}
             />
-            <p className="field-help">
-              마크다운으로 작성할 수 있습니다. 수식은 \(…\), 독립된 수식은 $$…$$로 감싸 주세요.
-            </p>
+            <p className="field-help">{t("마크다운으로 작성할 수 있습니다. 수식은 \\(…\\), 독립된 수식은 $$…$$로 감싸 주세요.")}</p>
           </div>
         </section>
         </div>

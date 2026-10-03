@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { publicPages, site } from '../../content/site'
@@ -11,15 +12,16 @@ interface PageMetadata {
 // One mounted route owns these head elements. Reuse the HTML fallback tags instead
 // of adding duplicates; navigation always replaces the previous page's metadata.
 export function usePageMetadata(overrides: PageMetadata = {}) {
+  const t = useT()
   const { pathname } = useLocation()
   const path = pathname.replace(/\/+$/, '') || '/'
   const section = `/${path.split('/')[1]}`
   const page = publicPages[path] ?? publicPages[section]
   const isAdmin = path === '/admin' || path.startsWith('/admin/')
   const title = overrides.title
-    ? `${overrides.title} | 스패닝트리`
-    : page?.title ?? (isAdmin ? '관리자 | 스패닝트리' : '검색 | 스패닝트리')
-  const description = overrides.description?.trim() || page?.description || site.description
+    ? `${overrides.title} | ${t('스패닝트리')}`
+    : t(page?.title ?? (isAdmin ? '관리자 | 스패닝트리' : '검색 | 스패닝트리'))
+  const description = overrides.description?.trim() || t(page?.description || site.description)
   const noindex = overrides.noindex || !page || import.meta.env.VITE_SEO_NOINDEX === 'true'
 
   useEffect(() => {

@@ -1,0 +1,28 @@
+.homepage-hero .homepage-intro { min-width: 0; }
+.homepage-hero h1, .homepage-hero p { overflow-wrap: anywhere; word-break: normal; }
+.homepage-hero p { white-space: pre-line; }
+.homepage-hero.font-sans h1, .homepage-hero.font-sans p { font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif; }
+.homepage-hero.font-serif h1, .homepage-hero.font-serif p { font-family: "Noto Serif KR", "Nanum Myeongjo", Batang, Georgia, serif; }
+.language-switch { display: inline-flex; gap: 3px; align-items: center; flex-shrink: 0; }
+.language-switch button { font: inherit; font-size: 12px; padding: 5px 7px; color: var(--color-muted); background: transparent; border: 1px solid transparent; cursor: pointer; }
+.language-switch button[aria-pressed="true"] { color: var(--color-green); border-color: var(--color-line-strong); }
+.site-header .header-actions { gap: 8px; align-items: center; }
+@media (max-width: 1100px) { .site-header .header-inner { grid-template-columns: 1fr auto; height: auto; min-height: 82px; row-gap: 0; } .site-header .primary-nav { grid-row: 2; grid-column: 1 / -1; justify-content: center; flex-wrap: wrap; } .site-header .header-actions { grid-row: 1; grid-column: 2; } }
+@media (max-width: 560px) { .site-header .header-inner { padding: 0 16px; column-gap: 8px; } .site-header .brand { font-size: 21px; } .site-header .primary-nav { gap: 14px; } .language-switch button { padding: 4px; } }
+
+.homepage-hero .hero-grid { min-width: 0; }
+.admin-sidebar > .language-switch { margin-bottom: 14px; }
+.admin-gate-panel > .language-switch { margin-bottom: 20px; }
+
+/* Keep the navigation in normal flow when language controls share the header. */
+@media (max-width: 1100px) {
+  .site-header .primary-nav { position: static; height: auto; padding: 0; overflow: visible; border: 0; background: transparent; }
+  .site-header .primary-nav a { padding: 12px 2px; }
+  .shell > main { padding-top: 0; }
+}
+@media (max-width: 560px) {
+  .site-header .brand { font-size: clamp(16px, 5vw, 21px); }
+  .site-header .search-icon { width: 32px; flex-shrink: 0; }
+}
+.admin-sidebar .language-switch button { color: #cfdbd2; }
+.admin-sidebar .language-switch button[aria-pressed="true"] { color: #fff; border-color: #82978a; }

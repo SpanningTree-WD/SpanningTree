@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AdminRepository } from '../../repositories/contracts'
@@ -25,6 +26,8 @@ const definitions = {
 }
 
 export function AdminListPage({ type }: { type: keyof typeof definitions }) {
+  const t = useT()
+
   const { title, repository } = definitions[type]
   const [records, setRecords] = useState<Item[]>()
   const [error, setError] = useState('')
@@ -52,8 +55,8 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
       busy ||
       !window.confirm(
         record.status === 'published'
-          ? '이 자료를 비공개로 전환하시겠습니까?'
-          : '이 자료를 공개하시겠습니까?'
+          ? t('이 자료를 비공개로 전환하시겠습니까?')
+          : t('이 자료를 공개하시겠습니까?')
       )
     )
       return
@@ -74,10 +77,10 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
     <div className="admin-page">
       <header className="admin-page-head admin-page-head-row">
         <div>
-          <p className="eyebrow">콘텐츠 관리</p>
-          <h1>{title}</h1>
+          <p className="eyebrow">{t("콘텐츠 관리")}</p>
+          <h1>{t(title)}</h1>
           <p>
-            {records ? `총 ${records.length}건 · 비공개 자료 포함` : '자료를 불러오고 있습니다.'}
+            {records ? t('총 {count}건 · 비공개 자료 포함', { count: records.length }) : t('자료를 불러오고 있습니다.')}
           </p>
         </div>
         <Link className="admin-primary" to={'/admin/' + type + '/new'}>
@@ -86,8 +89,8 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
       </header>
       {error && (
         <div role="alert">
-          <p className="field-error">{error}</p>
-          <button onClick={() => setRefresh((value) => value + 1)}>다시 불러오기</button>
+          <p className="field-error">{t(error)}</p>
+          <button onClick={() => setRefresh((value) => value + 1)}>{t("다시 불러오기")}</button>
         </div>
       )}
       {records && (
@@ -95,10 +98,10 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>제목</th>
-                <th>공개 상태</th>
-                <th>최근 수정일</th>
-                <th>관리</th>
+                <th>{t("제목")}</th>
+                <th>{t("공개 상태")}</th>
+                <th>{t("최근 수정일")}</th>
+                <th>{t("관리")}</th>
               </tr>
             </thead>
             <tbody>
@@ -109,21 +112,21 @@ export function AdminListPage({ type }: { type: keyof typeof definitions }) {
                   </td>
                   <td>
                     <span className={'status status-' + record.status}>
-                      {record.status === 'published' ? '공개' : '비공개'}
+                      {record.status === 'published' ? t('공개') : t('비공개')}
                     </span>
                   </td>
                   <td>{new Date(record.updatedAt).toLocaleDateString('ko-KR')}</td>
                   <td className="table-actions">
-                    <Link to={'/admin/' + type + '/' + record.id + '/edit'}>수정</Link>
+                    <Link to={'/admin/' + type + '/' + record.id + '/edit'}>{t("수정")}</Link>
                     <button disabled={busy} onClick={() => void toggle(record)}>
-                      {record.status === 'published' ? '비공개로 전환' : '공개하기'}
+                      {record.status === 'published' ? t('비공개로 전환') : t('공개하기')}
                     </button>
                   </td>
                 </tr>
               ))}
               {!records.length && (
                 <tr>
-                  <td colSpan={4}>등록된 자료가 없습니다. 새 자료를 작성해 주세요.</td>
+                  <td colSpan={4}>{t("등록된 자료가 없습니다. 새 자료를 작성해 주세요.")}</td>
                 </tr>
               )}
             </tbody>

@@ -1,3 +1,5 @@
+import { createHomepageRepository } from '../../src/repositories/firebase/homepageRepository'
+import { defaultHomepage } from '../../src/models/homepage'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
@@ -543,5 +545,84 @@ describe('multiple custom mathematics fields', () => {
         field: '분야 0', fields: ['분야 0', 'Topology'], updatedAt: serverTimestamp(),
       }))
     }
+  })
+})
+
+describe('homepage drafts and publication', () => {
+  const changed = { ...defaultHomepage, hero: { ...defaultHomepage.hero, title: { ko: '새 홈페이지', en: 'New homepage' }, font: 'serif' as const } }
+  const envelope = (settings = defaultHomepage, revision = 1) => ({ settings, revision, updatedAt: serverTimestamp() })
+  it('keeps drafts private, persists publication, and reloads it across client sessions', async () => {
+    const editor = createHomepageRepository(db('editor'))
+    const first = await editor.loadEditor()
+    expect(first).toEqual({ settings: defaultHomepage, revision: { draft: 0, published: 0 } })
+    const draft = await editor.save(changed, first.revision, false)
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).exists()).toBe(false)
+    await assertFails(getDoc(doc(db(), 'siteDrafts/homepage')))
+    expect((await createHomepageRepository(db('editor')).loadEditor()).settings).toEqual(changed)
+    const published = await editor.save(changed, draft.revision, true)
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).data()?.settings).toEqual(changed)
+    expect((await createHomepageRepository(db('editor')).loadEditor())).toEqual(published)
+    const laterDraft = await editor.save(defaultHomepage, published.revision, false)
+    expect(laterDraft.settings).toEqual(defaultHomepage)
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).data()?.settings).toEqual(changed)
+  })
+  it('blocks outsiders, unverified accounts, and revoked admins from modifying either document', async () => {
+    const editor = createHomepageRepository(db('editor'))
+    await editor.save(defaultHomepage, { draft: 0, published: 0 }, true)
+    await env.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().doc('admins/revoked').set({ enabled: false })
+    })
+    for (const store of [db(), db('outsider'), db('editor', { ...verified, email_verified: false }), db('revoked')]) {
+      await assertSucceeds(getDoc(doc(store, 'siteSettings/homepage')))
+      await assertFails(getDoc(doc(store, 'siteDrafts/homepage')))
+      for (const path of ['siteSettings/homepage', 'siteDrafts/homepage']) {
+        await assertFails(setDoc(doc(store, path), envelope(changed, 2)))
+        await assertFails(deleteDoc(doc(store, path)))
+      }
+      await assertFails(createHomepageRepository(store).save(changed, { draft: 1, published: 1 }, true))
+    }
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).data()?.settings).toEqual(defaultHomepage)
+  })
+  it('rejects stale administrator saves and revocation between loading and publishing', async () => {
+    const editor = createHomepageRepository(db('editor'))
+    const first = await editor.loadEditor()
+    await editor.save(changed, first.revision, false)
+    await expect(editor.save(defaultHomepage, first.revision, true)).rejects.toThrow('다른 관리자')
+    await env.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().doc('admins/editor').set({ enabled: false })
+    })
+    await assertFails(editor.save(changed, { draft: 1, published: 0 }, true))
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).exists()).toBe(false)
+  })
+  it('validates multilingual text, fonts, metadata, revisions, and supported document names on the server', async () => {
+    const store = db('editor')
+    for (const hero of [
+      { ...defaultHomepage.hero, font: 'url(evil)' },
+      { ...defaultHomepage.hero, title: { ko: '', en: '  ' } },
+      { ...defaultHomepage.hero, title: { ko: 'x'.repeat(161), en: '' } },
+      { ...defaultHomepage.hero, title: { ko: '제목' } },
+      { ...defaultHomepage.hero, description: { ko: 'x'.repeat(3001), en: '' } },
+      { ...defaultHomepage.hero, description: { ko: '\n  ', en: '' } },
+      { ...defaultHomepage.hero, color: 'red' },
+    ]) {
+      await assertFails(setDoc(doc(store, 'siteDrafts/homepage'), envelope({ ...defaultHomepage, hero } as typeof defaultHomepage)))
+    }
+    await assertFails(setDoc(doc(store, 'siteDrafts/homepage'), { ...envelope(), language: 'ko' }))
+    await assertFails(setDoc(doc(store, 'siteDrafts/homepage'), { ...envelope(), updatedAt: 'forged' }))
+    await assertFails(setDoc(doc(store, 'siteDrafts/homepage'), envelope(defaultHomepage, 5)))
+    await assertFails(setDoc(doc(store, 'siteDrafts/other'), envelope()))
+    await assertFails(setDoc(doc(store, 'siteSettings/other'), envelope()))
+    await assertSucceeds(setDoc(doc(store, 'siteDrafts/homepage'), envelope()))
+    await assertFails(setDoc(doc(store, 'siteDrafts/homepage'), envelope()))
+    await assertFails(deleteDoc(doc(store, 'siteDrafts/homepage')))
+  })
+  it('requires an atomic draft write when publishing and supports a missing translation', async () => {
+    const store = db('editor')
+    await assertFails(setDoc(doc(store, 'siteSettings/homepage'), envelope()))
+    const singleLanguage = { ...changed, hero: { ...changed.hero, title: { ko: '한글 원문', en: '' } } }
+    await createHomepageRepository(store).save(singleLanguage, { draft: 0, published: 0 }, true)
+    expect((await getDoc(doc(db(), 'siteSettings/homepage'))).data()?.settings.hero.title.en).toBe('')
+    await assertFails(updateDoc(doc(store, 'siteSettings/homepage'), { settings: changed, revision: 2, updatedAt: serverTimestamp() }))
+    await assertFails(deleteDoc(doc(store, 'siteSettings/homepage')))
   })
 })

@@ -22,6 +22,7 @@ import { PeopleAdminPage } from '../features/admin/PeopleAdminPage'
 
 export const router = createBrowserRouter([{ path:'/admin', element:<AdminLayout/>, children:[
   {index:true,element:<AdminDashboard/>},
+  {path:'homepage',lazy:async () => ({ Component: (await import('../features/admin/HomepageEditorPage')).HomepageEditorPage })},
   {path:'people',element:<PeopleAdminPage/>},
   {path:'activities',element:<AdminListPage type="activities"/>},{path:'activities/new',element:<ActivityEditorPage/>},{path:'activities/:id/edit',element:<ActivityEditorPage/>},
   {path:'mathematics',element:<AdminListPage type="mathematics"/>},{path:'mathematics/new',element:<MathematicsEditorPage/>},{path:'mathematics/:id/edit',element:<MathematicsEditorPage/>},

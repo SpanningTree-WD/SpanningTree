@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import type { Attachment } from '../../models/common'
 import { isUploadUrl } from '../../services/uploads/uploadTypes'
 
@@ -15,11 +16,13 @@ export function AttachmentList({
   files: Attachment[]
   pendingFiles?: PendingAttachment[]
 }) {
+  const t = useT()
+
   const available = files.filter((file) => isUploadUrl(file.url))
   if (!available.length && !pendingFiles.length) return null
   return (
     <section className="attachments">
-      <h2>첨부 파일</h2>
+      <h2>{t("첨부 파일")}</h2>
       {available.map((file) => (
         <div className="attachment" key={file.url}>
           <span>
@@ -34,9 +37,7 @@ export function AttachmentList({
             download={file.fileName}
             target="_blank"
             rel="noopener noreferrer"
-          >
-            PDF 다운로드
-          </a>
+          >{t("PDF 다운로드")}</a>
         </div>
       ))}
       {pendingFiles.map((file) => (
@@ -45,7 +46,7 @@ export function AttachmentList({
             {file.fileName}
             <small>{file.sizeLabel}</small>
           </span>
-          <span role="status">{file.stateText}</span>
+          <span role="status">{t(file.stateText)}</span>
         </div>
       ))}
     </section>

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { Attachment, MediaReference } from '../../models/common'
@@ -36,6 +37,7 @@ export function useAdminEditor<T extends EditableRecord>(
   path: string,
   validateExtra: (form: T) => Errors
 ) {
+  const t = useT()
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -122,7 +124,7 @@ export function useAdminEditor<T extends EditableRecord>(
     if (!current?.active || current.key !== sessionKey) return
     if (
       (dirty || attachments.hasPending || saving) &&
-      !window.confirm('저장하지 않은 변경사항과 첨부 파일 선택을 취소하시겠습니까?')
+      !window.confirm(t('저장하지 않은 변경사항과 첨부 파일 선택을 취소하시겠습니까?'))
     )
       return
     current.active = false
@@ -156,8 +158,8 @@ export function useAdminEditor<T extends EditableRecord>(
       action !== 'save' &&
       !window.confirm(
         action === 'publish'
-          ? '이 자료를 공개하시겠습니까? 현재 입력 내용도 저장됩니다.'
-          : '이 자료를 비공개로 전환하시겠습니까? 저장하지 않은 변경사항은 반영되지 않습니다.'
+          ? t('이 자료를 공개하시겠습니까? 현재 입력 내용도 저장됩니다.')
+          : t('이 자료를 비공개로 전환하시겠습니까? 저장하지 않은 변경사항은 반영되지 않습니다.')
       )
     )
       return

@@ -46,11 +46,13 @@ function show() {
 it('never mounts private routes until membership is confirmed, and removes them on revocation', () => {
   show()
   expect(screen.queryByText('Private editor')).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: '홈페이지 편집' })).not.toBeInTheDocument()
   act(() => notify({ status: 'signed-out' }))
   fireEvent.click(screen.getByRole('button', { name: 'Google로 로그인' }))
   expect(mocks.signIn).toHaveBeenCalledOnce()
   act(() => notify({ status: 'authorized', user: { uid: 'editor', email: 'editor@example.com' } }))
   expect(screen.getByText('Private editor')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '홈페이지 편집' })).toHaveAttribute('href', '/admin/homepage')
   act(() => notify({ status: 'denied', user: { uid: 'editor', email: 'editor@example.com' } }))
   expect(screen.queryByText('Private editor')).not.toBeInTheDocument()
   expect(screen.getByText('계정 식별번호: editor')).toBeInTheDocument()

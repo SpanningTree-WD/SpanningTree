@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { Choice } from '../../models/contentOptions'
@@ -21,12 +22,14 @@ export function Field({
   type = 'text',
   required = false,
 }: FieldProps & { type?: string }) {
+  const t = useT()
+
   const id = `field-${name}`
   return (
     <label className="admin-field" htmlFor={id}>
       <span>
-        {label}
-        {required && <em>필수</em>}
+        {t(label)}
+        {required && <em>{t("필수")}</em>}
       </span>
       <input
         id={id}
@@ -40,7 +43,7 @@ export function Field({
       />
       {error && (
         <small className="field-error" id={`${id}-error`}>
-          {error}
+          {t(error)}
         </small>
       )}
     </label>
@@ -56,12 +59,14 @@ export function SelectField({
   required = false,
   options,
 }: FieldProps & { options: readonly Choice[] }) {
+  const t = useT()
+
   const id = `field-${name}`
   return (
     <label className="admin-field" htmlFor={id}>
       <span>
-        {label}
-        {required && <em>필수</em>}
+        {t(label)}
+        {required && <em>{t("필수")}</em>}
       </span>
       <select
         id={id}
@@ -71,19 +76,19 @@ export function SelectField({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
       >
-        <option value="">선택해 주세요</option>
+        <option value="">{t("선택해 주세요")}</option>
         {value && !options.some(([key]) => key === value) && (
-          <option value={value}>{value} (기존 분류)</option>
+          <option value={value}>{value} ({t('기존 분류')})</option>
         )}
         {options.map(([key, text]) => (
           <option key={key} value={key}>
-            {text}
+            {t(text)}
           </option>
         ))}
       </select>
       {error && (
         <small className="field-error" id={`${id}-error`}>
-          {error}
+          {t(error)}
         </small>
       )}
     </label>
@@ -98,10 +103,12 @@ export function TextAreaField({
   onChange,
   rows = 8,
 }: FieldProps & { rows?: number }) {
+  const t = useT()
+
   const id = `field-${name}`
   return (
     <label className="admin-field" htmlFor={id}>
-      <span>{label}</span>
+      <span>{t(label)}</span>
       <textarea
         id={id}
         rows={rows}
@@ -112,7 +119,7 @@ export function TextAreaField({
       />
       {error && (
         <small className="field-error" id={`${id}-error`}>
-          {error}
+          {t(error)}
         </small>
       )}
     </label>
@@ -133,6 +140,8 @@ export function NamesField({
   value: string[]
   onChange: (value: string[]) => void
 }) {
+  const t = useT()
+
   const [text, setText] = useState(value.join(', '))
   // Keep the comma being typed while still following a reloaded or restored record.
   useEffect(() => {
@@ -142,9 +151,9 @@ export function NamesField({
   }, [value])
   return (
     <Field
-      label={`${label} (여러 명은 쉼표로 구분)`}
+      label={`${t(label)} (여러 명은 쉼표로 구분)`}
       name="authors"
-      value={text}
+      value={t(text)}
       onChange={(next) => {
         setText(next)
         onChange(splitNames(next))
@@ -170,6 +179,8 @@ export function EditorFrame({
   onBack?: () => void
   saving?: boolean
 }) {
+  const t = useT()
+
   return (
     <div className="admin-page editor-page">
       <header className="admin-page-head">
@@ -179,12 +190,12 @@ export function EditorFrame({
             if (!saving) onBack?.()
           }
         }}>
-          ← {section} 목록
+          {t('← {section} 목록', { section: t(section) })}
         </Link>
         <div className="editor-title">
-          <h1>{title}</h1>
+          <h1>{t(title)}</h1>
           <span className={`status status-${status}`}>
-            {status === 'published' ? '공개' : '비공개'}
+            {status === 'published' ? t('공개') : t('비공개')}
           </span>
         </div>
       </header>
@@ -208,20 +219,18 @@ export function EditorActions({
   onUnpublish: () => void
   onCancel?: () => void
 }) {
+  const t = useT()
+
   return (
     <div className="editor-actions">
-      {onCancel && <button type="button" onClick={onCancel} disabled={saving}>작성 취소</button>}
+      {onCancel && <button type="button" onClick={onCancel} disabled={saving}>{t("작성 취소")}</button>}
       <button type="button" onClick={onSave} disabled={saving}>
-        {saving ? '처리 중…' : status === 'draft' ? '임시 저장' : '변경사항 저장'}
+        {saving ? t('처리 중…') : status === 'draft' ? t('임시 저장') : t('변경사항 저장')}
       </button>
       {status === 'draft' ? (
-        <button className="admin-primary" type="button" onClick={onPublish} disabled={saving}>
-          공개하기
-        </button>
+        <button className="admin-primary" type="button" onClick={onPublish} disabled={saving}>{t("공개하기")}</button>
       ) : (
-        <button className="admin-danger" type="button" onClick={onUnpublish} disabled={saving}>
-          비공개로 전환
-        </button>
+        <button className="admin-danger" type="button" onClick={onUnpublish} disabled={saving}>{t("비공개로 전환")}</button>
       )}
     </div>
   )

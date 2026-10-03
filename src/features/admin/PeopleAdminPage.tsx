@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { groupMembers, validateMember, type Member, type MemberInput } from '../../models/people'
@@ -15,6 +16,8 @@ function MemberForm({
   onSave: (input: MemberInput) => Promise<void>
   onCancel: () => void
 }) {
+  const t = useT()
+
   const [name, setName] = useState(member?.name ?? '')
   const [generation, setGeneration] = useState(String(member?.generation ?? ''))
   const [isLeader, setIsLeader] = useState(member?.isLeader ?? false)
@@ -30,12 +33,10 @@ function MemberForm({
   }
   return (
     <form className="member-editor" onSubmit={(event) => void submit(event)}>
-      <h2>{member ? '구성원 수정' : '구성원 추가'}</h2>
+      <h2>{member ? t('구성원 수정') : t('구성원 추가')}</h2>
       <fieldset className="admin-editor-fields" disabled={busy}>
         <div className="admin-form-grid">
-          <label className="admin-field">
-            이름
-            <input
+          <label className="admin-field">{t("이름")}<input
               autoFocus
               required
               maxLength={40}
@@ -43,15 +44,13 @@ function MemberForm({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <label className="admin-field">
-            기수
-            <input
+          <label className="admin-field">{t("기수")}<input
               required
               type="number"
               min={1}
               max={999}
               step={1}
-              placeholder="예: 39"
+              placeholder={t("예: 39")}
               value={generation}
               onChange={(event) => setGeneration(event.target.value)}
             />
@@ -62,22 +61,18 @@ function MemberForm({
             type="checkbox"
             checked={isLeader}
             onChange={(event) => setIsLeader(event.target.checked)}
-          />
-          학년 장
-        </label>
-        <p className="member-form-help">학년 장은 공개 명단에서 두꺼운 테두리로 표시됩니다.</p>
+          />{t("학년 장")}</label>
+        <p className="member-form-help">{t("학년 장은 공개 명단에서 두꺼운 테두리로 표시됩니다.")}</p>
         {error && (
           <p className="field-error" role="alert">
-            {error}
+            {t(error)}
           </p>
         )}
         <div className="member-form-actions">
           <button type="submit" className="admin-primary">
-            {busy ? '저장 중…' : '저장'}
+            {busy ? t('저장 중…') : t('저장')}
           </button>
-          <button type="button" onClick={onCancel}>
-            취소
-          </button>
+          <button type="button" onClick={onCancel}>{t("취소")}</button>
         </div>
       </fieldset>
     </form>
@@ -85,6 +80,8 @@ function MemberForm({
 }
 
 export function PeopleAdminPage() {
+  const t = useT()
+
   const [members, setMembers] = useState<Member[]>()
   const [loadError, setLoadError] = useState('')
   const [retry, setRetry] = useState(0)
@@ -118,7 +115,7 @@ export function PeopleAdminPage() {
     setNotice('')
     try {
       await memberRepository.remove(removing)
-      setNotice(`${removing.name} 님을 명단에서 삭제했습니다.`)
+      setNotice(t('{name} 님을 명단에서 삭제했습니다.', { name: removing.name }))
       setRemoving(null)
     } catch (failure) {
       setError(adminErrorMessage(failure))
@@ -130,9 +127,9 @@ export function PeopleAdminPage() {
   return (
     <div className="admin-page">
       <header className="admin-page-head">
-        <p className="eyebrow">구성원 관리</p>
-        <h1>구성원 명단</h1>
-        <p>이름·기수·학년 장을 관리합니다. 저장한 내용은 바로 공개됩니다.</p>
+        <p className="eyebrow">{t("구성원 관리")}</p>
+        <h1>{t("구성원 명단")}</h1>
+        <p>{t("이름·기수·학년 장을 관리합니다. 저장한 내용은 바로 공개됩니다.")}</p>
       </header>
       <div className="member-toolbar">
         <button
@@ -142,18 +139,14 @@ export function PeopleAdminPage() {
             setEditor({})
             setNotice('')
           }}
-        >
-          구성원 추가
-        </button>
-        <Link to="/people" target="_blank" rel="noopener noreferrer">
-          공개 명단 보기 ↗
-        </Link>
+        >{t("구성원 추가")}</button>
+        <Link to="/people" target="_blank" rel="noopener noreferrer">{t("공개 명단 보기 ↗")}</Link>
       </div>
-      {notice && <p role="status">{notice}</p>}
+      {notice && <p role="status">{t(notice)}</p>}
       {loadError && (
         <div role="alert">
-          <p>{loadError}</p>
-          <button onClick={() => setRetry((value) => value + 1)}>다시 시도</button>
+          <p>{t(loadError)}</p>
+          <button onClick={() => setRetry((value) => value + 1)}>{t("다시 시도")}</button>
         </div>
       )}
       {editor && (
@@ -166,18 +159,18 @@ export function PeopleAdminPage() {
         />
       )}
       {removing && (
-        <div className="member-delete-confirm" role="alertdialog" aria-label="구성원 삭제 확인">
+        <div className="member-delete-confirm" role="alertdialog" aria-label={t("구성원 삭제 확인")}>
           <p>
-            {removing.generation}기 {removing.name} 님을 명단에서 삭제할까요?
+            {t('{generation}기 {name} 님을 명단에서 삭제할까요?', { generation: removing.generation, name: removing.name })}
           </p>
           {error && (
             <p className="field-error" role="alert">
-              {error}
+              {t(error)}
             </p>
           )}
           <div className="member-form-actions">
             <button className="admin-danger" disabled={busy} onClick={() => void remove()}>
-              {busy ? '삭제 중…' : '삭제 확인'}
+              {busy ? t('삭제 중…') : t('삭제 확인')}
             </button>
             <button
               disabled={busy}
@@ -185,26 +178,24 @@ export function PeopleAdminPage() {
                 setRemoving(null)
                 setError('')
               }}
-            >
-              취소
-            </button>
+            >{t("취소")}</button>
           </div>
         </div>
       )}
       {!members && !loadError ? (
-        <p role="status">명단을 불러오고 있습니다.</p>
+        <p role="status">{t("명단을 불러오고 있습니다.")}</p>
       ) : members?.length === 0 ? (
-        <p>등록된 구성원이 없습니다. 구성원을 추가해 주세요.</p>
+        <p>{t("등록된 구성원이 없습니다. 구성원을 추가해 주세요.")}</p>
       ) : (
         members && (
           <div className="admin-table-wrap">
             <table className="admin-table member-table">
               <thead>
                 <tr>
-                  <th scope="col">이름</th>
-                  <th scope="col">기수</th>
-                  <th scope="col">학년 장</th>
-                  <th scope="col">관리</th>
+                  <th scope="col">{t("이름")}</th>
+                  <th scope="col">{t("기수")}</th>
+                  <th scope="col">{t("학년 장")}</th>
+                  <th scope="col">{t("관리")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,31 +204,27 @@ export function PeopleAdminPage() {
                   .map((member) => (
                     <tr key={member.id}>
                       <td>{member.name}</td>
-                      <td>{member.generation}기</td>
-                      <td>{member.isLeader ? '학년 장' : '—'}</td>
+                      <td>{t('{count}기', { count: member.generation })}</td>
+                      <td>{member.isLeader ? t('학년 장') : '—'}</td>
                       <td>
                         <div className="table-actions">
                           <button
                             disabled={locked}
-                            aria-label={`${member.generation}기 ${member.name} 수정`}
+                            aria-label={t('{generation}기 {name} 수정', { generation: member.generation, name: member.name })}
                             onClick={() => {
                               setEditor({ member })
                               setNotice('')
                             }}
-                          >
-                            수정
-                          </button>
+                          >{t("수정")}</button>
                           <button
                             disabled={locked}
-                            aria-label={`${member.generation}기 ${member.name} 삭제`}
+                            aria-label={t('{generation}기 {name} 삭제', { generation: member.generation, name: member.name })}
                             onClick={() => {
                               setRemoving(member)
                               setNotice('')
                               setError('')
                             }}
-                          >
-                            삭제
-                          </button>
+                          >{t("삭제")}</button>
                         </div>
                       </td>
                     </tr>

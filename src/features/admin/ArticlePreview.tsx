@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/LanguageProvider'
 import type { ReactNode } from 'react'
 import type { PendingAttachment } from '../../components/content/AttachmentList'
 import type { Activity } from '../../models/activity'
@@ -22,8 +23,10 @@ export type ArticlePreviewProps = PreviewRecord & {
 }
 
 export function ArticlePreview(props: ArticlePreviewProps) {
+  const t = useT()
+
   return (
-    <section className="editor-article-preview" aria-label="글 미리보기">
+    <section className="editor-article-preview" aria-label={t("글 미리보기")}>
       {props.collection === 'activities' ? (
         <ActivityDetail record={props.record} imagePreviewUrl={props.imagePreviewUrl} pendingFiles={props.pendingFiles} />
       ) : props.collection === 'mathematics' ? (

@@ -1,6 +1,9 @@
+import { useT } from '../../i18n/LanguageProvider'
 import { club } from '../../content/club'
 
 export function SiteFooter() {
+  const t = useT()
+
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -11,18 +14,18 @@ export function SiteFooter() {
           <div>
             <div className="serif footer-title">SPANNING TREE</div>
             <div className="footer-copy">
-              {club.affiliation} {club.koreanName}
+              {t(club.affiliation)} · {t(club.koreanName)}
             </div>
           </div>
         </div>
         <div className="footer-details">
           <div className="footer-contact">
-            <span>Contact</span>
+            <span>{t("Contact")}</span>
             <a className="contact-link" href={`mailto:${club.email}`}>
               {club.email}
             </a>
           </div>
-          <div className="footer-copy">© Spanning Tree. All rights reserved.</div>
+          <div className="footer-copy">{t("© Spanning Tree. All rights reserved.")}</div>
         </div>
       </div>
     </footer>
