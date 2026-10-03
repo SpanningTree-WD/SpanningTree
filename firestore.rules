@@ -83,7 +83,7 @@ service cloud.firestore {
     }
     // Optional for legacy records; new editors also retain the first field.
     function mathematicsField(value) {
-      return value is string && value.size() <= 100 && value.matches('.*[^\\\\s].*');
+      return value is string && value.size() <= 100 && value.matches('.*[^\\s].*');
     }
     function validMathematicsFields(value, primary) {
       let count = value.size();
