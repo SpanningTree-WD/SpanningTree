@@ -82,25 +82,29 @@ service cloud.firestore {
         && (!('attachments' in data) || (data.attachments is list && data.attachments.size() <= 100));
     }
     // Optional for legacy records; new editors also retain the first field.
+    function mathematicsField(value) {
+      return value is string && value.size() <= 100 && value.matches('.*[^\\\\s].*');
+    }
     function validMathematicsFields(value, primary) {
-      return value is list && value.size() >= 1 && value.size() <= 16
-        && value.toSet().size() == value.size() && value[0] == primary
-        && (value.size() <= 0 || (text(value[0], 100) && value[0].matches('.*[^\\s].*')))
-        && (value.size() <= 1 || (text(value[1], 100) && value[1].matches('.*[^\\s].*')))
-        && (value.size() <= 2 || (text(value[2], 100) && value[2].matches('.*[^\\s].*')))
-        && (value.size() <= 3 || (text(value[3], 100) && value[3].matches('.*[^\\s].*')))
-        && (value.size() <= 4 || (text(value[4], 100) && value[4].matches('.*[^\\s].*')))
-        && (value.size() <= 5 || (text(value[5], 100) && value[5].matches('.*[^\\s].*')))
-        && (value.size() <= 6 || (text(value[6], 100) && value[6].matches('.*[^\\s].*')))
-        && (value.size() <= 7 || (text(value[7], 100) && value[7].matches('.*[^\\s].*')))
-        && (value.size() <= 8 || (text(value[8], 100) && value[8].matches('.*[^\\s].*')))
-        && (value.size() <= 9 || (text(value[9], 100) && value[9].matches('.*[^\\s].*')))
-        && (value.size() <= 10 || (text(value[10], 100) && value[10].matches('.*[^\\s].*')))
-        && (value.size() <= 11 || (text(value[11], 100) && value[11].matches('.*[^\\s].*')))
-        && (value.size() <= 12 || (text(value[12], 100) && value[12].matches('.*[^\\s].*')))
-        && (value.size() <= 13 || (text(value[13], 100) && value[13].matches('.*[^\\s].*')))
-        && (value.size() <= 14 || (text(value[14], 100) && value[14].matches('.*[^\\s].*')))
-        && (value.size() <= 15 || (text(value[15], 100) && value[15].matches('.*[^\\s].*')));
+      let count = value.size();
+      return value is list && count >= 1 && count <= 16
+        && value.toSet().size() == count && value[0] == primary
+        && (count <= 0 || mathematicsField(value[0]))
+        && (count <= 1 || mathematicsField(value[1]))
+        && (count <= 2 || mathematicsField(value[2]))
+        && (count <= 3 || mathematicsField(value[3]))
+        && (count <= 4 || mathematicsField(value[4]))
+        && (count <= 5 || mathematicsField(value[5]))
+        && (count <= 6 || mathematicsField(value[6]))
+        && (count <= 7 || mathematicsField(value[7]))
+        && (count <= 8 || mathematicsField(value[8]))
+        && (count <= 9 || mathematicsField(value[9]))
+        && (count <= 10 || mathematicsField(value[10]))
+        && (count <= 11 || mathematicsField(value[11]))
+        && (count <= 12 || mathematicsField(value[12]))
+        && (count <= 13 || mathematicsField(value[13]))
+        && (count <= 14 || mathematicsField(value[14]))
+        && (count <= 15 || mathematicsField(value[15]));
     }
     function mathematics(data) {
       return data.keys().hasAll(['content', 'authors', 'field', 'year', 'tags', 'attachments', 'relatedActivities', 'relatedPublications', 'relatedMathematics'])
