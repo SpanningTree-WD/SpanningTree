@@ -48,3 +48,9 @@ it('reports failed dispatch without altering the stored upload request', async (
   network.mockResolvedValueOnce(new Response('', { status: 503 }))
   await expect((await import('./triggerUpload')).triggerUpload('id')).rejects.toThrow('파일은 보관')
 })
+it('dispatches diagrams with an explicit kind and request ID without sending source', async () => {
+  network.mockResolvedValueOnce(Response.json({ status: 'requested' }, { status: 202 }))
+  const { triggerDiagram } = await import('./triggerUpload')
+  expect(await triggerDiagram('diagram-id')).toBe('requested')
+  expect(JSON.parse(network.mock.calls[0][1].body)).toEqual({ uid: 'editor', kind: 'diagram', requestId: 'diagram-id' })
+})

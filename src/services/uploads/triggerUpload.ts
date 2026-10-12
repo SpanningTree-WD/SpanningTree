@@ -5,7 +5,15 @@ const endpoint = configuredEndpoint === 'disabled' ? '' : configuredEndpoint
 export const hasUploadTrigger = () => Boolean(endpoint)
 export type TriggerResult = 'requested' | 'already-processing' | 'scheduled'
 
-export async function triggerUpload(uploadId: string): Promise<TriggerResult> {
+export function triggerUpload(uploadId: string): Promise<TriggerResult> {
+  return trigger({ uploadId })
+}
+
+export function triggerDiagram(requestId: string): Promise<TriggerResult> {
+  return trigger({ kind: 'diagram', requestId })
+}
+
+async function trigger(request: { uploadId: string } | { kind: 'diagram'; requestId: string }): Promise<TriggerResult> {
   if (!endpoint) return 'scheduled'
   const target = new URL(endpoint)
   if (
@@ -25,7 +33,7 @@ export async function triggerUpload(uploadId: string): Promise<TriggerResult> {
     redirect: 'error',
     signal: AbortSignal.timeout(25_000),
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uid: user.uid, uploadId }),
+    body: JSON.stringify({ uid: user.uid, ...request }),
   })
   if (!response.ok)
     throw new Error('즉시 실행 요청에 실패했습니다. 파일은 보관되어 있으며 예약 작업이 처리합니다.')
