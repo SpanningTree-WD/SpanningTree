@@ -1,5 +1,11 @@
 import type { Language } from './locale'
 export const authoringMessages: Record<string, Record<Language, string>> = {
+  "다른 도형을 처리 중입니다. 기존 도형의 처리가 끝난 뒤 다시 시도해 주세요.": {"ko": "다른 도형을 처리 중입니다. 기존 도형의 처리가 끝난 뒤 다시 시도해 주세요.", "en": "Another diagram is still processing. Retry after that diagram finishes."},
+  "도형 처리가 지연되고 있습니다. 재시도를 누르면 기존 작업에 다시 연결하고 완료된 결과를 가져옵니다.": {"ko": "도형 처리가 지연되고 있습니다. 재시도를 누르면 기존 작업에 다시 연결하고 완료된 결과를 가져옵니다.", "en": "The diagram is taking longer than expected. Retry to reconnect to the existing job and recover its result."},
+  "도형 결과 주소를 확인하지 못했습니다. 다시 시도해 주세요.": {"ko": "도형 결과 주소를 확인하지 못했습니다. 다시 시도해 주세요.", "en": "The diagram result URL could not be verified. Please try again."},
+  "예약 작업을 기다리고 있습니다. 완료까지 시간이 걸릴 수 있습니다.": {"ko": "예약 작업을 기다리고 있습니다. 완료까지 시간이 걸릴 수 있습니다.", "en": "Waiting for the scheduled worker. Completion may take some time."},
+  "즉시 실행을 요청했습니다. 작업 시작과 컴파일·배포까지 시간이 걸릴 수 있습니다.": {"ko": "즉시 실행을 요청했습니다. 작업 시작과 컴파일·배포까지 시간이 걸릴 수 있습니다.", "en": "Immediate processing requested. Starting, compiling and deploying may take some time."},
+  "즉시 실행 요청에 실패했습니다. 요청은 보관되어 있으며 예약 작업이 처리합니다.": {"ko": "즉시 실행 요청에 실패했습니다. 요청은 보관되어 있으며 예약 작업이 처리합니다.", "en": "Immediate processing could not be requested. Your request is saved for the scheduled worker."},
   "참여자": {
     "ko": "참여자",
     "en": "Participants"

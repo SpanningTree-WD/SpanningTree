@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'scripts/diagrams/**'
+      - 'src/services/diagrams/**'
+      - 'src/services/uploads/triggerUpload*'
+      - 'src/features/admin/DiagramEditor*'
+      - 'workers/upload-trigger/**'
+      - 'tests/rules/diagramService.test.ts'
       - '.github/workflows/diagram-sandbox-check.yml'
 permissions:
   contents: read
@@ -17,3 +22,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: docker build -t spanning-tree-diagrams:sandbox-v1 scripts/diagrams
       - run: npx tsx scripts/diagrams/sandbox-check.ts
+      - uses: actions/setup-java@v4
+        with: { distribution: 'temurin', java-version: '21' }
+      - name: Verify diagram request and result delivery with real rules and compiler
+        run: npx --yes firebase-tools@14.14.0 emulators:exec --project demo-spanning-diagrams --only firestore "npx vitest run --config vitest.rules.config.ts tests/rules/diagramService.test.ts"
+        env:
+          DIAGRAM_SANDBOX_VERIFY: 'true'

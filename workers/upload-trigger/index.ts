@@ -1,4 +1,4 @@
-// This Worker only wakes the existing GitHub uploader. It never receives file bytes.
+// Wake the existing file/diagram worker. Never accept file bytes or diagram source.
 export interface Env {
   GITHUB_DISPATCH_TOKEN: string
   TRIGGER_LIMITER: { limit(input: { key: string }): Promise<{ success: boolean }> }
@@ -12,6 +12,10 @@ const firestore =
 const workflow =
   'https://api.github.com/repos/SpanningTree-WD/SpanningTree/actions/workflows/github-uploads.yml/dispatches'
 type Fields = Record<string, { stringValue?: string }>
+type TriggerInput = { uid: string } & (
+  { kind?: undefined; uploadId: string } |
+  { kind: 'diagram'; requestId: string }
+)
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -43,7 +47,7 @@ export default {
     }
     if (request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json')
       return reply(415, { error: 'JSON 요청이 필요합니다.' })
-    let input: { uid: string; uploadId: string }
+    let input: TriggerInput
     try {
       // Read a bounded stream; Content-Length alone is not trustworthy.
       const reader = request.body?.getReader()
@@ -66,9 +70,11 @@ export default {
         !input ||
         typeof input.uid !== 'string' ||
         !/^[A-Za-z0-9_-]{1,128}$/.test(input.uid) ||
-        typeof input.uploadId !== 'string' ||
-        !/^[a-f0-9-]{36}$/.test(input.uploadId) ||
-        Object.keys(input).some((key) => !['uid', 'uploadId'].includes(key))
+        (input.kind !== undefined && input.kind !== 'diagram') ||
+        typeof (input.kind === 'diagram' ? input.requestId : input.uploadId) !== 'string' ||
+        !/^[a-f0-9-]{36}$/.test(input.kind === 'diagram' ? input.requestId : input.uploadId) ||
+        Object.keys(input).some((key) => !(input.kind === 'diagram'
+          ? ['uid', 'kind', 'requestId'] : ['uid', 'uploadId']).includes(key))
       )
         throw new Error('Invalid input')
     } catch {
@@ -79,7 +85,11 @@ export default {
     try {
       // Firestore validates the actual Firebase token and existing rules require the
       // verified, enabled administrator to own this slot. Never trust decoded JWT claims.
-      const check = await fetch(`${firestore}/uploadRequests/${input.uid}`, {
+      const diagram = input.kind === 'diagram'
+      const collection = diagram ? 'diagramRequests' : 'uploadRequests'
+      const identity = diagram ? 'requestId' : 'uploadId'
+      const requestId = input.kind === 'diagram' ? input.requestId : input.uploadId
+      const check = await fetch(`${firestore}/${collection}/${input.uid}`, {
         headers: { Authorization: authorization },
         signal: AbortSignal.timeout(10_000),
         // Workers supports manual/follow; reject 3xx below without forwarding credentials.
@@ -95,14 +105,16 @@ export default {
       const fields = ((await check.json()) as { fields?: Fields }).fields
       if (
         fields?.ownerId?.stringValue !== input.uid ||
-        fields?.uploadId?.stringValue !== input.uploadId
+        fields?.[identity]?.stringValue !== requestId
       ) {
         return reply(409, { error: '업로드 요청이 변경되었습니다.' })
       }
       const state = fields?.state?.stringValue
-      if (state === 'complete' || state === 'processing')
+      if (state === 'complete' || (!diagram && state === 'processing'))
         return reply(200, { status: 'already-processing' })
-      if (!['queued', 'committed', 'cancelled'].includes(state ?? ''))
+      // A retry must also wake an interrupted diagram marked processing. GitHub's
+      // shared concurrency group serializes workers, so this cannot compile twice at once.
+      if (!(diagram ? ['queued', 'processing', 'committed'] : ['queued', 'committed', 'cancelled']).includes(state ?? ''))
         return reply(409, { error: '파일 전송을 먼저 완료해 주세요.' })
       const limit = await env.TRIGGER_LIMITER.limit({ key: `uploader:${input.uid}` })
       if (!limit.success)

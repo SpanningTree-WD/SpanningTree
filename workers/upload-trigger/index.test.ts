@@ -152,3 +152,41 @@ it('fails closed during upstream failures and never returns credentials or raw u
   expect(await response.text()).not.toContain('private upstream')
   expect((await worker.fetch(request(), { ...env, GITHUB_DISPATCH_TOKEN: '' })).status).toBe(503)
 })
+
+it.each(['queued', 'processing', 'committed'])('immediately dispatches a %s diagram, including interrupted jobs', async state => {
+  network.mockResolvedValueOnce(metadata(state, { requestId: { stringValue: uploadId } }))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
+  const response = await worker.fetch(request({ uid, kind: 'diagram', requestId: uploadId }), env)
+  expect(response.status).toBe(202)
+  expect(network.mock.calls[0][0]).toMatch(/\/diagramRequests\/editor$/)
+  expect(network.mock.calls[1][0]).toMatch(/github-uploads.yml\/dispatches$/)
+  expect(JSON.parse(network.mock.calls[1][1].body)).toEqual({ ref: 'main' })
+})
+it('checks diagram identity and owner before dispatching, independently of upload IDs', async () => {
+  for (const patch of [{ requestId: { stringValue: 'wrong' } }, { ownerId: { stringValue: 'other' } }]) {
+    network.mockResolvedValueOnce(metadata('queued', { requestId: { stringValue: uploadId }, ...patch }))
+    expect((await worker.fetch(request({ uid, kind: 'diagram', requestId: uploadId }), env)).status).toBe(409)
+  }
+  expect(network).toHaveBeenCalledTimes(2)
+})
+it.each([401, 403])('denies unauthorized diagram dispatch (%s)', async status => {
+  network.mockResolvedValueOnce(new Response(null, { status }))
+  expect((await worker.fetch(request({ uid, kind: 'diagram', requestId: uploadId }), env)).status).toBe(403)
+  expect(network).toHaveBeenCalledTimes(1)
+})
+it('rejects malformed or mixed request types without querying Firestore', async () => {
+  for (const body of [
+    { uid, kind: 'other', requestId: uploadId }, { uid, kind: 'diagram', uploadId },
+    { uid, kind: 'diagram', requestId: uploadId, uploadId },
+    { uid, kind: 'diagram', requestId: '../secret' },
+    { uid, kind: 'diagram', requestId: uploadId, source: 'code' },
+  ]) expect((await worker.fetch(request(body), env)).status).toBe(400)
+  expect(network).not.toHaveBeenCalled()
+})
+it('does not dispatch failed or completed diagrams', async () => {
+  for (const [state, status] of [['failed', 409], ['complete', 200]] as const) {
+    network.mockResolvedValueOnce(metadata(state, { requestId: { stringValue: uploadId } }))
+    expect((await worker.fetch(request({ uid, kind: 'diagram', requestId: uploadId }), env)).status).toBe(status)
+  }
+  expect(network).toHaveBeenCalledTimes(2)
+})

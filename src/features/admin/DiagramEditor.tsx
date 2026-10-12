@@ -18,17 +18,18 @@ export function DiagramEditor({ scope, language, value, onSave, onClose }: {
   const [result, setResult] = useState<{ url: string; sourceHash: string } | undefined>(value?.url && value.sourceHash ? { url: value.url, sourceHash: value.sourceHash } : undefined)
   const [state, setState] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const operation = useRef<AbortController | null>(null)
   useEffect(() => () => operation.current?.abort(), [])
   async function compile() {
     if (operation.current) return
     const controller = new AbortController()
-    operation.current = controller; setBusy(true); setError('')
+    operation.current = controller; setBusy(true); setError(''); setNotice(''); setState('queued')
     try {
       const hash = await diagramHash(language, source)
       if (result?.sourceHash === hash) return
-      const next = await compileDiagram(scope, language, source, controller.signal, setState)
+      const next = await compileDiagram(scope, language, source, controller.signal, setState, setNotice)
       if (!controller.signal.aborted) setResult(next)
     } catch (failure) {
       if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : '도형을 컴파일하지 못했습니다.')
@@ -44,6 +45,7 @@ export function DiagramEditor({ scope, language, value, onSave, onClose }: {
       <label className="admin-field"><span>{t('대체 텍스트')}</span><input value={alt} maxLength={1000} onChange={event => setAlt(event.target.value)} /></label>
       <label className="admin-field"><span>{t('캡션')}</span><input value={caption} maxLength={5000} onChange={event => setCaption(event.target.value)} /></label>
     </div>
+    {busy && notice && <p role="status">{t(notice)}</p>}
     {busy && <p role="status">{t(state === 'queued' ? '컴파일 대기 중' : state === 'committed' ? '도형 결과 준비 중' : '도형 컴파일 중')}</p>}
     {error && <pre className="diagram-error field-error" role="alert">{t(error)}</pre>}
     {result && <img src={result.url} alt={alt || language} />}
