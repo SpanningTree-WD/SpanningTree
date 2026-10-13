@@ -1,4 +1,6 @@
 import DOMPurify from 'dompurify'
+import { useEffect, useRef } from 'react'
+import { hydrateBrowserDiagrams } from './browserDiagrams'
 import { renderMath } from './mathjax'
 import { Marked } from 'marked'
 import { useT } from '../../i18n/LanguageProvider'
@@ -56,6 +58,7 @@ export function renderMarkdown(markdown: string, options: RenderOptions = {}): s
       renderer(token) {
         if (token.kind === 'asset') return assetMarkup(options.assets?.find(asset => asset.id === token.id), t)
         const diagram = options.diagrams?.find(item => item.id === token.id)
+        if (diagram?.renderer === 'browser-v1') return '<figure class="body-image align-center browser-diagram" data-browser-diagram="' + escapeHtml(diagram.id) + '" data-diagram-hash="' + escapeHtml(diagram.sourceHash ?? '') + '"><div class="browser-diagram-output"><p role="status">' + escapeHtml(t('도형을 그리는 중…')) + '</p></div>' + (diagram.caption ? '<figcaption>' + escapeHtml(diagram.caption) + '</figcaption>' : '') + '</figure>'
         if (!diagram?.url || !isUploadUrl(diagram.url)) return '<aside class="asset-error">' + escapeHtml(t('도형을 렌더링해 주세요.')) + '</aside>'
         return '<figure class="body-image align-center"><img src="' + escapeHtml(diagram.url) + '" alt="' + escapeHtml(diagram.alt || diagram.language) + '">' + (diagram.caption ? '<figcaption>' + escapeHtml(diagram.caption) + '</figcaption>' : '') + '</figure>'
       },
@@ -87,5 +90,10 @@ export function ReferenceList({ references = [] }: { references?: ReferenceEntry
 }
 export function MarkdownRenderer({ content, className = '', ...options }: RenderOptions & { content: string; className?: string }) {
   const t = useT()
-  return <div className={('markdown-content ' + className).trim()} dangerouslySetInnerHTML={{ __html: renderMarkdown(content, { ...options, t }) }} />
+  const root = useRef<HTMLDivElement>(null)
+  const html = renderMarkdown(content, { ...options, t })
+  useEffect(() => {
+    if (root.current) return hydrateBrowserDiagrams(root.current, options.diagrams ?? [], t)
+  }, [html, options.diagrams, t])
+  return <div ref={root} className={('markdown-content ' + className).trim()} dangerouslySetInnerHTML={{ __html: html }} />
 }

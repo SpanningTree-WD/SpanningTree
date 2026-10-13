@@ -34,6 +34,21 @@ import { createMemberRepository } from '../../src/repositories/firebase/memberRe
 import type { Member } from '../../src/models/people'
 
 describe('article authoring relationships and private requests', () => {
+  it('saves, publishes and reloads source-only browser diagrams without a compiler queue', async () => {
+    const math = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')
+    const draft = (await math.getById('math-draft'))!
+    const diagrams = (['tikz', 'asymptote'] as const).map(language => ({
+      id: language, language, source: language === 'tikz' ? '\\begin{tikzpicture}\\draw (0,0)--(1,1);\\end{tikzpicture}' : 'draw(unitcircle);',
+      renderer: 'browser-v1' as const, sourceHash: 'a'.repeat(64), alt: language, caption: 'Local diagram',
+    }))
+    const saved = await math.update(draft.id, { ...draft, diagrams, content: '{{diagram:tikz}}\n\n{{diagram:asymptote}}' })
+    expect((await math.getById(saved.id))?.diagrams).toEqual(diagrams)
+    const publicRepos = createFirebaseRepositories(db())
+    expect(await publicRepos.mathematics.getPublishedByIds([saved.id])).toEqual([])
+    await math.publish(saved.id)
+    expect((await publicRepos.mathematics.getPublishedByIds([saved.id]))[0].diagrams).toEqual(diagrams)
+    expect((await getDoc(doc(db('editor'), 'diagramRequests/editor'))).exists()).toBe(false)
+  })
   it('adds and removes many-to-many links from either editor with one canonical field', async () => {
     const activities = createFirebaseAdminRepository<Activity>(db('editor'), 'activities')
     const mathematics = createFirebaseAdminRepository<Mathematics>(db('editor'), 'mathematics')

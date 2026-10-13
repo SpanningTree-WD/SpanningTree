@@ -1,5 +1,13 @@
 import type { Language } from './locale'
 export const authoringMessages: Record<string, Record<Language, string>> = {
+  "도형은 이 브라우저에서 바로 그립니다. 처음에는 엔진을 불러오는 시간이 필요하며, 글에는 소스 코드가 저장됩니다.": {"ko": "도형은 이 브라우저에서 바로 그립니다. 처음에는 엔진을 불러오는 시간이 필요하며, 글에는 소스 코드가 저장됩니다.", "en": "Diagrams render in this browser. The engine loads on first use; only source code is saved in the article."},
+  "도형을 그리는 중…": {"ko": "도형을 그리는 중…", "en": "Rendering diagram…"},
+  "도형 렌더링 시간이 초과되었습니다. 소스를 확인한 뒤 재시도해 주세요.": {"ko": "도형 렌더링 시간이 초과되었습니다. 소스를 확인한 뒤 재시도해 주세요.", "en": "Diagram rendering timed out. Check the source and retry."},
+  "도형 엔진을 불러오지 못했습니다. 연결을 확인하고 재시도해 주세요.": {"ko": "도형 엔진을 불러오지 못했습니다. 연결을 확인하고 재시도해 주세요.", "en": "Could not load the diagram engine. Check your connection and retry."},
+  "도형 글꼴을 불러오지 못했습니다. 다시 시도해 주세요.": {"ko": "도형 글꼴을 불러오지 못했습니다. 다시 시도해 주세요.", "en": "Could not load diagram fonts. Please retry."},
+  "도형 결과가 너무 큽니다. 소스를 간단히 줄여 주세요.": {"ko": "도형 결과가 너무 큽니다. 소스를 간단히 줄여 주세요.", "en": "The diagram output is too large. Please simplify the source."},
+  "도형 결과를 읽지 못했습니다. 소스를 확인해 주세요.": {"ko": "도형 결과를 읽지 못했습니다. 소스를 확인해 주세요.", "en": "Could not read the diagram output. Check the source."},
+  "지원하지 않는 도형 언어입니다.": {"ko": "지원하지 않는 도형 언어입니다.", "en": "This diagram language is not supported."},
   "다른 도형을 처리 중입니다. 기존 도형의 처리가 끝난 뒤 다시 시도해 주세요.": {"ko": "다른 도형을 처리 중입니다. 기존 도형의 처리가 끝난 뒤 다시 시도해 주세요.", "en": "Another diagram is still processing. Retry after that diagram finishes."},
   "도형 처리가 지연되고 있습니다. 재시도를 누르면 기존 작업에 다시 연결하고 완료된 결과를 가져옵니다.": {"ko": "도형 처리가 지연되고 있습니다. 재시도를 누르면 기존 작업에 다시 연결하고 완료된 결과를 가져옵니다.", "en": "The diagram is taking longer than expected. Retry to reconnect to the existing job and recover its result."},
   "도형 결과 주소를 확인하지 못했습니다. 다시 시도해 주세요.": {"ko": "도형 결과 주소를 확인하지 못했습니다. 다시 시도해 주세요.", "en": "The diagram result URL could not be verified. Please try again."},

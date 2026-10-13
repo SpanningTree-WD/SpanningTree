@@ -7,6 +7,10 @@
 .body-image img{display:block;max-width:100%;width:100%;height:auto;object-fit:contain}
 .body-image.align-center{margin-inline:auto}.body-image.align-right{margin-left:auto}
 .body-image figcaption{color:var(--color-muted);font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:.5rem}
+.browser-diagram-output{min-height:80px;max-width:100%;overflow-x:auto;text-align:center}
+.browser-diagram-output>svg{max-width:100%;height:auto;display:inline-block}
+.browser-diagram-output>p{color:var(--color-muted);font-size:.9rem;white-space:pre-wrap}
+.browser-diagram-output>[role=alert]{color:#8e382c}
 .body-file{display:flex;align-items:center;gap:1rem;border:1px solid var(--color-line);padding:1rem;margin-block:1rem;max-width:100%;min-width:0}
 .body-file>div{min-width:0;overflow-wrap:anywhere}.body-file small{display:block;color:var(--color-muted)}
 .asset-placeholder{display:grid;place-items:center;min-height:100px;background:var(--color-background);border:1px dashed var(--color-line)}
