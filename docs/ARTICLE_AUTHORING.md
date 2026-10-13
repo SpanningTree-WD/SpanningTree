@@ -28,18 +28,53 @@ Accepted files: JPEG, PNG and WebP up to 8 MB, PDF up to 20 MB; the backend veri
 
 The common Markdown renderer uses locally bundled **MathJax 4**, its TeX input and SVG output/font. Supported delimiters are `$…$`, `\(…\)`, `$$…$$` and `\[…\]`. Code spans/fences are left as code. No CDN, remote extension loader, `require`, or MathJax HTML extension is enabled. Equation failures remain local to the equation. The same renderer is used for the public article and writing preview, including images, files, citations and reference lists. SVG/HTML output is sanitized; long equations scroll within their own area.
 
-TikZ and Asymptote need a separate compiler. Their editor stores source, language, source hash, alt text, caption and the rendered PNG URL in the article. Authors enter source, render and review it, then explicitly insert/apply the result. Errors show compiler diagnostics without breaking the article preview. The private `diagramRequests/{uid}` queue is handled by the existing GitHub upload workflow. No extra production server or new secret is required, but the updated Firestore rules **and** the main-branch worker workflow must both be deployed before the new UI can compile diagrams.
+TikZ and Asymptote now render locally in Web Workers. The editor, CodeMirror blocks,
+article preview and public reader share the same renderer. A new diagram stores
+`renderer: "browser-v1"`, language, source, source hash, alt text and caption, with
+no uploaded image URL or SVG in Firestore. Authors render/review before inserting;
+a source edit invalidates the reviewed result. Rendering never writes a diagram
+request or dispatches GitHub Actions, so a stale legacy request cannot block it.
 
-Diagram requests now wake the existing Cloudflare trigger immediately after the private request is stored. The trigger verifies the current administrator, owner and request ID against `diagramRequests/{uid}` before dispatching the fixed main-branch workflow. GitHub scheduling, compiler image build and Hosting deployment can still take time. If dispatch fails or is disabled, the request remains queued for the scheduled worker and the editor explains the fallback.
+Runtime versions are pinned in package-lock.json and copied to same-origin,
+versioned `/vendor/diagrams/` URLs by `npm run diagrams:assets` (predev/prebuild).
+Pages without browser diagrams do not load either runtime. Reader diagrams are
+rendered near the viewport; workers are created on demand, one per language.
+Each load/compile operation is bounded to 30 seconds. On timeout, abort, or error,
+the worker is terminated; a retry creates a fresh instance. Failed results are
+never cached. Successful SVG is sanitized, stored in a bounded browser cache
+(memory + IndexedDB), and checked again when read. Engine versions, preamble,
+language and source all contribute to the cache key. Cache failure falls back to
+rendering. IndexedDB holds at most 32 results / approximately 8 MB.
 
-A timeout or closing the diagram editor only stops that browser's wait. Retrying the same article, language, engine and source hash rejoins the existing queued/processing/committed request and wakes the worker again; a completed result is returned immediately without another compilation. Failed jobs receive a new request ID. A different active diagram cannot be overwritten. The shared GitHub concurrency group serializes retries, including recovery of an interrupted processing job.
+TikZ uses the pinned TikZJax TeX worker with `amsmath`, `amssymb`, and libraries
+`arrows.meta`, `calc`, `positioning`, `decorations.pathmorphing`, `cd`. Enter a
+`tikzpicture`, `tikzcd`, or compatible body fragment. This is not a full arbitrary
+TeX installation: custom fonts, XeLaTeX/CJK packages, shell commands, external
+files and arbitrary packages are unsupported. Compiler diagnostics stay local
+to the failed diagram. The asset preparation script changes compressed-file
+suffixes from `.gz` to `.bin` to prevent HTTP servers decoding gzip twice; bytes
+remain compressed. Its pinned worker RPC and transformation are covered by the
+real browser tests; upgrading TikZJax requires rerunning them.
 
-Deploy the updated Cloudflare Worker (`npm run worker:deploy`) before releasing the frontend; updating Hosting alone does not deploy the trigger. Existing upload requests remain backward compatible, and this change requires no Firestore rules change or new secrets. The diagram CI workflow exercises the real Docker compiler and Firestore emulator together; its dispatch/delivery transport is isolated and is not a production delivery test.
+Asymptote uses asymptote-web 0.3.3 in safe mode for 2D SVG output. Its native
+browser build lacks TeX; our small, checked build-time patch to `plain_Label.asy`
+preserves evaluated label text in EPS markers. The upstream converter carries
+these into SVG, and the existing local MathJax renderer draws text and `$...$`
+math at the computed positions. Label metrics/layout are approximate, so review
+complex labels and tight alignments. TeX preambles/custom fonts, `texpath`, native
+PDF/PRC, interactive 3D, animation and external programs are not supported by this
+integration. Both runtimes remain inside the browser; source is never sent to a
+third-party rendering service. See [runtime notices](BROWSER_DIAGRAMS.md).
 
-The `sandbox-v1` Docker image uses Debian Bookworm's TeX Live, TikZ, Asymptote and Poppler. TikZ input is a `tikzpicture` or compatible body fragment; the wrapper loads `amsmath`, `amssymb`, and TikZ libraries `arrows.meta`, `calc`, `positioning`, `decorations.pathmorphing`, `cd`. Asymptote uses safe mode and PDF output through pdfLaTeX. Arbitrary extra packages, fonts, input files, network downloads, 3D interactive output and shell commands are not supported. Add supported dependencies in the Dockerfile/wrapper and bump the engine version in the server, client, rules and workflows when changing compilation semantics.
+Existing PNG diagrams keep rendering from their immutable URLs. Opening and
+applying an old diagram converts only that edited diagram to browser rendering;
+no bulk content migration or file deletion happens. The legacy sandbox and queue
+remain for already queued jobs and old clients. File/PDF uploads keep their
+existing GitHub workflow. This frontend change needs no new Firebase rules,
+Cloudflare deployment, secret, paid service, or database migration.
 
-Each job runs as UID 65534 with no network, no capabilities, no privilege escalation, read-only root, one read-only source directory, bounded scratch tmpfs, no host credentials/socket mount, one CPU, 512 MB memory, 64 processes, bounded file descriptors/output and a 25-second inner / 30-second host timeout. The named container and source directory are removed even on failure. Only a verified PNG up to 2048×2048 / 8 MB is accepted. Cache keys hash engine + language + normalized source; identical compiled source reuses the immutable result. A source edit invalidates the preview until rerendered. Deployment is verified byte-for-byte before the client receives a completed URL.
-
-The PR workflow `Diagram sandbox verification` builds the real Linux image and tests successful TikZ and Asymptote, invalid input, blocked arbitrary file reads/system commands and bounded infinite loops. It uses no production credentials. Frontend regression tests use isolated repository/upload adapters. Firestore emulator tests verify permission rules, persistence, relation updates and non-public filtering without production writes.
-
-References: [MathJax direct modules](https://docs.mathjax.org/en/latest/server/direct.html), [Asymptote options](https://asymptote.sourceforge.io/doc/Options.html), [Docker runtime restrictions](https://docs.docker.com/engine/containers/run/).
+`npm run test:browser-diagrams` runs actual Chromium and mobile-layout WebKit
+checks for both engines, source-only saving and reading, math labels, libraries,
+cache reuse, invalid input and terminating/restarting infinite loops. Tests use
+local fixtures, never production writes. Unit tests verify validation and SVG
+sanitization; emulator tests verify source-only draft/publish/read persistence.

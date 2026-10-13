@@ -115,3 +115,11 @@ See [GitHub upload operations](GITHUB_UPLOADS.md).
 UI code should not depend directly on Firestore document structure.
 
 Create application-level types/models and a separate data/service layer.
+
+## Browser-rendered diagrams
+
+`diagrams[]` retains `id`, `language` (`tikz` or `asymptote`), `source`,
+`sourceHash`, `alt?`, and `caption?`. New records have `renderer: "browser-v1"`
+and do not require an image `url`. SVG is generated and cached only in the
+browser. Existing records without this marker continue using their uploaded PNG
+URL. The body still references `{{diagram:ID}}`; no content migration is needed.

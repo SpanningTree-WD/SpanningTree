@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "diagrams:assets": "node scripts/browser-diagrams/assets.mjs",
+    "predev": "npm run diagrams:assets",
+    "prebuild": "npm run diagrams:assets",
+    "test:browser-diagrams": "playwright test --config playwright.diagrams.config.ts",
     "dev": "vite",
     "build": "tsc -b && vite build && npm run seo:generate",
     "seo:generate": "tsx scripts/seo/generate.ts",
@@ -25,6 +29,8 @@
     "@codemirror/view": "6.38.1",
     "@mathjax/mathjax-tex-font": "4.1.3",
     "@mathjax/src": "4.1.3",
+    "@rod2ik/tikzjax": "1.6.0",
+    "asymptote-web": "0.3.3",
     "dompurify": "3.2.6",
     "firebase": "12.2.1",
     "marked": "16.2.1",
@@ -35,6 +41,7 @@
   "devDependencies": {
     "@eslint/js": "9.34.0",
     "@firebase/rules-unit-testing": "5.0.0",
+    "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "6.8.0",
     "@testing-library/react": "16.3.0",
     "@types/node": "24.3.0",

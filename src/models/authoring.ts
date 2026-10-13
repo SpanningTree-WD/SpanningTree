@@ -26,6 +26,7 @@ export interface DiagramBlock {
   language: 'tikz' | 'asymptote'
   source: string
   sourceHash?: string
+  renderer?: 'browser-v1'
   url?: string
   caption?: string
   alt?: string
@@ -89,9 +90,11 @@ export function validateAuthoring(input: AuthoringFields & { content?: string; d
     throw new Error('삭제되거나 없는 참고문헌을 가리키는 인용을 수정해 주세요.')
   if ([...body.matchAll(/\{\{asset:([a-zA-Z0-9_-]+)\}\}/g)].some(match => !assets.some(asset => asset.id === match[1])))
     throw new Error('본문에서 사용하는 첨부 파일을 확인해 주세요.')
-  if ([...body.matchAll(/\{\{diagram:([a-zA-Z0-9_-]+)\}\}/g)].some(match => !diagrams.some(diagram => diagram.id === match[1] && diagram.url)))
+  if ([...body.matchAll(/\{\{diagram:([a-zA-Z0-9_-]+)\}\}/g)].some(match => !diagrams.some(diagram => diagram.id === match[1] && (diagram.url || diagram.renderer === 'browser-v1' && diagram.source.trim()))))
     throw new Error('본문의 도형을 먼저 렌더링해 주세요.')
-  if (diagrams.some(diagram => !['tikz', 'asymptote'].includes(diagram.language) || diagram.source.length > 20000 ||
+  if (diagrams.some(diagram => !['tikz', 'asymptote'].includes(diagram.language) || typeof diagram.source !== 'string' || !diagram.source.trim() || diagram.source.length > 20000 ||
+    (diagram.renderer !== undefined && diagram.renderer !== 'browser-v1') ||
+    (diagram.renderer === 'browser-v1' && !/^[a-f0-9]{64}$/.test(diagram.sourceHash ?? '')) ||
     (diagram.url && !/^\/uploads\/[a-f0-9]{64}\.png$/.test(diagram.url))))
     throw new Error('도형 소스 또는 결과를 확인해 주세요.')
 }

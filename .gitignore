@@ -15,3 +15,5 @@ authoring-backup-*.json
 .wrangler/
 .dev.vars
 .dev.vars.*
+public/vendor/diagrams/
+.diagram-test/

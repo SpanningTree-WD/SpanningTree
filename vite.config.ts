@@ -5,6 +5,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   return {
+    build: mode === 'diagram-test' ? {
+      outDir: '.diagram-test',
+      rollupOptions: { input: { app: 'index.html', fixture: 'tests/browser/fixture.html' } },
+    } : undefined,
     plugins: [react(), {
       name: 'preview-search-exclusion',
       transformIndexHtml() {

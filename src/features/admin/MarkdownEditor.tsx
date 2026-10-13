@@ -7,6 +7,7 @@ import { assetMarkup, renderMarkdown, safeContentUris, type RenderOptions } from
 import DOMPurify from 'dompurify'
 import { assetToken } from '../../models/authoring'
 import { useT } from '../../i18n/LanguageProvider'
+import { hydrateBrowserDiagrams } from '../../components/content/browserDiagrams'
 
 export interface MarkdownEditorHandle {
   insert: (text: string, block?: boolean) => void
@@ -34,6 +35,7 @@ export function MarkdownEditor(props: Props) {
   useEffect(() => {
     if (!host.current) return
     class BlockWidget extends WidgetType {
+      cleanup?: () => void
       constructor(readonly kind: string, readonly id: string, readonly html: string, readonly failed: boolean) { super() }
       eq(other: BlockWidget) { return this.kind === other.kind && this.id === other.id && this.html === other.html && this.failed === other.failed }
       toDOM(editor: EditorView) {
@@ -44,6 +46,7 @@ export function MarkdownEditor(props: Props) {
         content.className = 'markdown-content'
         content.innerHTML = DOMPurify.sanitize(this.html, { ALLOWED_URI_REGEXP: safeContentUris })
         box.append(content)
+        if (this.kind === 'diagram') this.cleanup = hydrateBrowserDiagrams(content, latest.current.diagrams ?? [], latest.current.t!)
         if (this.kind === 'citation') return box
         const actions = document.createElement('div')
         actions.className = 'editor-block-actions'
@@ -65,6 +68,7 @@ export function MarkdownEditor(props: Props) {
         return box
       }
       ignoreEvent() { return true }
+      destroy() { this.cleanup?.() }
     }
     function decorations(state: EditorState) {
       const ranges: Range<Decoration>[] = []
