@@ -5,12 +5,17 @@ const asy = 'size(160); draw(unitcircle);'
 
 test.use({ actionTimeout: 10000 })
 async function replaceBody(page: Page, value: string) {
-  // Use CodeMirror's select-all command so noneditable attachment widgets are
-  // included. Browser-native contenteditable.fill can leave those widgets behind.
+  // Paste through the editor's clipboard handler. Mobile WebKit advertises an
+  // Apple platform even on a Linux runner, so match CodeMirror's Mod key.
   const body = page.getByRole('textbox', { name: '본문', exact: true })
   await body.focus()
-  await body.press('ControlOrMeta+a')
-  await page.keyboard.insertText(value)
+  const modifier = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform + ' ' + navigator.userAgent) ? 'Meta' : 'Control')
+  await body.press(modifier + '+a')
+  await body.evaluate((element, text) => {
+    const clipboard = new DataTransfer()
+    clipboard.setData('text/plain', text)
+    element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: clipboard }))
+  }, value)
   await expect(page.getByTestId('body-source')).toHaveText(value)
 }
 

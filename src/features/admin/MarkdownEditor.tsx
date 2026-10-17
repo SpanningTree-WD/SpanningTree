@@ -199,7 +199,15 @@ export function MarkdownEditor(props: Props) {
           paste(event) {
             if (latest.current.disabled) return false
             const files = [...(event.clipboardData?.items ?? [])].filter(item => item.kind === 'file' && item.type.startsWith('image/')).map(item => item.getAsFile()).filter((file): file is File => !!file)
-            if (!files.length) return false
+            if (!files.length) {
+              const text = event.clipboardData?.getData('text/plain')
+              if (!text) return false
+              // Replace the model selection, including atomic image/citation
+              // widgets, rather than relying on browser contenteditable mutation.
+              event.preventDefault()
+              insert(text)
+              return true
+            }
             event.preventDefault()
             const ids = latest.current.onFiles(files)
             if (ids.length) insert(ids.map(assetToken).join('\n\n'), true)
