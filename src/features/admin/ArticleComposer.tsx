@@ -86,7 +86,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
           <label className="admin-field"><span>{t('대체 텍스트')}</span><input value={editing.alt ?? ''} maxLength={1000} onChange={event => update({ alt: event.target.value })} /></label>
           <label className="admin-field"><span>{t('캡션')}</span><input value={editing.caption ?? ''} maxLength={5000} onChange={event => update({ caption: event.target.value })} /></label>
           <label className="admin-field"><span>{t('너비 (본문 대비 %)')}</span><input type="number" min={10} max={100} value={editing.width ?? 100} onChange={event => update({ width: Math.max(10, Math.min(100, Number(event.target.value))) })} /></label>
-          <label className="admin-field"><span>{t('정렬')}</span><select value={editing.align ?? 'center'} onChange={event => update({ align: event.target.value as ArticleAsset['align'] })}><option value="left">{t('왼쪽')}</option><option value="center">{t('가운데')}</option><option value="right">{t('오른쪽')}</option></select></label>
+          <label className="admin-field"><span>{t('정렬')}</span><select aria-label={t('정렬')} value={editing.align ?? 'center'} onChange={event => update({ align: event.target.value as ArticleAsset['align'] })}><option value="left">{t('왼쪽')}</option><option value="center">{t('가운데')}</option><option value="right">{t('오른쪽')}</option></select></label>
         </div><button type="button" onClick={() => onCover(editing)}>{t('대표 이미지로 사용')}</button>
       </>}
     </section>}

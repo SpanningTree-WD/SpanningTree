@@ -1,7 +1,18 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 const tikz = String.raw`\begin{tikzpicture}\draw[->] (0,0)--(2,1);\end{tikzpicture}`
 const asy = 'size(160); draw(unitcircle);'
+
+test.use({ actionTimeout: 10000 })
+async function replaceBody(page: Page, value: string) {
+  // Use CodeMirror's select-all command so noneditable attachment widgets are
+  // included. Browser-native contenteditable.fill can leave those widgets behind.
+  const body = page.getByRole('textbox', { name: '본문', exact: true })
+  await body.focus()
+  await body.press('ControlOrMeta+a')
+  await page.keyboard.insertText(value)
+  await expect(page.getByTestId('body-source')).toHaveText(value)
+}
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/uploads/*.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') }))
@@ -10,7 +21,7 @@ test.beforeEach(async ({ page }) => {
 
 test('inline source renders automatically, edits recover, and saved body renders for readers', async ({ page }) => {
   const body = page.getByRole('textbox', { name: '본문', exact: true })
-  await body.fill('An article\n\n```tikz caption="Arrow" alt="An arrow"\n' + tikz + '\n```\n\n```asymptote\n' + asy + '\n```')
+  await replaceBody(page, 'An article\n\n```tikz caption="Arrow" alt="An arrow"\n' + tikz + '\n```\n\n```asymptote\n' + asy + '\n```')
   const diagrams = page.locator('.editor-diagram-preview')
   await expect(diagrams).toHaveCount(2)
   for (const diagram of await diagrams.all()) {
@@ -24,10 +35,10 @@ test('inline source renders automatically, edits recover, and saved body renders
   await expect(reader.locator('svg')).toHaveCount(2, { timeout: 45000 })
   await expect(reader.locator('figcaption')).toHaveText('Arrow')
   await expect(reader.locator('svg').first()).toHaveAttribute('aria-label', 'An arrow')
-  await body.fill('```asy\nthis is invalid;\n```\n\nThe rest is editable.')
+  await replaceBody(page, '```asy\nthis is invalid;\n```\n\nThe rest is editable.')
   await diagrams.scrollIntoViewIfNeeded()
   await expect(diagrams.getByRole('alert')).toBeVisible({ timeout: 45000 })
-  await body.fill('```asy\n' + asy + '\n```\n\nThe rest is editable.')
+  await replaceBody(page, '```asy\n' + asy + '\n```\n\nThe rest is editable.')
   await expect(diagrams.locator('svg')).toBeVisible({ timeout: 45000 })
   await page.screenshot({ path: test.info().outputPath('inline-diagrams.png'), fullPage: true })
 })
@@ -67,7 +78,7 @@ test('edits the selected citation, adds a reference in place, and edits image pr
 
 test('template buttons insert editable fenced source and image selection inserts at the cursor', async ({ page }) => {
   const body = page.getByRole('textbox', { name: '본문', exact: true })
-  await body.fill('Opening\n\n')
+  await replaceBody(page, 'Opening\n\n')
   await body.press('ControlOrMeta+End')
   await page.getByLabel('사진 선택', { exact: true }).setInputFiles({ name: 'New.png', mimeType: 'image/png', buffer: Buffer.from('fixture') })
   await expect(page.getByTestId('body-source')).toContainText('Opening\n\n\n\n{{asset:upload-1-0}}')
