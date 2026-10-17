@@ -109,11 +109,12 @@ export function TextAreaField({
   const id = `field-${name}`
   return (
     <label className="admin-field" htmlFor={id}>
-      <span>{t(label)}</span>
+      <span id={`${id}-label`}>{t(label)}</span>
       <textarea
         id={id}
         rows={rows}
         maxLength={maxLength}
+        aria-labelledby={`${id}-label`}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}

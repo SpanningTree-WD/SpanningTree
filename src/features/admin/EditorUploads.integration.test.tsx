@@ -195,7 +195,7 @@ it('pastes at the cursor, preserves typing and cursor on completion, and keeps u
   service.waitForUpload.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
   show()
   await screen.findByDisplayValue('활동 A')
-  const element = screen.getByRole('textbox', { name: '활동 내용' })
+  const element = await screen.findByRole('textbox', { name: '활동 내용' })
   const view = editorView(element)
   setEditorText(element, 'Before After')
   act(() => view.dispatch({ selection: { anchor: 7 } }))

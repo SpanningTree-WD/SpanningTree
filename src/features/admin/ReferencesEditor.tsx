@@ -14,7 +14,7 @@ function ReferenceFields({ value, onChange }: { value: ReferenceEntry; onChange:
         onChange({ ...value, format: next ? 'free' : 'structured', text: next ? savedText || referenceLabel({ ...value, format: 'structured' }) : '' })
       }}><option value="structured">{t('항목별 입력')}</option><option value="free">{t('자유 형식')}</option></select>
     </label>
-    {free ? <label className="admin-field"><span>{t('자유 형식')}</span><textarea rows={3} maxLength={5000} value={value.text ?? ''} onChange={event => onChange({ ...value, text: event.target.value })} /></label>
+    {free ? <label className="admin-field"><span>{t('자유 형식')}</span><textarea aria-label={t('자유 형식')} rows={3} maxLength={5000} value={value.text ?? ''} onChange={event => onChange({ ...value, text: event.target.value })} /></label>
       : <div className="reference-fields">{fields.map(([key, label]) => <label key={key} className="admin-field"><span>{t(label)}</span>
         <input value={value[key] ?? ''} maxLength={5000} onChange={event => onChange({ ...value, [key]: event.target.value })} />
       </label>)}</div>}
