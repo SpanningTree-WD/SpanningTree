@@ -174,7 +174,7 @@ export function MarkdownEditor(props: Props) {
       if (!editor || latest.current.disabled) return
       const range = editor.state.selection.main
       const from = position ?? range.from, to = position ?? range.to
-      const value = block ? '\n\n' + text + '\n\n' : text
+      const value = editor.state.toText(block ? '\n\n' + text + '\n\n' : text)
       editor.dispatch({ changes: { from, to, insert: value }, selection: { anchor: from + value.length }, userEvent: 'input' })
       editor.focus()
     }

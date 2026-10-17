@@ -52,11 +52,11 @@ it('does not decorate citations inside code or interpret example fences as diagr
   expect(screen.getByRole('button', { name: '인용 수정 [2]' })).toBeVisible()
   expect(container.querySelectorAll('.editor-diagram-preview')).toHaveLength(1)
 })
-it('replaces a selected document including atomic widgets when pasting Markdown', () => {
+it('replaces a selected document including atomic widgets when pasting Windows Markdown', () => {
   const { editor, container } = setup('See [@a].\n\n{{asset:photo}}')
   act(() => editor.dispatch({ selection: { anchor: 0, head: editor.state.doc.length } }))
   const source = 'Replacement\n\n```tikz\nsource\n```'
-  fireEvent.paste(editor.contentDOM, { clipboardData: { items: [], getData: (type: string) => type === 'text/plain' ? source : '' } })
+  fireEvent.paste(editor.contentDOM, { clipboardData: { items: [], getData: (type: string) => type === 'text/plain' ? source.replaceAll('\n', '\r\n') : '' } })
   expect(editor.state.doc.toString()).toBe(source)
   expect(container.querySelector('.editor-citation')).toBeNull()
   expect(container.querySelectorAll('.editor-diagram-preview')).toHaveLength(1)
