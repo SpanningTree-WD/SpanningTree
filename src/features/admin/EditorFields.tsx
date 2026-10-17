@@ -102,7 +102,8 @@ export function TextAreaField({
   error,
   onChange,
   rows = 8,
-}: FieldProps & { rows?: number }) {
+  maxLength,
+}: FieldProps & { rows?: number; maxLength?: number }) {
   const t = useT()
 
   const id = `field-${name}`
@@ -112,6 +113,7 @@ export function TextAreaField({
       <textarea
         id={id}
         rows={rows}
+        maxLength={maxLength}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}

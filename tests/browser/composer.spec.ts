@@ -116,7 +116,7 @@ test('preserves an explicit summary, unifies authors and collapses optional edit
   await expect(files).not.toHaveAttribute('open', '')
   await files.locator('summary').click()
   await expect(files.getByRole('button', { name: '본문에 삽입' })).toBeVisible()
-  const ref = page.locator('#reference-a')
+  const ref = page.locator('.references-editor #reference-a')
   await expect(ref.getByLabel('제목', { exact: true })).not.toBeVisible()
   await ref.getByRole('button', { name: '[1] Alpha', exact: true }).click()
   await ref.getByLabel('참고문헌 입력 방식').selectOption('free')

@@ -24,7 +24,7 @@ export function ComposerFixture() {
       setAssets([...assets, ...added]); return added.map(asset => asset.id)
     },
   }
-  return <main className="admin-main" style={{ maxWidth: 780, padding: 20, margin: 'auto' }}>
+  return <main className="admin-main admin-page" style={{ maxWidth: 780, padding: 20, margin: 'auto' }}>
     <h1>Article editor test</h1>
     <p>Changes stay in this page and are not sent to the site.</p>
     <SummaryField value={summary} body={body} onChange={setSummary} />
