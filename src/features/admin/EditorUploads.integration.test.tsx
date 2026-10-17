@@ -39,6 +39,7 @@ vi.mock('../../services/uploads/GitHubUploadService', () => ({
 }))
 
 vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
+vi.mock('../../repositories/memberRepository', () => ({ memberRepository: { subscribe: (next: (members: unknown[]) => void) => { next([]); return () => {} } } }))
 vi.mock('../../services/uploads/authoringSession', () => ({ keepUploadSession: vi.fn(async () => {}), closeUploadSession: vi.fn(async () => {}) }))
 
 type Article = Activity | Mathematics | Publication
@@ -151,7 +152,8 @@ afterEach(() => {
 function tabPreview() { fireEvent.click(screen.getAllByRole('button', { name: '미리보기' })[0]) }
 function tabWrite() { fireEvent.click(screen.getByRole('button', { name: '작성' })) }
 function fileCard(name: string): HTMLElement {
-  const panel = screen.getByRole('region', { name: '이 글의 첨부 파일' })
+  const panel = screen.getByRole('group', { name: '이 글의 첨부 파일' }) as HTMLDetailsElement
+  if (!panel.open) fireEvent.click(panel.querySelector('summary')!)
   const found = [...panel.querySelectorAll<HTMLElement>('.composer-attachment')].find(item => item.querySelector('strong')?.textContent === name)
   if (!found) throw new Error('Missing file card: ' + name)
   return found
@@ -213,14 +215,15 @@ it('pastes at the cursor, preserves typing and cursor on completion, and keeps u
   fireEvent.paste(element, { clipboardData: { items: [], getData: () => 'plain text' } })
   expect(view.state.doc.toString()).toContain('plain text')
 })
-it('dropzone adds a list item, insert adds a body block, body removal keeps the attachment', async () => {
+it('inline upload stays in the file list after body removal and can be inserted again', async () => {
   show()
   await screen.findByDisplayValue('활동 A')
   const image = photo('dropped.png')
-  fireEvent.drop(screen.getByRole('button', { name: '사진이나 파일을 끌어다 놓거나 클릭해서 첨부' }), { dataTransfer: { files: [image] } })
+  selectFile('사진 선택', image)
   await waitFor(() => expect(service.waitForUpload).toHaveBeenCalledOnce())
   await ready()
   const view = editorView(screen.getByRole('textbox', { name: '활동 내용' }))
+  fireEvent.click(within(view.dom).getByRole('button', { name: '본문에서 제거' }))
   expect(view.state.doc.toString()).not.toContain('{{asset:')
   fireEvent.click(within(fileCard(image.name)).getByRole('button', { name: '본문에 삽입' }))
   expect(view.state.doc.toString()).toContain('{{asset:')
@@ -283,11 +286,10 @@ it('uploads multiple files to a reserved article ID, saves and reopens durable i
   fireEvent.change(screen.getByLabelText(/제목/), { target: { value: '첨부 저장 시험' } })
   fireEvent.change(screen.getByLabelText(/활동 날짜/), { target: { value: '2026-09-30' } })
   fireEvent.change(screen.getByLabelText(/활동 유형/), { target: { value: 'Forum' } })
-  fireEvent.change(screen.getByLabelText('첨부 파일 선택'), { target: { files: [photo(), document()] } })
+  selectFile('사진 선택', photo())
+  selectFile('파일 선택', document())
   await waitFor(() => expect(service.waitForUpload).toHaveBeenCalledTimes(2))
   await ready()
-  fireEvent.click(within(fileCard('new-photo.png')).getByRole('button', { name: '본문에 삽입' }))
-  fireEvent.click(within(fileCard('new-notes.pdf')).getByRole('button', { name: '본문에 삽입' }))
   const reserved = service.queueGitHubUpload.mock.calls[0][2]
   expect(service.queueGitHubUpload.mock.calls[1][2]).toBe(reserved)
   expect(repository.create).not.toHaveBeenCalled()

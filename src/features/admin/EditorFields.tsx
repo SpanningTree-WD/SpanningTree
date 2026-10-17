@@ -1,5 +1,5 @@
 import { useT } from '../../i18n/LanguageProvider'
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { Choice } from '../../models/contentOptions'
 
@@ -123,42 +123,6 @@ export function TextAreaField({
         </small>
       )}
     </label>
-  )
-}
-
-const splitNames = (text: string) =>
-  text
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
-export function NamesField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string[]
-  onChange: (value: string[]) => void
-}) {
-  const t = useT()
-
-  const [text, setText] = useState(value.join(', '))
-  // Keep the comma being typed while still following a reloaded or restored record.
-  useEffect(() => {
-    setText((current) =>
-      JSON.stringify(splitNames(current)) === JSON.stringify(value) ? current : value.join(', ')
-    )
-  }, [value])
-  return (
-    <Field
-      label={`${t(label)} (${t('여러 명은 쉼표로 구분')})`}
-      name="authors"
-      value={text}
-      onChange={(next) => {
-        setText(next)
-        onChange(splitNames(next))
-      }}
-    />
   )
 }
 

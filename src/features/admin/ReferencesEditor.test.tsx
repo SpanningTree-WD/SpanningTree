@@ -38,3 +38,23 @@ it('searches and inserts multiple citations by ID with English interface copy', 
   expect(insert).toHaveBeenCalledWith('[@id-1; @id-2]')
   expect(close).toHaveBeenCalledOnce()
 })
+
+it('edits one reference at a time and switches formats without overwriting hidden structured fields', () => {
+  function Form() {
+    const [refs, setRefs] = useState<ReferenceEntry[]>([{ id: 'both', title: 'Original title', authors: 'Author', text: 'Custom citation', doi: '10.1000/test' }])
+    return <><ReferencesEditor value={refs} body="" onChange={setRefs} onBodyChange={() => {}} /><output data-testid="refs">{JSON.stringify(refs)}</output></>
+  }
+  render(<Form />)
+  expect(screen.queryByRole('textbox', { name: '자유 형식' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '[1] Custom citation' }))
+  expect(screen.getByRole('textbox', { name: '자유 형식' })).toHaveValue('Custom citation')
+  expect(screen.queryByRole('textbox', { name: '제목' })).toBeNull()
+  fireEvent.change(screen.getByLabelText('참고문헌 입력 방식'), { target: { value: 'structured' } })
+  expect(screen.getByLabelText('제목', { exact: true })).toHaveValue('Original title')
+  expect(screen.queryByRole('textbox', { name: '자유 형식' })).toBeNull()
+  fireEvent.change(screen.getByLabelText('제목', { exact: true }), { target: { value: 'Updated title' } })
+  fireEvent.change(screen.getByLabelText('참고문헌 입력 방식'), { target: { value: 'free' } })
+  expect(screen.getByRole('textbox', { name: '자유 형식' })).toHaveValue('Custom citation')
+  expect(screen.getByTestId('refs')).toHaveTextContent('Updated title')
+  expect(screen.getByLabelText('DOI')).toHaveValue('10.1000/test')
+})

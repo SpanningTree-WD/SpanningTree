@@ -6,15 +6,15 @@ import {
   EditorActions,
   EditorFrame,
   Field,
-  NamesField,
   SelectField,
   type Errors,
 } from './EditorFields'
 import { publicationTypes } from '../../models/contentOptions'
 import { useAdminEditor } from './useAdminEditor'
 import { ArticleComposer } from './ArticleComposer'
-import { PeoplePicker } from './ConnectionPickers'
+import { AuthorPicker } from './AuthorPicker'
 import { ArticlePreview } from './ArticlePreview'
+import { SummaryField } from './SummaryField'
 
 const empty: Publication = {
   id: '',
@@ -107,7 +107,9 @@ export function PublicationEditorPage() {
           required
           onChange={(v) => set('title', v)}
         />
-        <NamesField label="저자" value={form.authors} onChange={(v) => set('authors', v)} />
+
+        <SummaryField value={form.summary} body={form.description} onChange={value => set('summary', value)} />
+        <AuthorPicker label="저자" authors={form.authors} authorIds={form.authorIds ?? []} onChange={(authors, ids) => { set('authors', authors); set('authorIds', ids) }} />
         <div className="admin-form-grid">
           <Field
             label="발행 연도"
@@ -134,7 +136,7 @@ export function PublicationEditorPage() {
           onChange={value => set('description', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
            />
-        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
+
         </div>
         <EditorActions
           status={form.status}

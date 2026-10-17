@@ -14,6 +14,7 @@ import { useAdminEditor } from './useAdminEditor'
 import { ArticleComposer } from './ArticleComposer'
 import { PeoplePicker, RelatedPicker } from './ConnectionPickers'
 import { ArticlePreview } from './ArticlePreview'
+import { SummaryField } from './SummaryField'
 
 const empty: Activity = {
   id: '',
@@ -105,6 +106,7 @@ export function ActivityEditorPage() {
           required
           onChange={(v) => set('title', v)}
         />
+        <SummaryField value={form.summary} body={form.description} onChange={value => set('summary', value)} />
         <div className="admin-form-grid">
           <Field
             label="활동 날짜"

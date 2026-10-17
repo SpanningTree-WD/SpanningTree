@@ -5,6 +5,7 @@ import { mathematicsFixtures } from '../../content/fixtures/mathematics'
 import type { Mathematics } from '../../models/mathematics'
 import { MathematicsEditorPage } from './MathematicsEditorPage'
 vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
+vi.mock('../../repositories/memberRepository', () => ({ memberRepository: { subscribe: (next: (members: unknown[]) => void) => { next([]); return () => {} } } }))
 
 const repository = vi.hoisted(() => ({
   getById: vi.fn(), update: vi.fn(), create: vi.fn(), listAll: vi.fn(),
@@ -139,4 +140,20 @@ it('still permits adding custom fields if loading saved suggestions fails', asyn
   add('새 분야')
   expect(screen.getByRole('checkbox', { name: '새 분야' })).toBeChecked()
   expect(screen.getByRole('checkbox', { name: '기하학' })).toBeChecked()
+})
+
+it('previews and saves a directly edited summary, then generates again when cleared', async () => {
+  show({ ...legacy, summary: '이전 요약', content: '본문에서 생성할 내용' })
+  const summary = await screen.findByLabelText('요약', { exact: true })
+  fireEvent.change(summary, { target: { value: '직접 작성한 요약' } })
+  fireEvent.click(screen.getByRole('button', { name: '미리보기' }))
+  expect(screen.getByRole('region', { name: '글 미리보기' })).toHaveTextContent('직접 작성한 요약')
+  fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
+  await screen.findByText('저장했습니다.')
+  expect(repository.update).toHaveBeenLastCalledWith(legacy.id, expect.objectContaining({ summary: '직접 작성한 요약' }))
+  fireEvent.click(screen.getByRole('button', { name: '작성' }))
+  fireEvent.change(screen.getByLabelText('요약', { exact: true }), { target: { value: '' } })
+  fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
+  await waitFor(() => expect(repository.update).toHaveBeenCalledTimes(2))
+  expect(repository.update).toHaveBeenLastCalledWith(legacy.id, expect.objectContaining({ summary: '본문에서 생성할 내용' }))
 })
