@@ -40,6 +40,7 @@ it('edits one citation in place and adds a complete reference without leaving th
   fireEvent.click(dialog.getByRole('button', { name: '문헌 추가하고 인용' }))
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByRole('button', { name: '인용 수정 [2], [3]' })).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: '[3] Jones paper' }))
   expect(screen.getByDisplayValue('Jones paper')).toBeVisible()
   expect(screen.getByDisplayValue('10.1000/example')).toBeVisible()
   expect(editor.state.doc.toString()).toMatch(/First \[@a\]\. Second \[@b; @[\w-]+\]\./)

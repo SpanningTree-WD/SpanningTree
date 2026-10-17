@@ -1,5 +1,16 @@
 import type { Language } from './locale'
 export const authoringMessages: Record<string, Record<Language, string>> = {
+  "목록과 검색 결과에 표시됩니다. 비워 두면 본문에서 자동으로 만듭니다.": {"ko": "목록과 검색 결과에 표시됩니다. 비워 두면 본문에서 자동으로 만듭니다.", "en": "Shown in listings and search results. Leave blank to generate it from the article."},
+  "본문에서 요약 만들기": {"ko": "본문에서 요약 만들기", "en": "Generate summary from article"},
+  "이름 검색 또는 입력": {"ko": "이름 검색 또는 입력", "en": "Search or enter a name"},
+  "등록된 사람을 선택하거나, 목록에 없는 이름을 추가하세요.": {"ko": "등록된 사람을 선택하거나, 목록에 없는 이름을 추가하세요.", "en": "Select a registered person, or add a name that is not listed."},
+  "{name} 삭제": {"ko": "{name} 삭제", "en": "Remove {name}"},
+  "“{name}” 이름으로 추가": {"ko": "“{name}” 이름으로 추가", "en": "Add “{name}” by name"},
+  "참고문헌 입력 방식": {"ko": "참고문헌 입력 방식", "en": "Reference format"},
+  "항목별 입력": {"ko": "항목별 입력", "en": "Structured fields"},
+  "문헌명을 누르면 수정할 수 있습니다. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.": {"ko": "문헌명을 누르면 수정할 수 있습니다. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.", "en": "Select a reference to edit it. Reordering updates citation numbers automatically."},
+  "위의 사진 삽입·파일 첨부 버튼을 이용하세요. 본문에서 제거한 파일도 이 목록에서 다시 사용할 수 있습니다.": {"ko": "위의 사진 삽입·파일 첨부 버튼을 이용하세요. 본문에서 제거한 파일도 이 목록에서 다시 사용할 수 있습니다.", "en": "Use the image and file buttons above. Files removed from the body can be reused from this list."},
+
   "TikZ 코드": {"ko": "TikZ 코드", "en": "TikZ code"},
   "Asymptote 코드": {"ko": "Asymptote 코드", "en": "Asymptote code"},
   "도형 미리보기": {"ko": "도형 미리보기", "en": "Diagram preview"},
@@ -91,14 +102,6 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
     "ko": "인용 삽입",
     "en": "Insert citation"
   },
-  "TikZ 도형": {
-    "ko": "TikZ 도형",
-    "en": "TikZ diagram"
-  },
-  "Asymptote 도형": {
-    "ko": "Asymptote 도형",
-    "en": "Asymptote diagram"
-  },
   "사진 선택": {
     "ko": "사진 선택",
     "en": "Choose images"
@@ -106,10 +109,6 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
   "파일 선택": {
     "ko": "파일 선택",
     "en": "Choose files"
-  },
-  "첨부 파일 선택": {
-    "ko": "첨부 파일 선택",
-    "en": "Choose attachments"
   },
   "교체 파일 선택": {
     "ko": "교체 파일 선택",
@@ -158,10 +157,6 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
   "대표 이미지로 사용": {
     "ko": "대표 이미지로 사용",
     "en": "Use as cover image"
-  },
-  "사진이나 파일을 끌어다 놓거나 클릭해서 첨부": {
-    "ko": "사진이나 파일을 끌어다 놓거나 클릭해서 첨부",
-    "en": "Drop images or files here, or click to attach"
   },
   "JPEG·PNG·WebP: 8MB / PDF: 20MB. 여러 파일을 함께 선택할 수 있습니다.": {
     "ko": "JPEG·PNG·WebP: 8MB / PDF: 20MB. 여러 파일을 함께 선택할 수 있습니다.",
@@ -243,10 +238,6 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
     "ko": "도형을 컴파일하지 못했습니다.",
     "en": "Could not compile the diagram."
   },
-  "도형은 별도의 격리 환경에서 컴파일됩니다. 대기와 배포에 몇 분 걸릴 수 있습니다. 같은 소스의 결과는 재사용합니다.": {
-    "ko": "도형은 별도의 격리 환경에서 컴파일됩니다. 대기와 배포에 몇 분 걸릴 수 있습니다. 같은 소스의 결과는 재사용합니다.",
-    "en": "Diagrams compile in an isolated environment. Queuing and delivery may take several minutes. Identical sources reuse cached results."
-  },
   "도형 소스": {
     "ko": "도형 소스",
     "en": "Diagram source"
@@ -298,10 +289,6 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
   "본문에서 인용 중입니다. 참고문헌과 해당 인용을 함께 제거할까요?": {
     "ko": "본문에서 인용 중입니다. 참고문헌과 해당 인용을 함께 제거할까요?",
     "en": "This reference is cited in the body. Remove the reference and its citations together?"
-  },
-  "제목 또는 자유 형식을 입력해 주세요. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.": {
-    "ko": "제목 또는 자유 형식을 입력해 주세요. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.",
-    "en": "Enter a title or free text. Reordering references updates citation numbers automatically."
   },
   "새 참고문헌": {
     "ko": "새 참고문헌",

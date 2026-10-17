@@ -1,12 +1,46 @@
 import { useState } from 'react'
 import { useT } from '../../i18n/LanguageProvider'
 import { citationIds, citationToken, referenceLabel, removeCitation, type ReferenceEntry } from '../../models/authoring'
-const fields: [keyof Omit<ReferenceEntry, 'id'>, string][] = [['title', '제목'], ['authors', '저자'], ['year', '연도'], ['source', '학술지·출판사'], ['url', 'URL'], ['doi', 'DOI'], ['text', '자유 형식']]
+const fields: [keyof Omit<ReferenceEntry, 'id'>, string][] = [['title', '제목'], ['authors', '저자'], ['year', '연도'], ['source', '학술지·출판사']]
 function ReferenceFields({ value, onChange }: { value: ReferenceEntry; onChange: (value: ReferenceEntry) => void }) {
   const t = useT()
-  return <div className="reference-fields">{fields.map(([key, label]) => <label key={key} className="admin-field"><span>{t(label)}</span>
-    <input value={value[key] ?? ''} maxLength={5000} onChange={event => onChange({ ...value, [key]: event.target.value })} />
-  </label>)}</div>
+  const free = value.format === 'free' || (!value.format && Boolean(value.text?.trim()))
+  const [savedText, setSavedText] = useState(value.text ?? '')
+  return <>
+    <label className="admin-field"><span>{t('참고문헌 입력 방식')}</span>
+      <select value={free ? 'free' : 'structured'} onChange={event => {
+        const next = event.target.value === 'free'
+        if (!next) setSavedText(value.text ?? '')
+        onChange({ ...value, format: next ? 'free' : 'structured', text: next ? savedText || referenceLabel({ ...value, format: 'structured' }) : '' })
+      }}><option value="structured">{t('항목별 입력')}</option><option value="free">{t('자유 형식')}</option></select>
+    </label>
+    {free ? <label className="admin-field"><span>{t('자유 형식')}</span><textarea aria-label={t('자유 형식')} rows={3} maxLength={5000} value={value.text ?? ''} onChange={event => onChange({ ...value, text: event.target.value })} /></label>
+      : <div className="reference-fields">{fields.map(([key, label]) => <label key={key} className="admin-field"><span>{t(label)}</span>
+        <input value={value[key] ?? ''} maxLength={5000} onChange={event => onChange({ ...value, [key]: event.target.value })} />
+      </label>)}</div>}
+    <div className="reference-fields">{(['url', 'doi'] as const).map(key => <label key={key} className="admin-field"><span>{key.toUpperCase()}</span>
+      <input value={value[key] ?? ''} maxLength={5000} onChange={event => onChange({ ...value, [key]: event.target.value })} />
+    </label>)}</div>
+  </>
+}
+
+function ReferenceItem({ reference, index, count, onChange, onMove, onRemove }: {
+  reference: ReferenceEntry; index: number; count: number
+  onChange: (value: ReferenceEntry) => void; onMove: (offset: number) => void; onRemove: () => void
+}) {
+  const t = useT()
+  const [expanded, setExpanded] = useState(!referenceLabel(reference))
+  return <section className="reference-editor-item" id={'reference-' + reference.id}>
+    <div className="editor-row-actions">
+      <button className="reference-toggle" type="button" aria-expanded={expanded} aria-controls={'reference-fields-' + reference.id} onClick={() => setExpanded(value => !value)}>[{index + 1}] {referenceLabel(reference) || t('새 참고문헌')}</button>
+      <button type="button" disabled={index === 0} onClick={() => onMove(-1)} aria-label={'[' + (index + 1) + '] ' + t('위로')}>↑</button>
+      <button type="button" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={'[' + (index + 1) + '] ' + t('아래로')}>↓</button>
+      <button type="button" onClick={onRemove}>{t('삭제')}</button>
+    </div>
+    <div id={'reference-fields-' + reference.id} hidden={!expanded}>
+      <ReferenceFields value={reference} onChange={onChange} />
+    </div>
+  </section>
 }
 export function ReferencesEditor({ value, body, onChange, onBodyChange }: {
   value: ReferenceEntry[]; body: string; onChange: (value: ReferenceEntry[]) => void; onBodyChange: (body: string) => void
@@ -27,15 +61,10 @@ export function ReferencesEditor({ value, body, onChange, onBodyChange }: {
     onChange(value.filter(item => item.id !== ref.id))
   }
   return <section className="references-editor"><h2>{t('참고문헌')}</h2>
-    <p className="field-help">{t('제목 또는 자유 형식을 입력해 주세요. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.')}</p>
-    {value.map((ref, index) => <section className="reference-editor-item" id={'reference-' + ref.id} key={ref.id}>
-      <div className="editor-row-actions"><strong>[{index + 1}] {referenceLabel(ref) || t('새 참고문헌')}</strong>
-        <button type="button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={'[' + (index + 1) + '] ' + t('위로')}>↑</button>
-        <button type="button" disabled={index === value.length - 1} onClick={() => move(index, 1)} aria-label={'[' + (index + 1) + '] ' + t('아래로')}>↓</button>
-        <button type="button" onClick={() => remove(ref)}>{t('삭제')}</button>
-      </div>
-      <ReferenceFields value={ref} onChange={changed => onChange(value.map(item => item.id === ref.id ? changed : item))} />
-    </section>)}
+    <p className="field-help">{t('문헌명을 누르면 수정할 수 있습니다. 순서를 바꾸면 본문의 인용 번호도 자동으로 바뀝니다.')}</p>
+    {value.map((ref, index) => <ReferenceItem key={ref.id} reference={ref} index={index} count={value.length}
+      onMove={offset => move(index, offset)} onRemove={() => remove(ref)}
+      onChange={changed => onChange(value.map(item => item.id === ref.id ? changed : item))} />)}
     <button type="button" disabled={value.length >= 100} onClick={() => onChange([...value, { id: crypto.randomUUID(), title: '' }])}>{t('참고문헌 추가')}</button>
   </section>
 }
@@ -62,7 +91,7 @@ export function CitationPicker({ references, initialIds = [], onInsert, onClose,
     </label>)}</div>
     {onAdd && <details className="citation-new-reference" open={!references.length || undefined}><summary>{t('새 참고문헌')}</summary>
       <ReferenceFields value={draft} onChange={setDraft} />
-      <button type="button" disabled={error || references.length >= 100 || !(draft.title?.trim() || draft.text?.trim())} onClick={() => {
+      <button type="button" disabled={error || references.length >= 100 || !referenceLabel(draft)} onClick={() => {
         const reference = { ...draft, id: crypto.randomUUID() }
         onAdd(reference)
         setDraft({ id: '', title: '' })

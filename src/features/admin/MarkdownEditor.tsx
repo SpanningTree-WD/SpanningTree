@@ -110,7 +110,10 @@ export function MarkdownEditor(props: Props) {
           control.addEventListener('click', event => { event.preventDefault(); if (!latest.current.disabled) callback() })
           actions.append(control)
         }
-        button(this.kind === 'asset' ? '첨부 설정' : '도형 수정', () => this.kind === 'asset' ? latest.current.onAsset(this.id) : latest.current.onDiagram(this.id))
+        if (this.kind === 'diagram') button('도형 수정', () => latest.current.onDiagram(this.id))
+        else if (latest.current.assets?.find(asset => asset.id === this.id)?.mediaType.startsWith('image/')) {
+          button('첨부 설정', () => latest.current.onAsset(this.id))
+        }
         if (this.failed) button('재시도', () => latest.current.onRetry(this.id))
         button('본문에서 제거', () => {
           const token = '{{' + this.kind + ':' + this.id + '}}'

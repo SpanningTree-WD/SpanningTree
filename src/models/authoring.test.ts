@@ -11,3 +11,9 @@ it('still accepts legacy images and rejects missing diagram references', () => {
   expect(() => validateAuthoring({ content: '{{diagram:old}}', diagrams: [diagram] })).not.toThrow()
   expect(() => validateAuthoring({ content: '{{diagram:missing}}', diagrams: [diagram] })).toThrow()
 })
+it('requires the chosen reference format and preserves legacy mixed references', () => {
+  const legacy = { id: 'book', title: 'Book title', text: 'Custom citation' }
+  expect(() => validateAuthoring({ references: [legacy] })).not.toThrow()
+  expect(() => validateAuthoring({ references: [{ ...legacy, format: 'free', text: '' }] })).toThrow()
+  expect(() => validateAuthoring({ references: [{ ...legacy, format: 'structured', text: '' }] })).not.toThrow()
+})

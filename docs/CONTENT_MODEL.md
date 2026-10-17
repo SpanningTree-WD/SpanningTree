@@ -165,3 +165,22 @@ same citation appears elsewhere. The picker can create a reference and cite it
 without navigating to the full reference list. Toolbar insertion remembers the
 cursor/selection. Stale edit targets are rejected instead of overwriting text.
 Reference IDs, automatic numbering and the existing reference list are unchanged.
+
+## Summary and author editing
+
+All three editors expose `summary` directly. A nonblank value is preserved verbatim;
+an empty value is generated from prose, omitting code blocks and asset/diagram/citation
+markers. Existing summaries are not silently refreshed on body edits; the explicit
+button regenerates them. No new top-level stored fields or data migration is required.
+
+Mathematics and Publication share one author picker for `authors[]` and `authorIds[]`.
+Reading does not rewrite either array. A selected member hides a matching legacy name;
+removing that member also removes the matching fallback name (unless another selected
+member has the same name). Selecting a member explicitly converts matching plain names
+to that member's ID. Unknown IDs remain removable and names remain usable offline.
+
+`ReferenceEntry.format?: 'structured' | 'free'` records an explicit format choice.
+Legacy entries without it retain text-first rendering. Structured fields remain stored
+when free text is selected; an empty free-text citation is invalid even if hidden fields
+exist. Choosing structured format clears the active text override. The editor retains
+that text in memory while switching back and forth before leaving the page.

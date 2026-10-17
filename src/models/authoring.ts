@@ -13,6 +13,7 @@ export interface ArticleAsset {
 }
 export interface ReferenceEntry {
   id: string
+  format?: 'structured' | 'free'
   title?: string
   authors?: string
   year?: string
@@ -64,7 +65,10 @@ export function removeCitation(text: string, id: string) {
   })
 }
 export function referenceLabel(ref: ReferenceEntry) {
-  return ref.text?.trim() || [ref.authors, ref.title, ref.source, ref.year].filter(Boolean).join('. ')
+  const structured = [ref.authors, ref.title, ref.source, ref.year].filter(Boolean).join('. ')
+  if (ref.format === 'free') return ref.text?.trim() || ''
+  if (ref.format === 'structured') return structured
+  return ref.text?.trim() || structured
 }
 export function referenceLink(ref: ReferenceEntry) {
   if (safeLink(ref.url) && /^https?:/i.test(ref.url!)) return ref.url
@@ -84,7 +88,7 @@ export function validateAuthoring(input: AuthoringFields & { content?: string; d
     (asset.width !== undefined && (!Number.isFinite(asset.width) || asset.width < 10 || asset.width > 100)) ||
     (asset.align !== undefined && !['left', 'center', 'right'].includes(asset.align))))
     throw new Error('첨부 파일 정보가 올바르지 않습니다.')
-  if (refs.some(ref => !referenceLabel(ref) || Object.values(ref).some(value => typeof value !== 'string' || value.length > 5000)))
+  if (refs.some(ref => !referenceLabel(ref) || (ref.format !== undefined && !['structured', 'free'].includes(ref.format)) || Object.values(ref).some(value => typeof value !== 'string' || value.length > 5000)))
     throw new Error('참고문헌의 제목 또는 자유 형식 내용을 입력해 주세요.')
   if (citationIds(body).some(id => !refs.some(ref => ref.id === id)))
     throw new Error('삭제되거나 없는 참고문헌을 가리키는 인용을 수정해 주세요.')

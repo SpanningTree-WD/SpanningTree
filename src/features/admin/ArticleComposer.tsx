@@ -22,11 +22,11 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   const handle = useRef<MarkdownEditorHandle | null>(null)
   const pictureInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
-  const attachmentInput = useRef<HTMLInputElement>(null)
   const replaceInput = useRef<HTMLInputElement>(null)
   const replacement = useRef<ArticleAsset | undefined>(undefined)
   const [selected, setSelected] = useState<string>()
   const [preview, setPreview] = useState<string>()
+  const [attachmentsOpen, setAttachmentsOpen] = useState(false)
   const [citation, setCitation] = useState<string[]>()
   const [diagram, setDiagram] = useState<{ id?: string; language: 'tikz' | 'asymptote' }>()
   const views = uploads.views(assets)
@@ -34,6 +34,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   const previewing = views.find(asset => asset.id === preview)
   function add(files: File[], inline: boolean) {
     if (views.length + files.length > 100) { window.alert(t('첨부 파일은 글마다 최대 100개까지 사용할 수 있습니다.')); return [] }
+    setAttachmentsOpen(true)
     const ids = uploads.enqueue(files)
     if (inline && ids.length) handle.current?.insert(ids.map(assetToken).join('\n\n'), true)
     return ids
@@ -57,7 +58,6 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
     </div>
     <input hidden ref={pictureInput} aria-label={t('사진 선택')} type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={event => { add([...event.target.files ?? []], true); event.target.value = '' }} />
     <input hidden ref={fileInput} aria-label={t('파일 선택')} type="file" multiple accept="application/pdf" onChange={event => { add([...event.target.files ?? []], true); event.target.value = '' }} />
-    <input hidden ref={attachmentInput} aria-label={t('첨부 파일 선택')} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event => { add([...event.target.files ?? []], false); event.target.value = '' }} />
     <input hidden ref={replaceInput} aria-label={t('교체 파일 선택')} type="file" accept={replacement.current?.mediaType.startsWith('image/') ? 'image/jpeg,image/png,image/webp' : 'application/pdf'} onChange={event => {
       const file = event.target.files?.[0]
       if (file && replacement.current) uploads.enqueue([file], replacement.current)
@@ -91,12 +91,10 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
       </>}
     </section>}
     </ComposerDialog>}
-    <section className="composer-attachments" aria-label={t('이 글의 첨부 파일')}><h3>{t('이 글의 사진·파일')}</h3>
-      <button type="button" className="attachment-dropzone" disabled={disabled} onClick={() => attachmentInput.current?.click()}
-        onDragOver={event => { event.preventDefault(); event.stopPropagation() }}
-        onDrop={event => { event.preventDefault(); event.stopPropagation(); if (!disabled) add([...event.dataTransfer.files], false) }}>
-        {t('사진이나 파일을 끌어다 놓거나 클릭해서 첨부')}
-      </button>
+    <details className="composer-attachments" aria-label={t('이 글의 첨부 파일')} open={attachmentsOpen || !!uploads.error || views.some(asset => asset.state && asset.state !== 'ready')}
+      onToggle={event => setAttachmentsOpen(event.currentTarget.open)}>
+      <summary>{t('이 글의 사진·파일')} ({views.length})</summary>
+      <p className="field-help">{t('위의 사진 삽입·파일 첨부 버튼을 이용하세요. 본문에서 제거한 파일도 이 목록에서 다시 사용할 수 있습니다.')}</p>
       <p className="field-help">{t('JPEG·PNG·WebP: 8MB / PDF: 20MB. 여러 파일을 함께 선택할 수 있습니다.')}</p>
       <p className="field-help">{t('파일은 선택 즉시 전송됩니다. 링크를 아는 사람은 파일을 열 수 있습니다. 글 저장은 별도로 진행해 주세요.')}</p>
       {uploads.error && <div role="alert"><p>{t('일부 파일의 형식 또는 용량을 확인해 주세요.')}</p><pre>{uploads.error}</pre></div>}
@@ -112,14 +110,14 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
           <button type="button" onClick={() => handle.current?.insert(assetToken(asset.id), true)}>{t('본문에 삽입')}</button>
           {asset.state === 'failed' && <button type="button" onClick={() => uploads.retry(asset.id)}>{t('재시도')}</button>}
           {(!asset.state || asset.state === 'ready') && <>
-            <button type="button" onClick={() => setSelected(asset.id)}>{t('설정')}</button>
+            {asset.mediaType.startsWith('image/') && <button type="button" onClick={() => setSelected(asset.id)}>{t('설정')}</button>}
             <button type="button" onClick={() => { replacement.current = assets.find(item => item.id === asset.id); if (replacement.current) { replaceInput.current!.accept = asset.mediaType.startsWith('image/') ? 'image/jpeg,image/png,image/webp' : 'application/pdf'; replaceInput.current?.click() } }}>{t('교체')}</button>
           </>}
           <button type="button" onClick={() => remove(asset.id)}>{t('첨부 삭제')}</button>
         </div>
       </div>)}
       <p className="field-help">{t('본문에서 제거해도 첨부 목록에는 남습니다. 첨부 삭제는 저장 후 이 글에만 반영됩니다.')}</p>
-    </section>
+    </details>
     {previewing && <div className="asset-preview" role="dialog" aria-modal="true" aria-label={t('첨부 미리보기')}>
       <div><div className="editor-row-actions"><strong>{previewing.fileName}</strong><button type="button" autoFocus onClick={() => setPreview(undefined)}>{t('닫기')}</button></div>
         {previewing.mediaType.startsWith('image/') ? <img src={previewing.previewUrl || previewing.url} alt={previewing.alt ?? previewing.fileName} /> : <><iframe title={previewing.fileName} src={previewing.url} /><a href={previewing.url} target="_blank" rel="noopener noreferrer">{t('새 창에서 열기')} ↗</a></>}

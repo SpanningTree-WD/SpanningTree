@@ -6,7 +6,6 @@ import {
   EditorActions,
   EditorFrame,
   Field,
-  NamesField,
   SelectField,
   type Errors,
 } from './EditorFields'
@@ -15,8 +14,10 @@ import { getMathematicsFields } from '../../models/mathematicsFields'
 import { MathematicsFieldPicker } from './MathematicsFieldPicker'
 import { useAdminEditor } from './useAdminEditor'
 import { ArticleComposer } from './ArticleComposer'
-import { PeoplePicker, RelatedPicker } from './ConnectionPickers'
+import { RelatedPicker } from './ConnectionPickers'
+import { AuthorPicker } from './AuthorPicker'
 import { ArticlePreview } from './ArticlePreview'
+import { SummaryField } from './SummaryField'
 
 const empty: Mathematics = {
   id: '',
@@ -115,8 +116,10 @@ export function MathematicsEditorPage() {
           required
           onChange={(v) => set('title', v)}
         />
+        <SummaryField value={form.summary} body={form.content} onChange={value => set('summary', value)} />
+        <AuthorPicker label="작성자" authors={form.authors} authorIds={form.authorIds ?? []} onChange={(authors, ids) => { set('authors', authors); set('authorIds', ids) }} />
         <div className="admin-form-grid">
-          <NamesField label="작성자" value={form.authors} onChange={(v) => set('authors', v)} />
+
           <Field
             label="작성 연도"
             name="year"
@@ -150,7 +153,7 @@ export function MathematicsEditorPage() {
           onChange={value => set('content', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
           references={form.references ?? []} onReferences={value => set('references', value)} />
-        <PeoplePicker label="등록된 작성자" value={form.authorIds ?? []} onChange={value => set('authorIds', value)} />
+
         <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />
         </div>
         <EditorActions

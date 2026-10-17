@@ -5,6 +5,7 @@ import { MathematicsEditorPage } from './MathematicsEditorPage'
 import { PublicationEditorPage } from './PublicationEditorPage'
 import { setEditorText } from '../../test/editor'
 vi.mock('./ConnectionPickers', () => ({ PeoplePicker: () => null, RelatedPicker: () => null }))
+vi.mock('../../repositories/memberRepository', () => ({ memberRepository: { subscribe: (next: (members: unknown[]) => void) => { next([]); return () => {} } } }))
 
 const repository = vi.hoisted(() => ({ create: vi.fn(), getById: vi.fn(), update: vi.fn(), listAll: vi.fn() }))
 vi.mock('../../services/uploads/GitHubUploadService', () => ({ watchUpload: () => () => {} }))
@@ -38,8 +39,8 @@ it.each([
     value: 'Book',
   },
 ])(
-  'saves $path using only the simplified fields and supports typing multiple authors',
-  async ({ path, page, author, body, type, value }) => {
+  'saves $path with a single author selector and generated summary',
+  async ({ path, page, body, type, value }) => {
     render(
       <RouterProvider
         router={createMemoryRouter(
@@ -53,10 +54,10 @@ it.each([
     )
     await screen.findByLabelText(/제목/)
     fireEvent.change(screen.getByLabelText(/제목/), { target: { value: '수학의 시작' } })
-    const names = screen.getByLabelText(new RegExp(author))
-    for (const text of ['김하나', '김하나,', '김하나, ', '김하나, 이둘']) {
+    const names = screen.getByLabelText('이름 검색 또는 입력')
+    for (const text of ['김하나', '이둘']) {
       fireEvent.change(names, { target: { value: text } })
-      expect(names).toHaveValue(text)
+      fireEvent.keyDown(names, { key: 'Enter' })
     }
     fireEvent.change(screen.getByLabelText(new RegExp(type)), { target: { value } })
     if (path === 'mathematics')
