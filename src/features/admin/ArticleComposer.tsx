@@ -7,6 +7,8 @@ import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 import { MarkdownEditor, type MarkdownEditorHandle } from './MarkdownEditor'
 import { CitationPicker, ReferencesEditor } from './ReferencesEditor'
 import { DiagramEditor } from './DiagramEditor'
+import { ComposerDialog } from './ComposerDialog'
+import { diagramExamples, diagramFence } from '../../models/diagramSource'
 import './ArticleComposer.css'
 
 export function ArticleComposer({ value, label = '본문', assets = [], diagrams = [], references, uploads, scope, disabled, onChange, onAssets, onDiagrams, onReferences, onCover }: {
@@ -25,7 +27,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   const replacement = useRef<ArticleAsset | undefined>(undefined)
   const [selected, setSelected] = useState<string>()
   const [preview, setPreview] = useState<string>()
-  const [citation, setCitation] = useState(false)
+  const [citation, setCitation] = useState<string[]>()
   const [diagram, setDiagram] = useState<{ id?: string; language: 'tikz' | 'asymptote' }>()
   const views = uploads.views(assets)
   const editing = assets.find(asset => asset.id === selected)
@@ -49,9 +51,9 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
     <div className="composer-toolbar" role="toolbar" aria-label={t('본문 도구')}>
       <button type="button" disabled={disabled} onClick={() => pictureInput.current?.click()}>{t('사진 삽입')}</button>
       <button type="button" disabled={disabled} onClick={() => fileInput.current?.click()}>{t('파일 첨부')}</button>
-      {references && <button type="button" disabled={disabled} onClick={() => setCitation(!citation)}>{t('인용 삽입')}</button>}
-      <button type="button" disabled={disabled} onClick={() => setDiagram({ language: 'tikz' })}>{t('TikZ 도형')}</button>
-      <button type="button" disabled={disabled} onClick={() => setDiagram({ language: 'asymptote' })}>{t('Asymptote 도형')}</button>
+      {references && <button type="button" disabled={disabled} onClick={() => { handle.current?.capture(); setCitation([]) }}>{t('인용 삽입')}</button>}
+      <button type="button" disabled={disabled} onClick={() => handle.current?.insert(diagramFence({ language: 'tikz', source: diagramExamples.tikz }), true)}>{t('TikZ 코드')}</button>
+      <button type="button" disabled={disabled} onClick={() => handle.current?.insert(diagramFence({ language: 'asymptote', source: diagramExamples.asymptote }), true)}>{t('Asymptote 코드')}</button>
     </div>
     <input hidden ref={pictureInput} aria-label={t('사진 선택')} type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={event => { add([...event.target.files ?? []], true); event.target.value = '' }} />
     <input hidden ref={fileInput} aria-label={t('파일 선택')} type="file" multiple accept="application/pdf" onChange={event => { add([...event.target.files ?? []], true); event.target.value = '' }} />
@@ -61,7 +63,10 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
       if (file && replacement.current) uploads.enqueue([file], replacement.current)
       event.target.value = ''
     }} />
-    {citation && references && <CitationPicker references={references} onInsert={text => handle.current?.insert(text)} onClose={() => setCitation(false)} />}
+    {citation && references && <ComposerDialog label={t(citation.length ? '인용 수정' : '인용 삽입')} onClose={() => setCitation(undefined)} restoreFocus={() => handle.current?.focus()}>
+      <CitationPicker references={references} initialIds={citation} onInsert={text => handle.current?.insertCaptured(text) ?? false} onClose={() => setCitation(undefined)}
+        onAdd={onReferences ? ref => onReferences([...references, ref]) : undefined} />
+    </ComposerDialog>}
     {diagram && <DiagramEditor key={diagram.id ?? diagram.language} scope={scope} language={diagram.language} value={diagrams.find(item => item.id === diagram.id)} onClose={() => setDiagram(undefined)} onSave={item => {
       onDiagrams([...diagrams.filter(old => old.id !== item.id), item])
       if (!value.includes('{{diagram:' + item.id + '}}')) handle.current?.insert('{{diagram:' + item.id + '}}', true)
@@ -69,19 +74,23 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
     }} />}
     <MarkdownEditor handle={handle} label={t(label)} value={value} onChange={onChange} assets={views} diagrams={diagrams} references={references} disabled={disabled}
       onFiles={files => add(files, false)} onAsset={setSelected} onRetry={uploads.retry}
+      onCitation={setCitation}
       onDiagram={id => { const found = diagrams.find(item => item.id === id); if (found) setDiagram({ id, language: found.language }) }} />
     <p className="field-help">{t('사진을 붙여넣거나 본문에 끌어다 놓으면 커서 위치에 삽입됩니다. 마크다운과 $…$, $$…$$ 수식을 사용할 수 있습니다.')}</p>
-    {selected && !editing && <p role="status">{t('업로드가 완료되면 크기·정렬·설명을 수정할 수 있습니다.')}</p>}
-    {editing && <section className="asset-settings" aria-label={t('첨부 설정')}><div className="editor-row-actions"><h3>{editing.fileName}</h3><button type="button" onClick={() => setSelected(undefined)}>{t('닫기')}</button></div>
+    <p className="field-help">{t('본문에 tikz 또는 asymptote 코드 블록을 쓰면 바로 아래에 그림이 표시됩니다. 사진이나 인용 번호를 누르면 수정할 수 있습니다.')}</p>
+    {selected && <ComposerDialog label={t('첨부 설정')} onClose={() => setSelected(undefined)} restoreFocus={() => handle.current?.focus()}>
+      {!editing ? <><p role="status">{t('업로드가 완료되면 크기·정렬·설명을 수정할 수 있습니다.')}</p><button type="button" onClick={() => setSelected(undefined)}>{t('닫기')}</button></> : <section className="asset-settings" aria-label={t('첨부 설정')}><div className="editor-row-actions"><h3>{editing.fileName}</h3><button type="button" onClick={() => setSelected(undefined)}>{t('닫기')}</button></div>
       {editing.mediaType.startsWith('image/') && <>
+        <img className="asset-settings-preview" src={editing.url} alt={editing.alt ?? editing.fileName} />
         <div className="reference-fields">
           <label className="admin-field"><span>{t('대체 텍스트')}</span><input value={editing.alt ?? ''} maxLength={1000} onChange={event => update({ alt: event.target.value })} /></label>
           <label className="admin-field"><span>{t('캡션')}</span><input value={editing.caption ?? ''} maxLength={5000} onChange={event => update({ caption: event.target.value })} /></label>
           <label className="admin-field"><span>{t('너비 (본문 대비 %)')}</span><input type="number" min={10} max={100} value={editing.width ?? 100} onChange={event => update({ width: Math.max(10, Math.min(100, Number(event.target.value))) })} /></label>
-          <label className="admin-field"><span>{t('정렬')}</span><select value={editing.align ?? 'center'} onChange={event => update({ align: event.target.value as ArticleAsset['align'] })}><option value="left">{t('왼쪽')}</option><option value="center">{t('가운데')}</option><option value="right">{t('오른쪽')}</option></select></label>
+          <label className="admin-field"><span>{t('정렬')}</span><select aria-label={t('정렬')} value={editing.align ?? 'center'} onChange={event => update({ align: event.target.value as ArticleAsset['align'] })}><option value="left">{t('왼쪽')}</option><option value="center">{t('가운데')}</option><option value="right">{t('오른쪽')}</option></select></label>
         </div><button type="button" onClick={() => onCover(editing)}>{t('대표 이미지로 사용')}</button>
       </>}
     </section>}
+    </ComposerDialog>}
     <section className="composer-attachments" aria-label={t('이 글의 첨부 파일')}><h3>{t('이 글의 사진·파일')}</h3>
       <button type="button" className="attachment-dropzone" disabled={disabled} onClick={() => attachmentInput.current?.click()}
         onDragOver={event => { event.preventDefault(); event.stopPropagation() }}

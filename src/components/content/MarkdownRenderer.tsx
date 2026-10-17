@@ -1,11 +1,12 @@
 import DOMPurify from 'dompurify'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { hydrateBrowserDiagrams } from './browserDiagrams'
 import { renderMath } from './mathjax'
 import { Marked } from 'marked'
 import { useT } from '../../i18n/LanguageProvider'
 import { referenceLabel, referenceLink, type AssetView, type DiagramBlock, type ReferenceEntry } from '../../models/authoring'
 import { fileSizeLabel, isUploadUrl } from '../../services/uploads/uploadTypes'
+import { diagramFromFence } from '../../models/diagramSource'
 import './AuthoringContent.css'
 
 export interface RenderOptions {
@@ -27,9 +28,23 @@ export function assetMarkup(asset: AssetView | undefined, t: (text: string) => s
   if (image) return '<figure class="body-image align-' + align + '" style="width:' + width + '%" data-asset-id="' + escapeHtml(asset.id) + '">' + (source ? '<img src="' + escapeHtml(source) + '" alt="' + escapeHtml(asset.alt ?? asset.fileName) + '" loading="lazy">' : '<span class="asset-placeholder">▧</span>') + state + (asset.caption ? '<figcaption>' + escapeHtml(asset.caption) + '</figcaption>' : '') + '</figure>'
   return '<div class="body-file" data-asset-id="' + escapeHtml(asset.id) + '"><span aria-hidden="true">PDF</span><div>' + (source ? '<a href="' + escapeHtml(source) + '" target="_blank" rel="noopener noreferrer" download>' + escapeHtml(asset.fileName) + '</a>' : escapeHtml(asset.fileName)) + '<small>PDF' + (asset.size ? ' · ' + fileSizeLabel(asset.size) : '') + '</small>' + state + '</div></div>'
 }
-export function renderMarkdown(markdown: string, options: RenderOptions = {}): string {
+function browserDiagramMarkup(diagram: DiagramBlock, t: (text: string) => string) {
+  return '<figure class="body-image align-center browser-diagram" data-browser-diagram="' + escapeHtml(diagram.id) + '" data-diagram-hash="' + escapeHtml(diagram.sourceHash ?? '') + '"><div class="browser-diagram-output"><p role="status">' + escapeHtml(t('도형을 그리는 중…')) + '</p></div>' + (diagram.caption ? '<figcaption>' + escapeHtml(diagram.caption) + '</figcaption>' : '') + '</figure>'
+}
+export function renderArticleContent(markdown: string, options: RenderOptions = {}) {
   const t = options.t ?? (text => text)
   const engine = new Marked({ breaks: false, gfm: true })
+  const diagrams = [...options.diagrams ?? []]
+  const ids = new Set(diagrams.map(diagram => diagram.id))
+  let nextDiagram = 0
+  engine.use({ renderer: { code(token) {
+    let id: string
+    do { id = 'source-diagram-' + nextDiagram++ } while (ids.has(id))
+    const diagram = diagramFromFence(token, id)
+    if (!diagram) return false
+    ids.add(id); diagrams.push(diagram)
+    return browserDiagramMarkup(diagram, t)
+  } } })
   const math = (expression: string, displayMode: boolean) => renderMath(expression.trim(), displayMode)
   engine.use({ extensions: [
     {
@@ -58,7 +73,7 @@ export function renderMarkdown(markdown: string, options: RenderOptions = {}): s
       renderer(token) {
         if (token.kind === 'asset') return assetMarkup(options.assets?.find(asset => asset.id === token.id), t)
         const diagram = options.diagrams?.find(item => item.id === token.id)
-        if (diagram?.renderer === 'browser-v1') return '<figure class="body-image align-center browser-diagram" data-browser-diagram="' + escapeHtml(diagram.id) + '" data-diagram-hash="' + escapeHtml(diagram.sourceHash ?? '') + '"><div class="browser-diagram-output"><p role="status">' + escapeHtml(t('도형을 그리는 중…')) + '</p></div>' + (diagram.caption ? '<figcaption>' + escapeHtml(diagram.caption) + '</figcaption>' : '') + '</figure>'
+        if (diagram?.renderer === 'browser-v1') return browserDiagramMarkup(diagram, t)
         if (!diagram?.url || !isUploadUrl(diagram.url)) return '<aside class="asset-error">' + escapeHtml(t('도형을 렌더링해 주세요.')) + '</aside>'
         return '<figure class="body-image align-center"><img src="' + escapeHtml(diagram.url) + '" alt="' + escapeHtml(diagram.alt || diagram.language) + '">' + (diagram.caption ? '<figcaption>' + escapeHtml(diagram.caption) + '</figcaption>' : '') + '</figure>'
       },
@@ -75,9 +90,13 @@ export function renderMarkdown(markdown: string, options: RenderOptions = {}): s
       }).join(', ') + '</span>',
     },
   ] })
-  return DOMPurify.sanitize(engine.parse(markdown, { async: false }) as string, {
+  const html = DOMPurify.sanitize(engine.parse(markdown, { async: false }) as string, {
     USE_PROFILES: { html: true, svg: true, mathMl: true }, ADD_ATTR: ['aria-hidden'], ALLOWED_URI_REGEXP: safeContentUris,
   })
+  return { html, diagrams }
+}
+export function renderMarkdown(markdown: string, options: RenderOptions = {}): string {
+  return renderArticleContent(markdown, options).html
 }
 export function ReferenceList({ references = [] }: { references?: ReferenceEntry[] }) {
   const t = useT()
@@ -91,9 +110,10 @@ export function ReferenceList({ references = [] }: { references?: ReferenceEntry
 export function MarkdownRenderer({ content, className = '', ...options }: RenderOptions & { content: string; className?: string }) {
   const t = useT()
   const root = useRef<HTMLDivElement>(null)
-  const html = renderMarkdown(content, { ...options, t })
+  const { assets, diagrams: legacyDiagrams, references } = options
+  const { html, diagrams } = useMemo(() => renderArticleContent(content, { assets, diagrams: legacyDiagrams, references, t }), [content, assets, legacyDiagrams, references, t])
   useEffect(() => {
-    if (root.current) return hydrateBrowserDiagrams(root.current, options.diagrams ?? [], t)
-  }, [html, options.diagrams, t])
+    if (root.current) return hydrateBrowserDiagrams(root.current, diagrams, t)
+  }, [html, diagrams, t])
   return <div ref={root} className={('markdown-content ' + className).trim()} dangerouslySetInnerHTML={{ __html: html }} />
 }

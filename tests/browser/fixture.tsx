@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ComposerFixture } from './composer-fixture'
 import { DiagramEditor } from '../../src/features/admin/DiagramEditor'
 import { MarkdownRenderer } from '../../src/components/content/MarkdownRenderer'
 import type { DiagramBlock } from '../../src/models/authoring'
@@ -21,4 +22,4 @@ function Fixture() {
     {saved && <><h2>Reader</h2><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }} data-testid="saved">{JSON.stringify(saved)}</pre><MarkdownRenderer content={'{{diagram:' + saved.id + '}}'} diagrams={[saved]} /></>}
   </main>
 }
-createRoot(document.getElementById('root')!).render(<Fixture />)
+createRoot(document.getElementById('root')!).render(location.search.includes('composer') ? <ComposerFixture /> : <Fixture />)

@@ -118,8 +118,50 @@ Create application-level types/models and a separate data/service layer.
 
 ## Browser-rendered diagrams
 
-`diagrams[]` retains `id`, `language` (`tikz` or `asymptote`), `source`,
-`sourceHash`, `alt?`, and `caption?`. New records have `renderer: "browser-v1"`
-and do not require an image `url`. SVG is generated and cached only in the
-browser. Existing records without this marker continue using their uploaded PNG
-URL. The body still references `{{diagram:ID}}`; no content migration is needed.
+New diagrams live directly in `content` / `description` as fenced Markdown:
+
+````markdown
+```tikz caption="Figure 1" alt="An arrow from the origin"
+\begin{tikzpicture}
+\draw[->] (0,0) -- (2,1);
+\end{tikzpicture}
+```
+
+```asymptote
+size(160);
+draw(unitcircle);
+```
+````
+
+- Fence languages are `tikz`, `asymptote`, and the alias `asy` (case insensitive).
+  Backtick and tilde fences follow Markdown rules, including quoted/list blocks.
+- Optional `caption` and `alt` values use double-quoted JSON strings on the
+  opening fence; escape embedded quotes as `\"`. Unknown attributes or invalid
+  metadata leave an ordinary code block. Unclosed fences also stay as code.
+- In the editor, source remains editable and a preview appears below each
+  complete diagram fence after a short debounce. Public articles and article
+  previews use the same rendering pipeline. To display a syntax example, wrap
+  it in a longer fence labeled `markdown` or use `tex` for literal TeX code.
+- Only Markdown source is persisted; derived IDs and rendered SVG are not added
+  to article metadata. Rendering uses the existing isolated browser workers,
+  sanitized SVG, source cache, 20,000-character source limit and timeout.
+  An error is local to its diagram with a retry button; the source remains editable.
+- Existing `{{diagram:ID}}` tokens and `diagrams[]` records remain supported.
+  Records with `renderer: "browser-v1"` use their saved source and `sourceHash`;
+  older records use their PNG `url`. Existing diagrams can still be edited with
+  their original editor. No migration or rewrite happens on read.
+
+## Editing images and citations
+
+Image paste, drag-and-drop and file selection insert `{{asset:ID}}` at the current
+cursor. Clicking an inline image or its settings button opens a modal with live
+caption, alternative text, width and alignment controls. Closing the modal or
+pressing Escape returns to editing. Removing a body insertion keeps the file in
+the attachment list; replacing/deleting attachments retains the existing behavior.
+
+Clicking a citation number opens a picker with that occurrence's references
+selected. Applying or removing changes only the clicked occurrence, even if the
+same citation appears elsewhere. The picker can create a reference and cite it
+without navigating to the full reference list. Toolbar insertion remembers the
+cursor/selection. Stale edit targets are rejected instead of overwriting text.
+Reference IDs, automatic numbering and the existing reference list are unchanged.

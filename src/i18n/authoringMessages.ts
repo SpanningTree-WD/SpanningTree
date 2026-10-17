@@ -1,5 +1,14 @@
 import type { Language } from './locale'
 export const authoringMessages: Record<string, Record<Language, string>> = {
+  "TikZ 코드": {"ko": "TikZ 코드", "en": "TikZ code"},
+  "Asymptote 코드": {"ko": "Asymptote 코드", "en": "Asymptote code"},
+  "도형 미리보기": {"ko": "도형 미리보기", "en": "Diagram preview"},
+  "인용 수정": {"ko": "인용 수정", "en": "Edit citation"},
+  "문헌 추가하고 인용": {"ko": "문헌 추가하고 인용", "en": "Add reference and cite"},
+  "인용 변경": {"ko": "인용 변경", "en": "Update citation"},
+  "이 인용 제거": {"ko": "이 인용 제거", "en": "Remove this citation"},
+  "편집 위치가 바뀌었습니다. 닫은 뒤 본문에서 인용 위치를 다시 선택해 주세요.": {"ko": "편집 위치가 바뀌었습니다. 닫은 뒤 본문에서 인용 위치를 다시 선택해 주세요.", "en": "The insertion point changed. Close this dialog and select the citation location again."},
+  "본문에 tikz 또는 asymptote 코드 블록을 쓰면 바로 아래에 그림이 표시됩니다. 사진이나 인용 번호를 누르면 수정할 수 있습니다.": {"ko": "본문에 tikz 또는 asymptote 코드 블록을 쓰면 바로 아래에 그림이 표시됩니다. 사진이나 인용 번호를 누르면 수정할 수 있습니다.", "en": "Write a tikz or asymptote code block to preview the diagram below it. Click an image or citation number to edit it."},
   "도형은 이 브라우저에서 바로 그립니다. 처음에는 엔진을 불러오는 시간이 필요하며, 글에는 소스 코드가 저장됩니다.": {"ko": "도형은 이 브라우저에서 바로 그립니다. 처음에는 엔진을 불러오는 시간이 필요하며, 글에는 소스 코드가 저장됩니다.", "en": "Diagrams render in this browser. The engine loads on first use; only source code is saved in the article."},
   "도형을 그리는 중…": {"ko": "도형을 그리는 중…", "en": "Rendering diagram…"},
   "도형 렌더링 시간이 초과되었습니다. 소스를 확인한 뒤 재시도해 주세요.": {"ko": "도형 렌더링 시간이 초과되었습니다. 소스를 확인한 뒤 재시도해 주세요.", "en": "Diagram rendering timed out. Check the source and retry."},
