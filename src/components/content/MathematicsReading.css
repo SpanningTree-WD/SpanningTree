@@ -1,0 +1,70 @@
+/* Shared by the public mathematics reader and its authoring preview. */
+.detail-page.mathematics-detail {
+  --reading-width: 740px;
+  padding-top: 36px;
+}
+
+.mathematics-detail .content-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+}
+
+.mathematics-detail .content-header h1 {
+  font-size: clamp(30px, 3.4vw, 48px);
+  line-height: 1.25;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.mathematics-detail .detail-summary {
+  max-width: none;
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.mathematics-detail .detail-summary > :last-child {
+  margin-bottom: 0;
+}
+
+.mathematics-detail .reading-body {
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.mathematics-detail .markdown-content {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.mathematics-detail .reading-body .markdown-content :is(p, ul, ol) {
+  margin: 0 0 0.85em;
+}
+
+.mathematics-detail .reading-body .markdown-content h2 {
+  font-size: 26px;
+  line-height: 1.35;
+  margin: 1.6em 0 0.65em;
+  scroll-margin-top: 112px;
+}
+
+/* Keep each display equation intact, with horizontal scrolling when needed. */
+.mathematics-detail .markdown-content .mathjax-display {
+  margin-block: 0.75em;
+  overflow-x: auto;
+}
+
+@media (max-width: 650px) {
+  .detail-page.mathematics-detail {
+    padding-top: 24px;
+  }
+
+  .mathematics-detail .reading-body {
+    font-size: 17px;
+  }
+
+  .mathematics-detail .reading-body .markdown-content h2 {
+    font-size: 23px;
+  }
+}

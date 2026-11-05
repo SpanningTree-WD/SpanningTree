@@ -48,6 +48,17 @@ export function renderArticleContent(markdown: string, options: RenderOptions = 
   const math = (expression: string, displayMode: boolean) => renderMath(expression.trim(), displayMode)
   engine.use({ extensions: [
     {
+      // A math delimiter before ** and a Korean particle after it makes the
+      // CommonMark closing delimiter ambiguous: **degree $2$**의.
+      name: 'mathStrong', level: 'inline', start: src => src.indexOf('**'),
+      tokenizer(src) {
+        const match = /^\*\*(\S(?:(?!\*\*)[^\n])*?)\*\*(?=[가-힣])/.exec(src)
+        if (!match || /\s$/.test(match[1]) || !/(?:\\\([\s\S]+?\\\)|\$(?!\$)[^\n$]+\$)/.test(match[1])) return
+        return { type: 'mathStrong', raw: match[0], tokens: this.lexer.inlineTokens(match[1]) }
+      },
+      renderer(token) { return '<strong>' + this.parser.parseInline(token.tokens ?? []) + '</strong>' },
+    },
+    {
       name: 'mathBlock', level: 'block',
       start: src => src.search(/\$\$|\\\[/),
       tokenizer(src) {

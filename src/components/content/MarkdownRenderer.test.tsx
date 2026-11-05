@@ -5,6 +5,21 @@ afterEach(cleanup)
 
 describe('MarkdownRenderer with MathJax', () => {
   it.each([
+    ['이 map은 **degree $2$**의 map이다.', '2'],
+    ['**real dimension \\(2\\)**인 대상을 만든다.', '2'],
+    ['**dimension $n+1$**에서는 다르다.', 'n+1'],
+  ])('renders emphasized mathematics followed by a Korean particle: %s', (content, expression) => {
+    const { container } = render(<MarkdownRenderer content={content} />)
+    expect(container.querySelector('strong .mathjax-inline')).toHaveAttribute('aria-label', expression)
+    expect(container.textContent).not.toContain('**')
+  })
+  it('preserves ordinary emphasis, escaped markers and code alongside Korean math emphasis', () => {
+    const { container } = render(<MarkdownRenderer content={'**실수**와 **complex dimension $1$**, `**degree $2$**의` 및 \\*\\*literal\\*\\*.'} />)
+    expect(container.querySelectorAll('strong')).toHaveLength(2)
+    expect(container.querySelector('code')?.textContent).toBe('**degree $2$**의')
+    expect(container.textContent).toContain('**literal**')
+  })
+  it.each([
     '\\{(x,y)\\in\\mathbb R^2:F(x,y)=0\\}',
     'x,y\\in\\mathbb C,\\quad\\mathbb C^2\\cong\\mathbb R^4',
     '\\mathcal O_X \\otimes \\mathscr F',

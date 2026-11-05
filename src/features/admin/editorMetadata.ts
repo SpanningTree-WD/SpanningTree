@@ -1,4 +1,4 @@
-import { marked, type Token } from 'marked'
+import { contentExcerpt } from '../../models/contentExcerpt'
 
 interface EditorMetadata {
   title: string
@@ -8,31 +8,8 @@ interface EditorMetadata {
   coverImage: { alt: string; variant: string; caption?: string }
 }
 
-function plainSummary(source: string) {
-  const text = source
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]*>/g, '')
-    .replace(/^[\s#>*-]+/gm, '')
-    .replace(/[`*_]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-  return text.length > 160 ? text.slice(0, 157) + '…' : text
-}
-
-function summaryText(tokens: Token[]): string {
-  return tokens.map(token => {
-    if (token.type === 'code') return ''
-    if (token.type === 'list') return summaryText(token.items)
-    if ('tokens' in token && token.tokens) return summaryText(token.tokens)
-    return token.raw
-  }).join(' ')
-}
-
 export function contentSummary(record: EditorMetadata) {
-  const source = record.content ?? record.description ?? ''
-  return plainSummary(summaryText(marked.lexer(source))
-    .replace(/\{\{(?:asset|diagram):[^}]+\}\}|\[@[^\]]+\]/g, ''))
+  return contentExcerpt(record.content ?? record.description ?? '')
 }
 
 export function prepareEditorRecord<T extends EditorMetadata>(form: T, previous: T): T {

@@ -4,12 +4,14 @@ import type { Activity } from '../../models/activity'
 import type { Mathematics } from '../../models/mathematics'
 import type { Publication } from '../../models/publication'
 import { formatMathematicsFields } from '../../models/mathematicsFields'
+import { detailSummary } from '../../models/contentExcerpt'
 import { AttachmentList, type PendingAttachment } from './AttachmentList'
 import { ContentImage } from './ContentImage'
 import { MarkdownRenderer, ReferenceList, assetMarkup, safeContentUris } from './MarkdownRenderer'
 import type { AssetView } from '../../models/authoring'
 import { PersonLinks } from './PersonLinks'
 import DOMPurify from 'dompurify'
+import './MathematicsReading.css'
 
 interface DetailProps<T> {
   record: T
@@ -64,16 +66,17 @@ export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFi
 
 export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Mathematics>) {
   const t = useT()
+  const summary = detailSummary(r.summary, r.content)
 
   return (
-    <article className="page-container detail-page">
+    <article className="page-container detail-page mathematics-detail">
       <header className="content-header">
         <p className="eyebrow">{t('Mathematics')} · {formatMathematicsFields(r)}</p>
         <h1>{r.title}</h1>
         <div className="detail-meta">
           <PersonLinks ids={r.authorIds} legacy={r.authors} /> · {r.type} · {formatMathematicsFields(r)} · {r.year}
         </div>
-        <p className="detail-summary">{r.summary}</p>
+        {summary && <MarkdownRenderer className="detail-summary" content={summary} references={r.references} />}
       </header>
       {(r.coverImage.url || imagePreviewUrl?.startsWith('blob:')) && (
         <ContentImage className="detail-hero" media={r.coverImage} previewUrl={imagePreviewUrl} />
