@@ -140,6 +140,36 @@ it('does not accept blob URLs from persisted media or arbitrary preview URLs', (
   expect(screen.getByRole('img', { name: coverImage.alt })).toHaveAttribute('src', imageUrl)
 })
 
+it.each([undefined, 'https://unrelated.example/image.png', pdf.url])(
+  'omits missing or unsupported detail covers without leaving a publication column (%s)',
+  (url) => {
+    const missingCover = { alt: '없는 표지', variant: 'a', url }
+    const rendered = render(<ActivityDetail record={{ ...activity, coverImage: missingCover, gallery: [missingCover] }} />)
+    expect(rendered.container.querySelector('.detail-hero')).toBeNull()
+    expect(rendered.container.querySelector('.gallery')).toBeNull()
+    expect(screen.getByText(activity.description)).toBeInTheDocument()
+    rendered.rerender(<MathematicsDetail record={{ ...mathematics, coverImage: missingCover }} />)
+    expect(rendered.container.querySelector('.detail-hero')).toBeNull()
+    expect(screen.getByRole('heading', { name: '본문 제목' })).toBeInTheDocument()
+    rendered.rerender(<PublicationDetail record={{ ...publication, coverImage: missingCover }} />)
+    expect(rendered.container.querySelector('.detail-cover')).toBeNull()
+    expect(rendered.container.querySelector('.publication-detail-grid')).toHaveClass('publication-detail-no-cover')
+    expect(screen.getByText(publication.description)).toBeInTheDocument()
+  }
+)
+
+it('uses metadata in list covers and replaces it with the attached image when available', () => {
+  const fallback = { title: '긴 제목의 수학 자료', year: 2026, category: 'Article' }
+  const rendered = render(<ContentImage media={{ alt: '', variant: 'blue' }} fallback={fallback} />)
+  expect(screen.getByRole('img', { name: '긴 제목의 수학 자료 · Article · 2026' })).toHaveClass('content-cover')
+  expect(screen.getByText(fallback.title)).toBeInTheDocument()
+  expect(screen.getByText('2026')).toBeInTheDocument()
+  expect(screen.getByText('Article')).toBeInTheDocument()
+  rendered.rerender(<ContentImage media={coverImage} fallback={fallback} />)
+  expect(screen.getByRole('img', { name: coverImage.alt })).toHaveAttribute('src', imageUrl)
+  expect(rendered.container.querySelector('.content-cover')).toBeNull()
+})
+
 it('drops the previous article image and attachments when previewing a new record', () => {
   const rendered = render(<ArticlePreview collection="mathematics" record={mathematics} />)
   rendered.rerender(

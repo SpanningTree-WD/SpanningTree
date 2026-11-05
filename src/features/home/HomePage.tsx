@@ -1,3 +1,4 @@
+import { activityTypes, publicationTypes } from '../../models/contentOptions'
 import { useT } from '../../i18n/LanguageProvider'
 import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { usePageMetadata } from '../shared/usePageMetadata'
@@ -58,7 +59,8 @@ export function HomePage() {
                 {data.activities.map((item) => (
                   <article className="mini-card" key={item.id}>
                     <Link to={`/activities/${item.slug}`}>
-                      <ContentImage className="photo" media={item.coverImage} />
+                      <ContentImage className="photo" media={item.coverImage}
+                        fallback={{ title: item.title, year: item.date.slice(0, 4), category: t(activityTypes.find(([value]) => value === item.type)?.[1] ?? item.type) }} />
                       <div className="mini-meta">
                         <strong>{item.title}</strong>
                         <small>{item.date.replaceAll('-', '.')}</small>
@@ -90,7 +92,11 @@ export function HomePage() {
                   <ContentImage
                     className="cover"
                     media={data.publication.coverImage}
-                    title={data.publication.title}
+                    fallback={{
+                      title: data.publication.title,
+                      year: data.publication.year,
+                      category: t(publicationTypes.find(([value]) => value === data.publication?.type)?.[1] ?? data.publication.type),
+                    }}
                   />
                   <div>
                     <h3 className="publication-feature-title">{data.publication.title}</h3>

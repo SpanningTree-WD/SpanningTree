@@ -654,6 +654,48 @@ main {
   background:#4a3328;
   color:#f8efe3
 }
+/* Metadata covers are used only in lists; full titles remain beside them. */
+.content-cover, .archive-row .content-cover {
+  width:100%;
+  aspect-ratio:auto;
+  min-width:0;
+  min-height:132px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  padding:12px;
+  border:1px solid var(--color-line);
+  border-top:3px solid var(--color-green);
+  background:var(--color-paper);
+  color:var(--color-text);
+  font-family:var(--font-sans);
+  line-height:1.4
+}
+.content-cover::after { content:none; }
+.cover.content-cover { aspect-ratio:2/3; }
+.content-cover .content-cover-year {
+  color:var(--color-green);
+  font-size:11px;
+  font-variant-numeric:tabular-nums
+}
+.content-cover .content-cover-title {
+  flex-shrink:0;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  font-size:14px;
+  font-weight:600;
+  line-height:1.4
+}
+.content-cover .content-cover-category {
+  margin-top:auto;
+  color:var(--color-muted);
+  font-size:11px;
+  overflow-wrap:anywhere
+}
 .article-link {
   font-size:13px;
   color:var(--color-green);
@@ -808,6 +850,10 @@ main {
   grid-template-columns:280px 1fr;
   gap:60px;
   align-items:start
+}
+.publication-detail-no-cover {
+  max-width:var(--reading-width);
+  grid-template-columns:minmax(0,1fr)
 }
 .detail-cover {
   width:100%;

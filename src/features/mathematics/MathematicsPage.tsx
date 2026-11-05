@@ -16,7 +16,15 @@ export function MathematicsArchiveRow({ item }: { item: Mathematics }) {
   return (
     <article className="archive-row math-row">
       <Link to={`/mathematics/${item.slug}`}>
-        <ContentImage className="math-cover" media={item.coverImage} title={item.title} />
+        <ContentImage
+          className="math-cover"
+          media={item.coverImage}
+          fallback={{
+            title: item.title,
+            year: item.year,
+            category: t(mathematicsTypes.find(([value]) => value === item.type)?.[1] ?? item.type),
+          }}
+        />
       </Link>
       <div>
         <h2>

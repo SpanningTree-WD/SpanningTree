@@ -10,10 +10,12 @@ import { activityTypes } from '../../models/contentOptions'
 import { archiveFilter } from '../shared/archiveFilters'
 import { useArchiveResults } from '../shared/useArchiveResults'
 export function ActivityArchiveRow({ item }: { item: Activity }) {
+  const t = useT()
   return (
     <article className="archive-row">
       <Link to={`/activities/${item.slug}`}>
-        <ContentImage className="thumb photo" media={item.coverImage} />
+        <ContentImage className="thumb photo" media={item.coverImage}
+          fallback={{ title: item.title, year: item.date.slice(0, 4), category: t(activityTypes.find(([value]) => value === item.type)?.[1] ?? item.type) }} />
       </Link>
       <div>
         <h2>

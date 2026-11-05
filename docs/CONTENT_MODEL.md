@@ -84,8 +84,12 @@ Possible types:
 ## Implemented uploaded media
 
 `MediaReference` retains `alt`, `variant`, optional `caption`, and adds optional
-`url` for a GitHub-uploaded JPEG/PNG/WebP file. `variant` remains the prototype
-fallback when no image has been attached.
+`url` for a GitHub-uploaded JPEG/PNG/WebP file. `variant` is retained for stored
+record compatibility; it no longer selects a decorative placeholder. Lists and
+homepage cards show a shared title/year/type cover when no valid image is attached.
+Detail pages omit the cover entirely, and publications use a single reading column.
+Activity galleries omit entries without a valid image and hide an empty gallery.
+These display rules do not modify saved records or select a body image automatically.
 
 PDF attachment metadata is `{ label, fileName, mediaType, sizeLabel, url? }`.
 Mathematics uses `attachments[]`; Activity adds optional `attachments[]`;

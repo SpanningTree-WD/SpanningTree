@@ -10,10 +10,19 @@ import { publicationTypes } from '../../models/contentOptions'
 import { archiveFilter } from '../shared/archiveFilters'
 import { useArchiveResults } from '../shared/useArchiveResults'
 export function PublicationArchiveRow({ item }: { item: Publication }) {
+  const t = useT()
   return (
     <article className="archive-row publication-row">
       <Link className="cover-thumb" to={`/publications/${item.slug}`}>
-        <ContentImage className="cover" media={item.coverImage} title={item.title} />
+        <ContentImage
+          className="cover"
+          media={item.coverImage}
+          fallback={{
+            title: item.title,
+            year: item.year,
+            category: t(publicationTypes.find(([value]) => value === item.type)?.[1] ?? item.type),
+          }}
+        />
       </Link>
       <div>
         <h2>

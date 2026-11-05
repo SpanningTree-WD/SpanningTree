@@ -7,6 +7,7 @@ import { formatMathematicsFields } from '../../models/mathematicsFields'
 import { detailSummary } from '../../models/contentExcerpt'
 import { AttachmentList, type PendingAttachment } from './AttachmentList'
 import { ContentImage } from './ContentImage'
+import { contentImageSource } from './contentImageSource'
 import { MarkdownRenderer, ReferenceList, assetMarkup, safeContentUris } from './MarkdownRenderer'
 import type { AssetView } from '../../models/authoring'
 import { PersonLinks } from './PersonLinks'
@@ -32,6 +33,7 @@ function ArticleAssetList({ assets = [], excluded = [] }: { assets?: AssetView[]
 // are kept separate from the persisted record and accepted only by ContentImage.
 export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Activity>) {
   const t = useT()
+  const gallery = r.gallery.filter(media => contentImageSource(media))
 
   return (
     <article className="page-container detail-page">
@@ -48,15 +50,15 @@ export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFi
       <div className="reading-body">
         <MarkdownRenderer content={r.description} assets={assetViews ?? r.assets} diagrams={r.diagrams} />
       </div>
-      <section className="gallery">
+      {gallery.length > 0 && <section className="gallery">
         <h2>{t("Gallery")}</h2>
-        {r.gallery.map((media) => (
+        {gallery.map((media) => (
           <figure key={media.alt}>
             <ContentImage className="photo" media={media} />
             <figcaption>{media.caption}</figcaption>
           </figure>
         ))}
-      </section>
+      </section>}
       <AttachmentList files={r.attachments ?? []} pendingFiles={pendingFiles} />
       <ArticleAssetList assets={assetViews ?? r.assets} excluded={[r.coverImage.url, ...(r.attachments ?? []).map(file => file.url)]} />
       {children}
@@ -78,9 +80,7 @@ export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendin
         </div>
         {summary && <MarkdownRenderer className="detail-summary" content={summary} references={r.references} />}
       </header>
-      {(r.coverImage.url || imagePreviewUrl?.startsWith('blob:')) && (
-        <ContentImage className="detail-hero" media={r.coverImage} previewUrl={imagePreviewUrl} />
-      )}
+      <ContentImage className="detail-hero" media={r.coverImage} previewUrl={imagePreviewUrl} />
       <div className="reading-body">
         <MarkdownRenderer content={r.content} assets={assetViews ?? r.assets} diagrams={r.diagrams} references={r.references} />
         <ReferenceList references={r.references} />
@@ -94,6 +94,7 @@ export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendin
 
 export function PublicationDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Publication>) {
   const t = useT()
+  const hasCover = Boolean(contentImageSource(r.coverImage, imagePreviewUrl))
 
   return (
     <article className="page-container detail-page">
@@ -105,11 +106,10 @@ export function PublicationDetail({ record: r, children, imagePreviewUrl, pendin
         </div>
         <p className="detail-summary">{r.summary}</p>
       </header>
-      <div className="publication-detail-grid">
+      <div className={`publication-detail-grid${hasCover ? '' : ' publication-detail-no-cover'}`}>
         <ContentImage
           className="cover detail-cover"
           media={r.coverImage}
-          title={r.title}
           previewUrl={imagePreviewUrl}
         />
         <div>
