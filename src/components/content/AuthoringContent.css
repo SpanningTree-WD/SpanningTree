@@ -25,3 +25,8 @@
 .content-header h1,.page-head h1,.admin-page-head h1{overflow-wrap:anywhere;line-height:1.15}
 .detail-meta{overflow-wrap:anywhere;line-height:1.8}.section-head{flex-wrap:wrap;gap:.7rem}.nodes{flex-wrap:wrap}.person{flex-shrink:0;overflow-wrap:anywhere;padding:.35rem;text-align:center}
 @media(max-width:700px){.publication-detail-grid{grid-template-columns:minmax(0,1fr)}.generation{grid-template-columns:minmax(0,1fr)}.tree-note{margin-left:0}.body-image{max-width:100%}.archive-row{grid-template-columns:minmax(0,1fr)}.archive-row .row-arrow{justify-self:end}}
+
+/* Long references may wrap, but their [n] markers must never collapse vertically. */
+.reference-list li > .reference-index { flex: 0 0 auto; white-space: nowrap; }
+.reference-list li > div { flex: 1 1 0%; min-width: 0; overflow-wrap: anywhere; }
+.citations a { white-space: nowrap; }
