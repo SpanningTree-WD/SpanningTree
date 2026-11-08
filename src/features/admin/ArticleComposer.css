@@ -15,3 +15,31 @@
 .reference-toggle { display: flex; align-items: baseline; gap: .35rem; }
 .reference-toggle .reference-index { flex: 0 0 auto; white-space: nowrap; }
 .reference-toggle .reference-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+/* Covers are used only as list thumbnails, independently of body attachments. */
+.composer-cover-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .8rem 1.2rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+}
+.composer-cover-details { flex: 1 1 280px; min-width: 0; }
+.composer-cover-details > strong { display: block; }
+.composer-cover-details .field-help { margin: .25rem 0 0; }
+.composer-cover-controls {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.composer-cover-thumbnail {
+  width: 84px;
+  height: 58px;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+}
+.composer-cover-controls .field-help { margin: 0; }
