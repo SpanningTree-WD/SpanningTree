@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { MarkdownRenderer, renderMarkdown, ReferenceList } from './MarkdownRenderer'
+import referenceStyles from './AuthoringContent.css?raw'
 afterEach(cleanup)
 
 describe('MarkdownRenderer with MathJax', () => {
@@ -88,6 +89,16 @@ describe('MarkdownRenderer with MathJax', () => {
     expect(container.querySelector('.citations')?.textContent).toBe('[1], [2]')
     expect(container.querySelector('.citations a')).toHaveAttribute('href', '#reference-beta')
     expect(container.querySelector('#reference-beta')?.textContent).toContain('[1]')
+  })
+  it('keeps [n] reference markers together when the reference entry spans multiple lines', () => {
+    const longText = 'A very long reference title and publication information. '.repeat(12)
+    const { container } = render(<ReferenceList references={[{ id: 'long', format: 'free', text: longText }, { id: 'next', title: 'Next' }]} />)
+    const items = container.querySelectorAll('.reference-list li')
+    expect(items).toHaveLength(2)
+    expect(items[0].querySelector('.reference-index')).toHaveTextContent('[1]')
+    expect(items[1].querySelector('.reference-index')).toHaveTextContent('[2]')
+    expect(items[0].querySelector('div')).toHaveTextContent(longText.trim())
+    expect(referenceStyles).toMatch(/\\.reference-list li\\s*>\\s*\\.reference-index\\s*\\{[^}]*white-space:\\s*nowrap/)
   })
   it('renders inline attachments consistently and isolates a missing diagram', () => {
     const url = '/uploads/' + 'a'.repeat(64) + '.png'
