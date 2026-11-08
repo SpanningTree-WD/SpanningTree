@@ -130,7 +130,9 @@ export function ActivityEditorPage() {
         <ArticleComposer value={form.description} label="활동 내용"
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('description', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
+          coverImage={form.coverImage}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
+          onClearCover={() => set('coverImage', { alt: '', variant: form.coverImage.variant })}
            />
         <PeoplePicker label="참여자" value={form.participantIds ?? []} onChange={value => set('participantIds', value)} />
         <RelatedPicker collection="mathematics" label="관련 수학 자료" value={form.relatedMathematics} onChange={value => set('relatedMathematics', value)} />

@@ -134,7 +134,9 @@ export function PublicationEditorPage() {
         <ArticleComposer value={form.description} label="출판물 소개"
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('description', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
+          coverImage={form.coverImage}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
+          onClearCover={() => set('coverImage', { alt: '', variant: form.coverImage.variant })}
            />
 
         </div>

@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { ArticleComposer } from './ArticleComposer'
 import type { ArticleAsset, ReferenceEntry } from '../../models/authoring'
+import type { MediaReference } from '../../models/common'
 import type { BodyUploads } from './useBodyUploads'
 import { editorView, setEditorText } from '../../test/editor'
 vi.mock('../../components/content/browserDiagrams', () => ({ hydrateBrowserDiagrams: vi.fn(() => vi.fn()) }))
@@ -18,7 +19,10 @@ function setup() {
     const [body, setBody] = useState('First [@a]. Second [@a].\n\n{{asset:photo}}')
     const [refs, setRefs] = useState<ReferenceEntry[]>([{ id: 'a', title: 'Alpha' }, { id: 'b', title: 'Beta' }])
     const [assets, setAssets] = useState<ArticleAsset[]>([{ id: 'photo', url: '/uploads/' + 'a'.repeat(64) + '.png', fileName: 'Graph.png', alt: 'Graph', mediaType: 'image/png', size: 10 }])
-    return <ArticleComposer value={body} references={refs} assets={assets} uploads={uploads} scope={{ collection: 'mathematics', recordId: 'test' }} onChange={setBody} onReferences={setRefs} onAssets={setAssets} onDiagrams={() => {}} onCover={() => {}} />
+    const [coverImage, setCoverImage] = useState<MediaReference>({ alt: 'Graph', variant: 'a', url: assets[0].url })
+    return <ArticleComposer value={body} references={refs} assets={assets} uploads={uploads} scope={{ collection: 'mathematics', recordId: 'test' }} onChange={setBody} onReferences={setRefs} onAssets={setAssets} onDiagrams={() => {}} coverImage={coverImage}
+      onCover={asset => setCoverImage({ ...coverImage, url: asset.url, alt: asset.alt || asset.fileName })}
+      onClearCover={() => setCoverImage({ alt: '', variant: coverImage.variant })} />
   }
   const result = render(<Form />)
   return { ...result, enqueue, editor: editorView(screen.getByRole('textbox', { name: '본문' })) }
@@ -58,6 +62,21 @@ it('edits image caption, alt, width and alignment directly from the image', () =
   expect(container.querySelector('.markdown-editor figure')).toHaveClass('align-right')
   expect(container.querySelector('.markdown-editor figcaption')).toHaveTextContent('Figure 1')
   expect(container.querySelector('.markdown-editor figure img')).toHaveAttribute('alt', 'A graph')
+})
+it('clears only the cover assignment and can select it again without removing an inline image', () => {
+  const { editor } = setup()
+  const cover = within(screen.getByRole('region', { name: '대표 사진 (썸네일)' }))
+  expect(cover.getByRole('button', { name: '대표 사진 해제' })).toBeVisible()
+  expect(cover.getByText('대표 사진 설정됨')).toBeVisible()
+  fireEvent.click(cover.getByRole('button', { name: '대표 사진 해제' }))
+  expect(cover.getByText('대표 사진 없음')).toBeVisible()
+  expect(cover.queryByRole('button', { name: '대표 사진 해제' })).toBeNull()
+  expect(editor.state.doc.toString()).toContain('{{asset:photo}}')
+  fireEvent.click(screen.getByRole('button', { name: '첨부 설정: Graph' }))
+  const dialog = within(screen.getByRole('dialog', { name: '첨부 설정' }))
+  fireEvent.click(dialog.getByRole('button', { name: '대표 이미지로 사용' }))
+  expect(cover.getByText('대표 사진 설정됨')).toBeVisible()
+  expect(cover.getByRole('button', { name: '대표 사진 해제' })).toBeVisible()
 })
 it('inserts templates as source and captures the cursor for new citations', () => {
   const { editor } = setup()

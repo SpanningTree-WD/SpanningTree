@@ -46,17 +46,15 @@ const publication = {
   pdf,
 }
 
-it('shows the current mathematics body, hero and file in their public positions', () => {
+it('shows the mathematics body and file without an enlarged cover', () => {
   const { container } = render(<ArticlePreview collection="mathematics" record={mathematics} />)
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(mathematics.title)
   expect(screen.getByRole('heading', { name: '본문 제목' })).toBeInTheDocument()
-  const hero = screen.getByRole('img', { name: coverImage.alt })
-  expect(hero).toHaveAttribute('src', imageUrl)
-  expect(hero).toHaveClass('detail-hero', 'uploaded-image')
+  expect(screen.queryByRole('img', { name: coverImage.alt })).toBeNull()
   const article = container.querySelector('article')!
   expect(article).toHaveClass('page-container', 'detail-page')
   expect(Array.from(article.children).map((node) => node.className)).toEqual([
-    'content-header', 'detail-hero uploaded-image', 'reading-body',
+    'content-header', 'reading-body',
   ])
   const body = container.querySelector('.reading-body')! as HTMLElement
   expect(within(body).getByText('lecture-notes.pdf · 12 KB')).toBeInTheDocument()
@@ -66,7 +64,7 @@ it('shows the current mathematics body, hero and file in their public positions'
 it('shows activity photos, gallery captions and attachments with the body', () => {
   const { container } = render(<ArticlePreview collection="activities" record={activity} />)
   expect(screen.getByText(activity.description)).toBeInTheDocument()
-  expect(screen.getByRole('img', { name: coverImage.alt })).toHaveClass('detail-hero', 'photo')
+  expect(screen.queryByRole('img', { name: coverImage.alt })).toBeNull()
   expect(screen.getByRole('img', { name: '활동 사진' }).closest('figure')).toHaveTextContent(
     '함께 공부하는 모습'
   )
@@ -74,10 +72,11 @@ it('shows activity photos, gallery captions and attachments with the body', () =
   expect(screen.getByRole('link', { name: 'PDF 다운로드' })).toHaveAttribute('download', pdf.fileName)
 })
 
-it('shows publication cover beside the description and file using the public grid', () => {
+it('shows publication description and file in a single reading column without its cover', () => {
   const { container } = render(<ArticlePreview collection="publications" record={publication} />)
   const grid = container.querySelector('.publication-detail-grid')! as HTMLElement
-  expect(within(grid).getByRole('img', { name: coverImage.alt })).toHaveClass('cover', 'detail-cover')
+  expect(within(grid).queryByRole('img', { name: coverImage.alt })).toBeNull()
+  expect(grid).toHaveClass('publication-detail-no-cover')
   expect(within(grid).getByText(publication.description)).toBeInTheDocument()
   expect(within(grid).getByRole('link', { name: 'PDF 다운로드' })).toHaveAttribute('href', pdf.url)
 })
@@ -106,21 +105,21 @@ it('uses the same complete article markup for public pages and all three preview
   }
 })
 
-it('previews a pending replacement locally without changing the saved image', () => {
+it('does not show the cover above the body even when a preview URL is supplied', () => {
   const record = { ...mathematics, coverImage: { ...coverImage } }
   const rendered = render(
     <ArticlePreview collection="mathematics" record={record} imagePreviewUrl="blob:local-picture">
       <p role="status">새 사진 업로드 중</p>
     </ArticlePreview>
   )
-  expect(screen.getByRole('img', { name: coverImage.alt })).toHaveAttribute('src', 'blob:local-picture')
+  expect(screen.queryByRole('img', { name: coverImage.alt })).toBeNull()
   expect(screen.getByRole('status')).toHaveTextContent('새 사진 업로드 중')
   expect(record.coverImage.url).toBe(imageUrl)
   rendered.rerender(<ArticlePreview collection="mathematics" record={record} />)
-  expect(screen.getByRole('img', { name: coverImage.alt })).toHaveAttribute('src', imageUrl)
+  expect(screen.queryByRole('img', { name: coverImage.alt })).toBeNull()
 })
 
-it('shows a local photo before a new mathematics article has a stored image URL', () => {
+it('keeps a pending cover photo out of a new mathematics article', () => {
   render(
     <ArticlePreview
       collection="mathematics"
@@ -128,7 +127,7 @@ it('shows a local photo before a new mathematics article has a stored image URL'
       imagePreviewUrl="blob:new-picture"
     />
   )
-  expect(screen.getByRole('img', { name: '새 사진' })).toHaveAttribute('src', 'blob:new-picture')
+  expect(screen.queryByRole('img', { name: '새 사진' })).toBeNull()
 })
 
 it('does not accept blob URLs from persisted media or arbitrary preview URLs', () => {

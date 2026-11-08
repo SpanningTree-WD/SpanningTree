@@ -31,7 +31,7 @@ function ArticleAssetList({ assets = [], excluded = [] }: { assets?: AssetView[]
 
 // Public pages and editor previews share markup and sizing. Preview object URLs
 // are kept separate from the persisted record and accepted only by ContentImage.
-export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Activity>) {
+export function ActivityDetail({ record: r, children, pendingFiles = [], assetViews }: DetailProps<Activity>) {
   const t = useT()
   const gallery = r.gallery.filter(media => contentImageSource(media))
 
@@ -46,7 +46,6 @@ export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFi
         <p className="detail-summary">{r.summary}</p>
         {!!(r.participantIds?.length || r.participants?.length) && <p>{t('참여자')}: <PersonLinks ids={r.participantIds} legacy={r.participants} /></p>}
       </header>
-      <ContentImage className="detail-hero photo" media={r.coverImage} previewUrl={imagePreviewUrl} />
       <div className="reading-body">
         <MarkdownRenderer content={r.description} assets={assetViews ?? r.assets} diagrams={r.diagrams} />
       </div>
@@ -66,7 +65,7 @@ export function ActivityDetail({ record: r, children, imagePreviewUrl, pendingFi
   )
 }
 
-export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Mathematics>) {
+export function MathematicsDetail({ record: r, children, pendingFiles = [], assetViews }: DetailProps<Mathematics>) {
   const t = useT()
   const summary = detailSummary(r.summary, r.content)
 
@@ -80,7 +79,6 @@ export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendin
         </div>
         {summary && <MarkdownRenderer className="detail-summary" content={summary} references={r.references} />}
       </header>
-      <ContentImage className="detail-hero" media={r.coverImage} previewUrl={imagePreviewUrl} />
       <div className="reading-body">
         <MarkdownRenderer content={r.content} assets={assetViews ?? r.assets} diagrams={r.diagrams} references={r.references} />
         <ReferenceList references={r.references} />
@@ -92,10 +90,8 @@ export function MathematicsDetail({ record: r, children, imagePreviewUrl, pendin
   )
 }
 
-export function PublicationDetail({ record: r, children, imagePreviewUrl, pendingFiles = [], assetViews }: DetailProps<Publication>) {
+export function PublicationDetail({ record: r, children, pendingFiles = [], assetViews }: DetailProps<Publication>) {
   const t = useT()
-  const hasCover = Boolean(contentImageSource(r.coverImage, imagePreviewUrl))
-
   return (
     <article className="page-container detail-page">
       <header className="content-header">
@@ -106,12 +102,7 @@ export function PublicationDetail({ record: r, children, imagePreviewUrl, pendin
         </div>
         <p className="detail-summary">{r.summary}</p>
       </header>
-      <div className={`publication-detail-grid${hasCover ? '' : ' publication-detail-no-cover'}`}>
-        <ContentImage
-          className="cover detail-cover"
-          media={r.coverImage}
-          previewUrl={imagePreviewUrl}
-        />
+      <div className="publication-detail-grid publication-detail-no-cover">
         <div>
           <h2>{t("About this publication")}</h2>
           <MarkdownRenderer content={r.description} assets={assetViews ?? r.assets} diagrams={r.diagrams} />

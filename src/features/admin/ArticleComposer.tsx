@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { useT } from '../../i18n/LanguageProvider'
 import { assetToken, type ArticleAsset, type DiagramBlock, type ReferenceEntry } from '../../models/authoring'
 import type { BodyUploads } from './useBodyUploads'
+import type { MediaReference } from '../../models/common'
+import { contentImageSource } from '../../components/content/contentImageSource'
 import type { UploadScope } from '../../services/uploads/GitHubUploadService'
 import { fileSizeLabel } from '../../services/uploads/uploadTypes'
 import { MarkdownEditor, type MarkdownEditorHandle } from './MarkdownEditor'
@@ -11,12 +13,14 @@ import { ComposerDialog } from './ComposerDialog'
 import { diagramExamples, diagramFence } from '../../models/diagramSource'
 import './ArticleComposer.css'
 
-export function ArticleComposer({ value, label = '본문', assets = [], diagrams = [], references, uploads, scope, disabled, onChange, onAssets, onDiagrams, onReferences, onCover }: {
+export function ArticleComposer({ value, label = '본문', assets = [], diagrams = [], references, uploads, scope, disabled, onChange, onAssets, onDiagrams, onReferences, coverImage, onCover, onClearCover }: {
   value: string; label?: string; assets?: ArticleAsset[]; diagrams?: DiagramBlock[]; references?: ReferenceEntry[]
   uploads: BodyUploads; scope: UploadScope; disabled?: boolean
   onChange: (value: string) => void; onAssets: (assets: ArticleAsset[]) => void
   onDiagrams: (diagrams: DiagramBlock[]) => void; onReferences?: (references: ReferenceEntry[]) => void
+  coverImage: MediaReference
   onCover: (asset: ArticleAsset) => void
+  onClearCover: () => void
 }) {
   const t = useT()
   const handle = useRef<MarkdownEditorHandle | null>(null)
@@ -29,6 +33,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   const [attachmentsOpen, setAttachmentsOpen] = useState(false)
   const [citation, setCitation] = useState<string[]>()
   const [diagram, setDiagram] = useState<{ id?: string; language: 'tikz' | 'asymptote' }>()
+  const coverSource = contentImageSource(coverImage)
   const views = uploads.views(assets)
   const editing = assets.find(asset => asset.id === selected)
   const previewing = views.find(asset => asset.id === preview)
@@ -49,6 +54,18 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   function update(patch: Partial<ArticleAsset>) { if (editing) onAssets(assets.map(asset => asset.id === editing.id ? { ...asset, ...patch } : asset)) }
   return <section className="article-composer">
     <h2>{t(label)}</h2>
+    <section className="composer-cover-settings" aria-label={t('대표 사진 (썸네일)')}>
+      <div className="composer-cover-details">
+        <strong>{t('대표 사진 (썸네일)')}</strong>
+        <p className="field-help">{t('대표 사진은 목록과 홈페이지 썸네일에만 표시되며, 상세 화면의 본문 위에는 표시되지 않습니다.')}</p>
+        <p className="field-help">{t('첨부 사진의 설정에서 대표 이미지로 사용할 수 있습니다.')}</p>
+      </div>
+      <div className="composer-cover-controls">
+        {coverSource && <img className="composer-cover-thumbnail" src={coverSource} alt="" />}
+        <span className="field-help">{t(coverSource ? '대표 사진 설정됨' : '대표 사진 없음')}</span>
+        {coverImage.url && <button type="button" disabled={disabled} onClick={onClearCover}>{t('대표 사진 해제')}</button>}
+      </div>
+    </section>
     <div className="composer-toolbar" role="toolbar" aria-label={t('본문 도구')}>
       <button type="button" disabled={disabled} onClick={() => pictureInput.current?.click()}>{t('사진 삽입')}</button>
       <button type="button" disabled={disabled} onClick={() => fileInput.current?.click()}>{t('파일 첨부')}</button>

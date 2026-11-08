@@ -151,7 +151,9 @@ export function MathematicsEditorPage() {
         <ArticleComposer value={form.content} label="본문"
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('content', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
+          coverImage={form.coverImage}
           onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
+          onClearCover={() => set('coverImage', { alt: '', variant: form.coverImage.variant })}
           references={form.references ?? []} onReferences={value => set('references', value)} />
 
         <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />

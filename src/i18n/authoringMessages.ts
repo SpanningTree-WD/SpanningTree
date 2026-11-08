@@ -154,6 +154,18 @@ export const authoringMessages: Record<string, Record<Language, string>> = {
     "ko": "오른쪽",
     "en": "Right"
   },
+  "대표 사진 (썸네일)": {"ko": "대표 사진 (썸네일)", "en": "Cover photo (thumbnail)"},
+  "대표 사진은 목록과 홈페이지 썸네일에만 표시되며, 상세 화면의 본문 위에는 표시되지 않습니다.": {
+    "ko": "대표 사진은 목록과 홈페이지 썸네일에만 표시되며, 상세 화면의 본문 위에는 표시되지 않습니다.",
+    "en": "The cover photo appears only as a thumbnail in lists and on the homepage, not above the article body."
+  },
+  "첨부 사진의 설정에서 대표 이미지로 사용할 수 있습니다.": {
+    "ko": "첨부 사진의 설정에서 대표 이미지로 사용할 수 있습니다.",
+    "en": "Use an attached photo's settings to assign it as the cover image."
+  },
+  "대표 사진 설정됨": {"ko": "대표 사진 설정됨", "en": "Cover photo selected"},
+  "대표 사진 없음": {"ko": "대표 사진 없음", "en": "No cover photo"},
+  "대표 사진 해제": {"ko": "대표 사진 해제", "en": "Remove cover photo"},
   "대표 이미지로 사용": {
     "ko": "대표 이미지로 사용",
     "en": "Use as cover image"
