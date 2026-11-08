@@ -10,3 +10,8 @@
 
 .composer-attachments>summary{cursor:pointer;font-weight:600;padding-block:.3rem}.reference-toggle{flex:1;text-align:left;min-width:0}.reference-toggle[aria-expanded="true"]{font-weight:600}.people-picker button.picker-option{width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--color-line)}.summary-field{margin-block:1.2rem}.summary-field .admin-field{margin-bottom:0}
 .summary-field .field-help{margin:.5rem 0}
+
+/* Reference numbers remain on one line while long editor titles wrap beside them. */
+.reference-toggle { display: flex; align-items: baseline; gap: .35rem; }
+.reference-toggle .reference-index { flex: 0 0 auto; white-space: nowrap; }
+.reference-toggle .reference-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
