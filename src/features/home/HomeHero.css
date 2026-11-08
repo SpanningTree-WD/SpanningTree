@@ -26,3 +26,46 @@
 }
 .admin-sidebar .language-switch button { color: #cfdbd2; }
 .admin-sidebar .language-switch button[aria-pressed="true"] { color: #fff; border-color: #82978a; }
+
+/* Keep the existing site design; only center the homepage's existing intro. */
+.homepage-hero .hero-grid {
+  min-height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 30px 28px 38px;
+  text-align: center;
+}
+.homepage-hero .homepage-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+}
+.homepage-hero .homepage-hero-logo {
+  display: block;
+  width: min(100%, 550px);
+  height: auto;
+  margin: 0 auto -6px;
+}
+.homepage-hero .homepage-intro > h1 { max-width: 850px; }
+.homepage-hero .homepage-intro > p {
+  max-width: 560px;
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.homepage-hero .homepage-intro > .button-link { align-self: center; }
+
+@media (max-width: 560px) {
+  .homepage-hero { min-height: 0; }
+  .homepage-hero .hero-grid { min-height: 0; padding: 28px 16px 40px; }
+  .homepage-hero .homepage-hero-logo {
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 2px;
+  }
+  .homepage-hero .homepage-intro > p { font-size: 15px; }
+}

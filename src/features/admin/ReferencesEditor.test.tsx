@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { ReferencesEditor, CitationPicker } from './ReferencesEditor'
+import composerStyles from './ArticleComposer.css?raw'
 import { MarkdownRenderer } from '../../components/content/MarkdownRenderer'
 import type { ReferenceEntry } from '../../models/authoring'
 import { LanguageProvider } from '../../i18n/LanguageProvider'
@@ -57,4 +58,13 @@ it('edits one reference at a time and switches formats without overwriting hidde
   expect(screen.getByRole('textbox', { name: '자유 형식' })).toHaveValue('Custom citation')
   expect(screen.getByTestId('refs')).toHaveTextContent('Updated title')
   expect(screen.getByLabelText('DOI')).toHaveValue('10.1000/test')
+})
+
+it('keeps editor reference numbers beside multiline titles instead of splitting brackets', () => {
+  const longText = 'An extended bibliography entry that needs several display lines. '.repeat(10)
+  const { container } = render(<ReferencesEditor value={[{ id: 'long', format: 'free', text: longText }]}
+    body="" onChange={() => {}} onBodyChange={() => {}} />)
+  expect(container.querySelector('.reference-toggle .reference-index')).toHaveTextContent('[1]')
+  expect(container.querySelector('.reference-toggle .reference-title')).toHaveTextContent(longText.trim())
+  expect(composerStyles).toContain('.reference-toggle .reference-index { flex: 0 0 auto; white-space: nowrap; }')
 })

@@ -32,7 +32,7 @@ function ReferenceItem({ reference, index, count, onChange, onMove, onRemove }: 
   const [expanded, setExpanded] = useState(!referenceLabel(reference))
   return <section className="reference-editor-item" id={'reference-' + reference.id}>
     <div className="editor-row-actions">
-      <button className="reference-toggle" type="button" aria-expanded={expanded} aria-controls={'reference-fields-' + reference.id} onClick={() => setExpanded(value => !value)}>[{index + 1}] {referenceLabel(reference) || t('새 참고문헌')}</button>
+      <button className="reference-toggle" type="button" aria-expanded={expanded} aria-controls={'reference-fields-' + reference.id} onClick={() => setExpanded(value => !value)}><span className="reference-index">[{index + 1}]</span>{' '}<span className="reference-title">{referenceLabel(reference) || t('새 참고문헌')}</span></button>
       <button type="button" disabled={index === 0} onClick={() => onMove(-1)} aria-label={'[' + (index + 1) + '] ' + t('위로')}>↑</button>
       <button type="button" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={'[' + (index + 1) + '] ' + t('아래로')}>↓</button>
       <button type="button" onClick={onRemove}>{t('삭제')}</button>

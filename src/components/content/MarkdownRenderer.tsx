@@ -113,7 +113,7 @@ export function ReferenceList({ references = [] }: { references?: ReferenceEntry
   const t = useT()
   if (!references.length) return null
   return <section className="reference-list" aria-label={t('참고문헌')}><h2>{t('참고문헌')}</h2><ol>
-    {references.map((ref, index) => <li key={ref.id} id={'reference-' + ref.id}><span>[{index + 1}]</span><div>
+    {references.map((ref, index) => <li key={ref.id} id={'reference-' + ref.id}><span className="reference-index">[{index + 1}]</span><div>
       {referenceLabel(ref)}{referenceLink(ref) && <> <a href={referenceLink(ref)} target="_blank" rel="noopener noreferrer">{ref.doi || t('링크')} ↗</a></>}
     </div></li>)}
   </ol></section>
