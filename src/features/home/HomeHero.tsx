@@ -13,7 +13,8 @@ export function HomeHero({ settings, language, preview = false }: { settings: Ho
     <div className="hero-grid">
       <div className="homepage-intro">
         {useBrandLogo
-          ? <img className="homepage-hero-logo" src="/spanning-tree-hero-logo.svg" width="1100" height="580" alt="Spanning Tree" />
+          ? <><h1 className="visually-hidden">{copy.title}</h1>
+            <img className="homepage-hero-logo" src="/spanning-tree-hero-logo.svg" width="1100" height="580" alt="Spanning Tree" /></>
           : <h1>{copy.title}</h1>}
         <p>{copy.description}</p>
         {preview ? <span className="button-link">{label} <span aria-hidden="true">→</span></span>
