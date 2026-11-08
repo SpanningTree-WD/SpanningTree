@@ -190,6 +190,8 @@ it('can save an unset cover, keep the uploaded file, then choose it again', asyn
   expect(records.get('A')?.assets).toEqual(expect.arrayContaining([expect.objectContaining({ url: originalImage })]))
   expect((records.get('B') as Activity).coverImage.url).toBe(originalImage)
 
+  // jsdom does not implement native dialog.showModal.
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
   const storedImage = fileCard('활동 A')
   fireEvent.click(within(storedImage).getByRole('button', { name: '설정' }))
   const dialog = within(screen.getByRole('dialog', { name: '첨부 설정' }))
