@@ -9,6 +9,7 @@ describe('centered homepage hero', () => {
   it('uses the approved SVG and preserves the description and About link', () => {
     const { container } = render(<HomeHero settings={defaultHomepage} language="ko" />)
     expect(screen.getByRole('img', { name: 'Spanning Tree' })).toHaveAttribute('src', '/spanning-tree-hero-logo.svg')
+    expect(screen.getByRole('heading', { name: 'Spanning Tree' })).toHaveClass('visually-hidden')
     expect(screen.getByText(/활동 기록과 수학 자료를 제공합니다/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /동아리 소개/ })).toHaveAttribute('href', '/about')
     expect(container.querySelector('.tree-art')).toBeNull()
