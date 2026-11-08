@@ -98,7 +98,7 @@ describe('MarkdownRenderer with MathJax', () => {
     expect(items[0].querySelector('.reference-index')).toHaveTextContent('[1]')
     expect(items[1].querySelector('.reference-index')).toHaveTextContent('[2]')
     expect(items[0].querySelector('div')).toHaveTextContent(longText.trim())
-    expect(referenceStyles).toMatch(/\\.reference-list li\\s*>\\s*\\.reference-index\\s*\\{[^}]*white-space:\\s*nowrap/)
+    expect(referenceStyles).toContain('.reference-list li > .reference-index { flex: 0 0 auto; white-space: nowrap; }')
   })
   it('renders inline attachments consistently and isolates a missing diagram', () => {
     const url = '/uploads/' + 'a'.repeat(64) + '.png'
