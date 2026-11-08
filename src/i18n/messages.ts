@@ -4,6 +4,21 @@ import { authoringMessages } from './authoringMessages'
 // Only interface copy belongs here. User-authored content is rendered verbatim.
 export const messages: Record<string, Record<Language, string>> = {
   ...authoringMessages,
+  "수학 글 목록": {"ko": "수학 글 목록", "en": "Mathematics archive"},
+  "모든 유형": {"ko": "모든 유형", "en": "All types"},
+  "모든 연도": {"ko": "모든 연도", "en": "All years"},
+  "전체 글 보기": {"ko": "전체 글 보기", "en": "Show all articles"},
+  "목록 대표 그림": {"ko": "목록 대표 그림", "en": "Archive thumbnail"},
+  "선택 안 함": {"ko": "선택 안 함", "en": "None"},
+  "기존 대표 사진": {"ko": "기존 대표 사진", "en": "Existing cover photo"},
+  "본문에서 사라진 항목": {"ko": "본문에서 사라진 항목", "en": "Item no longer in the article"},
+  "불러오는 중…": {"ko": "불러오는 중…", "en": "Loading…"},
+  "독립 수식": {"ko": "독립 수식", "en": "Display equation"},
+  "인라인 수식": {"ko": "인라인 수식", "en": "Inline equation"},
+  "본문에 삽입한 사진, 도형 또는 수식을 고르세요. 선택은 글을 저장할 때 목록에 반영됩니다.": {"ko": "본문에 삽입한 사진, 도형 또는 수식을 고르세요. 선택은 글을 저장할 때 목록에 반영됩니다.", "en": "Choose an image, diagram or equation from the article. Save the article to update its thumbnail."},
+  "본문 그림 후보를 불러올 수 없습니다.": {"ko": "본문 그림 후보를 불러올 수 없습니다.", "en": "Could not load thumbnail options."},
+  "선택한 항목이 본문에서 변경되거나 삭제되어 목록에 표시되지 않습니다.": {"ko": "선택한 항목이 본문에서 변경되거나 삭제되어 목록에 표시되지 않습니다.", "en": "The selected item changed or was removed. It will not appear in the archive."},
+  "사진": {"ko": "사진", "en": "Image"},
   "Main": {
     "ko": "홈",
     "en": "Main"

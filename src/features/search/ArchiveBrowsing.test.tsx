@@ -1,6 +1,8 @@
+import { webcrypto } from 'node:crypto'
+import { mathematicsCovers } from '../../components/content/mathematicsCovers'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { PublicLayout } from '../../components/layout/PublicLayout'
 import {
   activityRepository,
@@ -59,28 +61,17 @@ it('provides all admin classifications, observed legacy values and new years wit
   })
   await mathematicsRepository.update('math-prime-number', { field: 'Legacy Field' })
   open('/mathematics')
-  await screen.findByRole('button', { name: '2028' })
-  for (const label of [
-    'Analysis',
-    'Geometry',
-    'Probability',
-    'Other',
-    'Poster',
-    'Slides',
-    'Legacy Field',
-  ])
+  await screen.findByRole('option', { name: '2028' })
+  for (const label of ['해석학', '기하학', '확률론', '기타', 'Legacy Field'])
     expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: '필터 열기' }))
-  const toggle = screen.getByRole('button', { name: /필터 닫기/ })
-  expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  fireEvent.click(screen.getByRole('button', { name: '2028' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Poster' }))
+  expect(screen.getByRole('option', { name: '발표 자료' })).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('연도'), { target: { value: '2028' } })
+  fireEvent.change(screen.getByLabelText('자료 유형'), { target: { value: 'Poster' } })
   expect(titles()).toEqual(['Sylow’s Theorems'])
-  expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  fireEvent.click(screen.getByRole('button', { name: 'Geometry' }))
+  fireEvent.click(screen.getByRole('button', { name: '기하학' }))
   expect(screen.getByText('0개 결과')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '2028' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: '필터 초기화' }))
+  expect(screen.getByRole('option', { name: '2028' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '초기화' }))
   expect(titles()).toHaveLength(5)
 })
 
@@ -128,10 +119,26 @@ it('shows all article fields and finds the article from a secondary field or Kor
   await screen.findByText('1개 결과')
   expect(titles()).toEqual(['Sylow’s Theorems'])
   expect(screen.getByRole('article')).toHaveTextContent('대수기하 · 위상수학 · 복소해석학')
-  fireEvent.click(screen.getByRole('button', { name: 'Topology' }))
+  fireEvent.click(screen.getByRole('button', { name: '위상수학' }))
   expect(titles()).toEqual(['Sylow’s Theorems', 'An Introduction to Fundamental Groups'])
   await act(() => router.navigate('/search?q=' + encodeURIComponent('복소해석학')))
   await screen.findByText('1개 결과')
   expect(titles()).toEqual(['Sylow’s Theorems'])
   expect(screen.getByRole('article')).toHaveTextContent('대수기하 · 위상수학 · 복소해석학')
+})
+
+it('shows only the chosen body formula on a public card and hides it if its source disappears', async () => {
+  vi.stubGlobal('crypto', webcrypto)
+  const content = '$$x+1$$\n\n$$y+2$$'
+  const choices = await mathematicsCovers({ content, slug: 'selected' })
+  await mathematicsRepository.update('math-sylow', { content, coverImage: { alt: '', variant: choices[1].key } })
+  open('/mathematics?q=Sylow')
+  expect(await screen.findByRole('math', { name: 'y+2' })).toBeInTheDocument()
+  expect(screen.queryByRole('math', { name: 'x+1' })).toBeNull()
+  expect(screen.queryByText('목록 대표 그림')).toBeNull()
+  cleanup()
+  await mathematicsRepository.update('math-sylow', { content: '$$x+1$$' })
+  open('/mathematics?q=Sylow')
+  await screen.findByText('1개 결과')
+  expect(screen.queryByRole('math')).toBeNull()
 })

@@ -81,12 +81,25 @@ Possible types:
 - createdAt
 - updatedAt
 
+## Mathematics archive thumbnails
+
+The mathematics editor offers only images, TikZ/Asymptote diagrams and inline or
+display equations present in the article body. A selection is saved with the
+article in its existing `coverImage.variant` as `body-v1:<SHA-256>`. The key
+identifies the body asset/legacy diagram ID, image source, diagram source and
+language, or TeX expression and display mode. It does not use the item’s position.
+Rendered images, SVG and duplicated TeX source are not stored in Firestore.
+Editing a selected formula or fenced diagram requires choosing it again; saving
+removes a reference whose target no longer exists. Explicit older cover photos
+remain visible until changed. Articles without a selected cover use text-only
+archive cards. Readers cannot choose covers from the public archive.
+
 ## Implemented uploaded media
 
 `MediaReference` retains `alt`, `variant`, optional `caption`, and adds optional
 `url` for a GitHub-uploaded JPEG/PNG/WebP file. `variant` is retained for stored
-record compatibility; it no longer selects a decorative placeholder. Lists and
-homepage cards show a shared title/year/type cover when no valid image is attached.
+record compatibility; it no longer selects a decorative placeholder. Other archive lists and
+homepage cards use a title/year/type cover when no valid image is attached.
 Detail pages omit the cover entirely, and publications use a single reading column.
 Activity galleries omit entries without a valid image and hide an empty gallery.
 These display rules do not modify saved records or select a body image automatically.

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useT } from '../../i18n/LanguageProvider'
 import { assetToken, type ArticleAsset, type DiagramBlock, type ReferenceEntry } from '../../models/authoring'
 import type { BodyUploads } from './useBodyUploads'
@@ -13,14 +13,15 @@ import { ComposerDialog } from './ComposerDialog'
 import { diagramExamples, diagramFence } from '../../models/diagramSource'
 import './ArticleComposer.css'
 
-export function ArticleComposer({ value, label = '본문', assets = [], diagrams = [], references, uploads, scope, disabled, onChange, onAssets, onDiagrams, onReferences, coverImage, onCover, onClearCover }: {
+export function ArticleComposer({ value, label = '본문', assets = [], diagrams = [], references, uploads, scope, disabled, onChange, onAssets, onDiagrams, onReferences, coverSettings, coverImage, onCover, onClearCover }: {
   value: string; label?: string; assets?: ArticleAsset[]; diagrams?: DiagramBlock[]; references?: ReferenceEntry[]
   uploads: BodyUploads; scope: UploadScope; disabled?: boolean
   onChange: (value: string) => void; onAssets: (assets: ArticleAsset[]) => void
   onDiagrams: (diagrams: DiagramBlock[]) => void; onReferences?: (references: ReferenceEntry[]) => void
   coverImage: MediaReference
-  onCover: (asset: ArticleAsset) => void
-  onClearCover: () => void
+  coverSettings?: ReactNode
+  onCover?: (asset: ArticleAsset) => void
+  onClearCover?: () => void
 }) {
   const t = useT()
   const handle = useRef<MarkdownEditorHandle | null>(null)
@@ -54,7 +55,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
   function update(patch: Partial<ArticleAsset>) { if (editing) onAssets(assets.map(asset => asset.id === editing.id ? { ...asset, ...patch } : asset)) }
   return <section className="article-composer">
     <h2>{t(label)}</h2>
-    <section className="composer-cover-settings" aria-label={t('대표 사진 (썸네일)')}>
+    {coverSettings ?? <section className="composer-cover-settings" aria-label={t('대표 사진 (썸네일)')}>
       <div className="composer-cover-details">
         <strong>{t('대표 사진 (썸네일)')}</strong>
         <p className="field-help">{t('대표 사진은 목록과 홈페이지 썸네일에만 표시되며, 상세 화면의 본문 위에는 표시되지 않습니다.')}</p>
@@ -65,7 +66,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
         <span className="field-help">{t(coverSource ? '대표 사진 설정됨' : '대표 사진 없음')}</span>
         {coverImage.url && <button type="button" disabled={disabled} onClick={onClearCover}>{t('대표 사진 해제')}</button>}
       </div>
-    </section>
+    </section>}
     <div className="composer-toolbar" role="toolbar" aria-label={t('본문 도구')}>
       <button type="button" disabled={disabled} onClick={() => pictureInput.current?.click()}>{t('사진 삽입')}</button>
       <button type="button" disabled={disabled} onClick={() => fileInput.current?.click()}>{t('파일 첨부')}</button>
@@ -104,7 +105,7 @@ export function ArticleComposer({ value, label = '본문', assets = [], diagrams
           <label className="admin-field"><span>{t('캡션')}</span><input value={editing.caption ?? ''} maxLength={5000} onChange={event => update({ caption: event.target.value })} /></label>
           <label className="admin-field"><span>{t('너비 (본문 대비 %)')}</span><input type="number" min={10} max={100} value={editing.width ?? 100} onChange={event => update({ width: Math.max(10, Math.min(100, Number(event.target.value))) })} /></label>
           <label className="admin-field"><span>{t('정렬')}</span><select aria-label={t('정렬')} value={editing.align ?? 'center'} onChange={event => update({ align: event.target.value as ArticleAsset['align'] })}><option value="left">{t('왼쪽')}</option><option value="center">{t('가운데')}</option><option value="right">{t('오른쪽')}</option></select></label>
-        </div><button type="button" onClick={() => onCover(editing)}>{t('대표 이미지로 사용')}</button>
+        </div>{onCover && <button type="button" onClick={() => onCover(editing)}>{t('대표 이미지로 사용')}</button>}
       </>}
     </section>}
     </ComposerDialog>}
