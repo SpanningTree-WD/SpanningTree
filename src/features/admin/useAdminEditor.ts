@@ -57,7 +57,8 @@ export function useAdminEditor<T extends EditableRecord>(
   repository: AdminRepository<T>,
   empty: T,
   path: string,
-  validateExtra: (form: T) => Errors
+  validateExtra: (form: T) => Errors,
+  prepareForSave?: (record: T) => Promise<T>
 ) {
   const t = useT()
   const { id } = useParams()
@@ -220,7 +221,9 @@ export function useAdminEditor<T extends EditableRecord>(
         attachments.clear()
         bodyUploads.clear()
       } else {
-        const input = prepareEditorRecord(form, previous.current)
+        const prepared = prepareEditorRecord(form, previous.current)
+        const input = prepareForSave ? await prepareForSave(prepared) : prepared
+        checkpoint()
         if (attachments.hasPending) {
           let base = input
           if (!base.id) {

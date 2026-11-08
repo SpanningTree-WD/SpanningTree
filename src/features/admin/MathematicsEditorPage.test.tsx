@@ -1,3 +1,4 @@
+import { webcrypto } from 'node:crypto'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -156,4 +157,16 @@ it('previews and saves a directly edited summary, then generates again when clea
   fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
   await waitFor(() => expect(repository.update).toHaveBeenCalledTimes(2))
   expect(repository.update).toHaveBeenLastCalledWith(legacy.id, expect.objectContaining({ summary: '본문에서 생성할 내용' }))
+})
+
+it('saves just the chosen equation from the editor', async () => {
+  vi.stubGlobal('crypto', webcrypto)
+  show({ ...legacy, content: '$$x^2+1$$' })
+  const option = await screen.findByRole('option', { name: /x\^2\+1/ })
+  const key = (option as HTMLOptionElement).value
+  expect(key).toMatch(/^body-v1:[a-f0-9]{64}$/)
+  fireEvent.change(screen.getByLabelText('목록 대표 그림', { selector: 'select' }), { target: { value: key } })
+  fireEvent.click(screen.getByRole('button', { name: '임시 저장' }))
+  await screen.findByText('저장했습니다.')
+  expect(repository.update).toHaveBeenCalledWith(legacy.id, expect.objectContaining({ coverImage: expect.objectContaining({ variant: key }) }))
 })

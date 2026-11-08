@@ -18,6 +18,8 @@ import { RelatedPicker } from './ConnectionPickers'
 import { AuthorPicker } from './AuthorPicker'
 import { ArticlePreview } from './ArticlePreview'
 import { SummaryField } from './SummaryField'
+import { prepareMathematicsCover } from '../../components/content/mathematicsCovers'
+import { MathematicsCoverPicker } from './MathematicsCoverPicker'
 
 const empty: Mathematics = {
   id: '',
@@ -71,7 +73,7 @@ export function MathematicsEditorPage() {
     save,
     publish,
     unpublish,
-  } = useAdminEditor(mathematicsRepository, empty, '/admin/mathematics', validateExtra)
+  } = useAdminEditor(mathematicsRepository, empty, '/admin/mathematics', validateExtra, prepareMathematicsCover)
   if (loadError)
     return (
       <div className="admin-page" role="alert">
@@ -152,8 +154,7 @@ export function MathematicsEditorPage() {
           assets={form.assets} diagrams={form.diagrams} uploads={bodyUploads} scope={uploadScope} disabled={saving}
           onChange={value => set('content', value)} onAssets={setAssets} onDiagrams={value => set('diagrams', value)}
           coverImage={form.coverImage}
-          onCover={asset => set('coverImage', { ...form.coverImage, url: asset.url, alt: asset.alt || form.title })}
-          onClearCover={() => set('coverImage', { alt: '', variant: form.coverImage.variant })}
+          coverSettings={<MathematicsCoverPicker item={form} onChange={value => set('coverImage', value)} />}
           references={form.references ?? []} onReferences={value => set('references', value)} />
 
         <RelatedPicker collection="activities" label="관련 활동" value={form.relatedActivities} onChange={value => set('relatedActivities', value)} />
