@@ -6,6 +6,7 @@ import type { BodyUploads } from '../../src/features/admin/useBodyUploads'
 import { SummaryField } from '../../src/features/admin/SummaryField'
 import { AuthorSelector } from '../../src/features/admin/AuthorPicker'
 import { prepareEditorRecord } from '../../src/features/admin/editorMetadata'
+import type { MediaReference } from '../../src/models/common'
 
 export function ComposerFixture() {
   const [body, setBody] = useState('First [@a]. Second [@a].\n\n{{asset:photo}}')
@@ -17,6 +18,7 @@ export function ComposerFixture() {
   const [authors, setAuthors] = useState(['Kim', 'Guest'])
   const [authorIds, setAuthorIds] = useState(['member-kim'])
   const [metadata, setMetadata] = useState('')
+  const [coverImage, setCoverImage] = useState<MediaReference>({ alt: '', variant: 'a' })
   const uploads: BodyUploads = {
     items: [], error: '', hasPending: false, views: values => values ?? [], remove: () => {}, retry: () => {}, clear: () => {},
     enqueue: files => {
@@ -29,10 +31,10 @@ export function ComposerFixture() {
     <p>Changes stay in this page and are not sent to the site.</p>
     <SummaryField value={summary} body={body} onChange={setSummary} />
     <AuthorSelector authors={authors} authorIds={authorIds} members={[{ id: 'member-kim', name: 'Kim', generation: 38, isLeader: false, createdAt: '', updatedAt: '' }]} onChange={(names, ids) => { setAuthors(names); setAuthorIds(ids) }} />
-    <ArticleComposer value={body} assets={assets} references={refs} diagrams={diagrams} uploads={uploads} scope={{ collection: 'mathematics', recordId: 'fixture' }} onChange={setBody} onAssets={setAssets} onReferences={setRefs} onDiagrams={setDiagrams} onCover={() => {}} />
+    <ArticleComposer value={body} assets={assets} references={refs} diagrams={diagrams} uploads={uploads} scope={{ collection: 'mathematics', recordId: 'fixture' }} onChange={setBody} onAssets={setAssets} onReferences={setRefs} onDiagrams={setDiagrams} coverImage={coverImage} onCover={asset => setCoverImage({ ...coverImage, url: asset.url, alt: asset.alt || asset.fileName })} onClearCover={() => setCoverImage({ alt: '', variant: coverImage.variant })} />
     <button onClick={() => {
       validateAuthoring({ content: body, assets, references: refs, diagrams }); setSaved(body)
-      const record = { title: 'Test', summary, content: body, authors, authorIds, coverImage: { alt: '', variant: '' } }
+      const record = { title: 'Test', summary, content: body, authors, authorIds, coverImage }
       setMetadata(JSON.stringify(prepareEditorRecord(record, record)))
     }}>Save locally</button>
     <pre data-testid="saved-metadata" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{metadata}</pre>
