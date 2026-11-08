@@ -19,7 +19,7 @@ describe('cover photos are reserved for archive thumbnails', () => {
     }
     const { container } = render(<ActivityDetail record={record} />)
     expect(screen.getByRole('heading', { name: record.title })).toBeInTheDocument()
-    expect(screen.getByText(record.summary)).toBeInTheDocument()
+    expect(container.querySelector('.detail-summary')).toHaveTextContent(record.summary)
     expect(container.querySelector('.detail-hero')).toBeNull()
     expect(container.querySelector(`img[src="${coverUrl}"]`)).toBeNull()
     expect(screen.getByRole('img', { name: '포럼 현장' })).toHaveAttribute('src', galleryUrl)
@@ -45,7 +45,7 @@ describe('cover photos are reserved for archive thumbnails', () => {
     }
     const { container } = render(<PublicationDetail record={record} />)
     expect(screen.getByRole('heading', { name: record.title })).toBeInTheDocument()
-    expect(screen.getByText(record.summary)).toBeInTheDocument()
+    expect(container.querySelector('.detail-summary')).toHaveTextContent(record.summary)
     expect(container.querySelector('.publication-detail-grid')).toHaveClass('publication-detail-no-cover')
     expect(container.querySelector('.detail-cover')).toBeNull()
     expect(container.querySelector(`img[src="${coverUrl}"]`)).toBeNull()
