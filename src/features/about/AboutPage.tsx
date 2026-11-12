@@ -29,10 +29,13 @@ export function AboutPage() {
             {t('스패닝트리는 서울과학고등학교 수학 동아리입니다. 대학수학을 공부하며 강연·포럼·교류 활동을 진행합니다.')}
           </p>
         </div>
-        <div
+        <img
           className="about-photo"
-          role="img"
-          aria-label={t("나무가 있는 풍경을 표현한 추상 이미지")}
+          src="/images/about-photo-cinematic.webp"
+          alt={t("동아리원들이 야외에서 포스터를 보며 토론하는 모습")}
+          width={1105}
+          height={695}
+          decoding="async"
         />
       </section>
       <div className="about-grid">

@@ -310,23 +310,13 @@ main {
   max-width:680px
 }
 .about-photo {
-  aspect-ratio:16/10;
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:1105 / 695;
+  object-fit:cover;
   border:1px solid var(--color-line);
-  background:radial-gradient(circle at 65% 34%,rgba(33,77,54,.55) 0 2%,transparent 3%),linear-gradient(170deg,#e9e6dc 0 58%,#81906f 59% 76%,#4a5940 77%);
-  position:relative;
-  overflow:hidden
-}
-.about-photo::before {
-  content:"";
-  position:absolute;
-  width:120px;
-  height:220px;
-  border-radius:50% 50% 10% 10%;
-  left:62%;
-  top:16%;
-  border-left:5px solid #334c39;
-  transform:rotate(3deg);
-  box-shadow:-35px 22px 0 -31px #334c39,35px 28px 0 -31px #334c39,-65px 55px 0 -31px #334c39,62px 52px 0 -31px #334c39
+  background:#e9e6dc
 }
 .about-grid {
   display:grid;
